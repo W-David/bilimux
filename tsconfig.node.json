@@ -1,0 +1,17 @@
+{
+  "extends": "@electron-toolkit/tsconfig/tsconfig.node.json",
+  "include": [
+    "electron.vite.config.*", 
+    "eslint.config.mjs",
+    "src/main/**/*", 
+    "src/preload/*",
+  ],
+  "compilerOptions": {
+    "composite": true,
+    "types": ["electron-vite/node"],
+    "baseUrl": ".",
+    "paths": {
+      "types/conf": ["./node_modules/conf/dist/source/types.d.ts"]
+    }
+  }
+}

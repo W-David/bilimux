@@ -1,0 +1,19 @@
+{
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "problems.showCurrentInStatus": false,
+  "workbench.editor.autoLockGroups": {
+    "mainThreadWebview-simpleBrowser.view": false,
+    "markdown-preview-enhanced": true
+  },
+  "typescript.tsserver.enableTracing": true,
+  "typescript.tsserver.watchOptions": "vscode"
+}
