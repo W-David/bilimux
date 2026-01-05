@@ -1,12 +1,11 @@
 import { autoUpdater } from 'electron-updater'
 import logger from './Logger'
-import { BrowserWindow } from 'electron'
 
 export default class UpdateManager {
   constructor() {
     autoUpdater.logger = logger
     autoUpdater.autoDownload = false
-    
+
     logger.info(this.constructor.name, 'inited')
   }
 

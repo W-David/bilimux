@@ -2,17 +2,19 @@
   <div class="h-full bg-dark-500">
     <div class="h-full flex flex-col justify-between flex-items-center pb-6 pt-16">
       <div class="flex flex-col items-center gap-4">
-        <RouterLink v-for="item in hItems" :key="item.to.name" :to="item.to">
-          <span
-            :class="[item.icon, route.name === item.to.name ? 'color-[#FB7299]' : 'color-light']"
-          ></span>
+        <RouterLink
+          v-for="item in hItems"
+          :key="item.to.name"
+          :to="item.to">
+          <span :class="[item.icon, route.name === item.to.name ? 'color-[#FB7299]' : 'color-light']"></span>
         </RouterLink>
       </div>
       <div class="flex flex-col items-center gap-4">
-        <RouterLink v-for="item in fItems" :key="item.to.name" :to="item.to">
-          <span
-            :class="[item.icon, route.name === item.to.name ? 'color-[#FB7299]' : 'color-light']"
-          ></span>
+        <RouterLink
+          v-for="item in fItems"
+          :key="item.to.name"
+          :to="item.to">
+          <span :class="[item.icon, route.name === item.to.name ? 'color-[#FB7299]' : 'color-light']"></span>
         </RouterLink>
       </div>
     </div>

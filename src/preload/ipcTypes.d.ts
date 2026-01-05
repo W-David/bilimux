@@ -1,10 +1,7 @@
 import type { IpcRendererEvent } from 'electron'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type IpcRendererListener<Args extends any[] = any[]> = (
-  event: IpcRendererEvent,
-  ...args: Args
-) => void
+export type IpcRendererListener<Args extends any[] = any[]> = (event: IpcRendererEvent, ...args: Args) => void
 
 export type IpcListenEventMap = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

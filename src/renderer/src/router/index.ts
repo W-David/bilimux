@@ -1,7 +1,7 @@
 import { createMemoryHistory, createRouter, RouteRecordRaw } from 'vue-router'
 
 const About = () => import('@renderer/components/About.vue')
-const Convert = () => import('@renderer/components/Convert.vue')
+const Convert = () => import('@renderer/components/ConvertTask.vue')
 const Layout = () => import('@renderer/components/Layout.vue')
 const Main = () => import('@renderer/components/Main.vue')
 const Settings = () => import('@renderer/components/Prefer.vue')
@@ -58,7 +58,7 @@ const router = createRouter({
 router.afterEach((to, from) => {
   const fromOrder = from.meta.order as number
   const toOrder = to.meta.order as number
-  const transition = toOrder >= fromOrder ? 'slide-up' : 'slide-down'
+  const transition = toOrder >= fromOrder ? 'main-slide-up' : 'main-slide-down'
   to.meta.transition = transition
 })
 

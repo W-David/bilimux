@@ -1,9 +1,10 @@
-import eslintConfigPrettier from '@electron-toolkit/eslint-config-prettier'
 import tseslint from '@electron-toolkit/eslint-config-ts'
-import eslintPluginVue from 'eslint-plugin-vue'
-import { defineConfig } from 'eslint/config'
-import vueParser from 'vue-eslint-parser'
 import unocss from '@unocss/eslint-config/flat'
+import eslintPluginPrettier from 'eslint-plugin-prettier/recommended'
+import eslintPluginVue from 'eslint-plugin-vue'
+import {defineConfig} from 'eslint/config'
+import vueParser from 'vue-eslint-parser'
+import prettierConfig from './.prettierrc.mjs'
 
 export default defineConfig(
   { ignores: ['**/node_modules', '**/dist', '**/out'] },
@@ -43,5 +44,15 @@ export default defineConfig(
       ]
     }
   },
-  eslintConfigPrettier
+  {
+    ...eslintPluginPrettier,
+    files: ['**/*.{ts,mts,tsx,vue}'],
+    rules: {
+      ...eslintPluginPrettier.rules,
+      'prettier/prettier': [
+        'error',
+        prettierConfig
+      ]
+    }
+  }
 )

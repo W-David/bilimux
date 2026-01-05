@@ -9,18 +9,22 @@ import {
   PLAYURL_FILE_NAME,
   VIDEO_INFO_FILE_NAME
 } from '../config/constants'
-import { CompositionOptions, EngineEventMap, VideoTaskInfo } from '../config/types'
+import { ComposEventMap, CompositionOptions, ConfigOptions, EngineResponse, VideoTaskInfo } from '../config/types'
 import { createDirIfNotExist, isExist, isValidFile } from '../utils'
 import ConfigManager from './ConfigManager'
 import Engine from './Engine'
 import logger from './Logger'
+import ProcessQueue from './ProcessQueue'
 
-export class ComposEngine extends EventEmitter<EngineEventMap> {
+export class ComposEngine extends EventEmitter<ComposEventMap> {
   private configManager: ConfigManager
+  private processQueue: ProcessQueue<number>
+  private isRunning = false
 
-  constructor(configManager: ConfigManager) {
+  constructor(processQueue: ProcessQueue<number>, configManager: ConfigManager) {
     super()
     this.configManager = configManager
+    this.processQueue = processQueue
     logger.info(this.constructor.name, 'inited')
   }
 
@@ -28,157 +32,267 @@ export class ComposEngine extends EventEmitter<EngineEventMap> {
    * 执行主流程
    */
   public async run(): Promise<void> {
+    if (this.isRunning) {
+      logger.warn('已在合成中，忽略重复请求')
+      return
+    }
+
+    this.isRunning = true
     try {
       const config = this.configManager.store.get('convert-config')
-      const { gpacBinPath, outputDir, cachePath, forceTransform, forceComposition, genConfig } =
-        config
+      const { gpacBinPath, outputDir, cachePath, genConfig } = config
 
-      const errorMessage = await isValidFile(gpacBinPath, fs.constants.X_OK)
-
-      if (errorMessage) {
-        // 如果返回非空字符串，说明文件无效，直接使用返回的错误信息
-        logger.error(errorMessage)
-        throw new Error(errorMessage)
+      // 检查 GPAC 可执行文件
+      const gpacErrMessage = await isValidFile(gpacBinPath, fs.constants.X_OK)
+      if (gpacErrMessage) {
+        logger.error(gpacErrMessage)
+        this.emit('process:broke', {
+          reason: '无效的 MP4Box 可执行文件，请检查配置'
+        })
+        return
       }
 
-      // 1. 生成BVS配置
-      const bvs = await this.generateBVS(cachePath)
+      // 检查缓存目录
+      const cacheErrMessage = await isValidFile(cachePath, fs.constants.R_OK)
+      if (cacheErrMessage) {
+        logger.error(cacheErrMessage)
+        this.emit('process:broke', {
+          reason: '无效的缓存目录'
+        })
+        return
+      }
+
+      // 生成BVS配置
+      const rawBVS = await this.generateBVS(cachePath)
+
+      // 生成空的BVS配置
+      if (rawBVS.length === 0) {
+        this.emit('process:broke', {
+          reason: `缓存目录下未扫描到有效的文件`
+        })
+        return
+      }
+
+      // BVS文件源信息检查
+      const [validBVS, _] = await this.pickupBVS(rawBVS)
+      if (validBVS.length === 0) {
+        this.emit('process:broke', {
+          reason: '没有可处理的缓存文件'
+        })
+        return
+      }
 
       // 写入 conf 文件
       if (genConfig) {
         // 确保输出目录存在
         await createDirIfNotExist(outputDir)
-        const bvsBuffer = Buffer.from(JSON.stringify(bvs, null, 2), 'utf-8')
+        const bvsBuffer = Buffer.from(JSON.stringify(validBVS, null, 2), 'utf-8')
         const confFilePath = path.join(outputDir, CONF_FILE_NAME)
         await fs.writeFile(confFilePath, bvsBuffer)
         const message = `已写入 conf 文件: ${confFilePath}`
         logger.info(message)
       }
 
-      // 2. 遍历处理
-      for (let idx = 0, len = bvs.length; idx < len; idx++) {
-        const bv = bvs[idx]
+      // 合成队列处理
+      await this.syntheticTask(validBVS, config)
+    } catch (error) {
+      const message = `合成失败: ${error instanceof Error ? error.message : String(error)}`
+      logger.error(message)
+      this.emit('process:broke', {
+        reason: message
+      })
+    } finally {
+      this.isRunning = false
+    }
+  }
 
-        if (bv.status !== 'completed') {
-          const message = `未缓存完成,跳过合成: ${bv.fileInfo.fileName}`
-          logger.warn(message)
-          this.emit('progress', {
-            type: 'preprocess',
-            file: bv.fileInfo.fileName,
-            raw: message
-          })
-          continue
-        }
+  /**
+   * 视频转换合成
+   * @param bvs bvs列表
+   */
+  private async syntheticTask(bvs: VideoTaskInfo[], config: ConfigOptions): Promise<void> {
+    const { gpacBinPath, outputDir, forceTransform, forceComposition } = config
 
-        const { videoM4sPath, videoMp4Path, audioM4sPath, audioMp3Path, fileName } = bv.fileInfo
+    const taskFn = async (bv: VideoTaskInfo) => {
+      const { videoM4sPath, videoMp4Path, audioM4sPath, audioMp3Path, fileName } = bv.fileInfo
 
-        // 检查源文件
-        const videoValidError = await isValidFile(videoM4sPath, fs.constants.R_OK)
-        if (videoValidError) {
-          const message = `${videoValidError}: ${videoM4sPath}, 跳过处理`
-          logger.warn(message)
-          this.emit('progress', {
-            type: 'preprocess',
-            file: fileName,
-            raw: message
-          })
-          continue
-        }
+      logger.info(`开始转换: (${bv.bvid}) - (${bv.fileInfo.fileName})`)
 
-        const audioValidError = await isValidFile(audioM4sPath, fs.constants.R_OK)
-        if (audioValidError) {
-          const message = `${audioValidError}, 跳过: ${audioM4sPath}`
-          logger.warn(message)
-          this.emit('progress', {
-            type: 'preprocess',
-            file: fileName,
-            raw: message
-          })
-          continue
-        }
+      // 开始时间戳
+      const start = new Date().getTime()
 
-        // 3. 转换 (Transform)
-        // 视频
-        const isVideoExist = await isExist(videoMp4Path)
-        if (!isVideoExist || forceTransform) {
-          await this.transformFile(videoM4sPath, videoMp4Path)
-          const message = `已转换视频${forceTransform ? '（覆盖）' : ''}: ${videoM4sPath} -> ${videoMp4Path}`
-          logger.info(message)
-          this.emit('progress', {
-            type: 'preprocess',
-            file: fileName,
-            raw: message
-          })
-        } else {
-          const message = `视频已存在,跳过转换: ${videoMp4Path}`
-          logger.info(message)
-          this.emit('progress', {
-            type: 'preprocess',
-            file: fileName,
-            raw: message
-          })
-        }
-
-        // 音频
-        const isAudioExist = await isExist(audioMp3Path)
-        if (!isAudioExist || forceTransform) {
-          await this.transformFile(audioM4sPath, audioMp3Path)
-          const message = `已转换音频${forceTransform ? '（覆盖）' : ''}: ${audioM4sPath} -> ${audioMp3Path}`
-          logger.info(message)
-          this.emit('progress', {
-            type: 'preprocess',
-            file: fileName,
-            raw: message
-          })
-        } else {
-          const message = `音频已存在,跳过转换: ${audioMp3Path}`
-          logger.info(message)
-          this.emit('progress', {
-            type: 'preprocess',
-            file: fileName,
-            raw: message
-          })
-        }
-
-        // 4. 合成 (Composition)
-        const outputFilePath = path.join(outputDir, fileName)
-        const isOutputExist = await isExist(outputFilePath)
-        if (!isOutputExist || forceComposition) {
-          await this.compose(gpacBinPath, {
-            bvInfo: bv,
-            videoFile: videoMp4Path,
-            audioFile: audioMp3Path,
-            outputFile: outputFilePath
-          })
-          const message = `已合成文件${forceComposition ? '（覆盖）' : ''}: ${outputFilePath}`
-          logger.info(message)
-
-          this.emit('progress', {
-            type: 'preprocess',
-            file: fileName,
-            raw: message
-          })
-        } else {
-          const message = `合成文件已存在,跳过: ${outputFilePath}`
-          logger.info(message)
-
-          this.emit('progress', {
-            type: 'preprocess',
-            file: fileName,
-            raw: message
-          })
-        }
-
-        // 5. 进度更新
-        this.emit('itemProgress', {
-          idx,
-          len
+      // 转换 (Transform)
+      // 视频
+      const isVideoExist = await isExist(videoMp4Path)
+      if (!isVideoExist || forceTransform) {
+        await this.transformFile(videoM4sPath, videoMp4Path)
+        const message = `已转换视频${forceTransform ? '（覆盖）' : ''}: ${videoM4sPath} -> ${videoMp4Path}`
+        logger.info(message)
+        this.emit('process:item:progress', {
+          bvid: bv.bvid,
+          type: 'preprocess',
+          progress: 0
+        })
+      } else {
+        const message = `视频已存在,跳过转换: ${videoMp4Path}`
+        logger.info(message)
+        this.emit('process:item:progress', {
+          bvid: bv.bvid,
+          type: 'preprocess',
+          progress: 0
         })
       }
-    } catch (error) {
-      logger.error(`合成失败: ${error instanceof Error ? error.message : String(error)}`)
-      throw error
+
+      // 音频
+      const isAudioExist = await isExist(audioMp3Path)
+      if (!isAudioExist || forceTransform) {
+        await this.transformFile(audioM4sPath, audioMp3Path)
+        const message = `已转换音频${forceTransform ? '（覆盖）' : ''}: ${audioM4sPath} -> ${audioMp3Path}`
+        logger.info(message)
+        this.emit('process:item:progress', {
+          bvid: bv.bvid,
+          type: 'preprocess',
+          progress: 0
+        })
+      } else {
+        const message = `音频已存在,跳过转换: ${audioMp3Path}`
+        logger.info(message)
+        this.emit('process:item:progress', {
+          bvid: bv.bvid,
+          type: 'preprocess',
+          progress: 0
+        })
+      }
+
+      // 合成 (Composition)
+      const outputFilePath = path.join(outputDir, fileName)
+      const isOutputExist = await isExist(outputFilePath)
+      if (!isOutputExist || forceComposition) {
+        await this.compose(gpacBinPath, {
+          bvInfo: bv,
+          videoFile: videoMp4Path,
+          audioFile: audioMp3Path,
+          outputFile: outputFilePath
+        })
+        const message = `已合成文件${forceComposition ? '（覆盖）' : ''}: ${outputFilePath}`
+        logger.info(message)
+      } else {
+        const message = `合成文件已存在,跳过: ${outputFilePath}`
+        logger.info(message)
+      }
+
+      const duration = new Date().getTime() - start
+      return duration
     }
+
+    return new Promise(resolve => {
+      const count = { success: 0, fail: 0 }
+
+      this.emit('process:ready', {
+        bvs: bvs
+      })
+
+      bvs.forEach(bv => {
+        // 启动队列任务
+        logger.info('启动队列任务')
+
+        this.processQueue
+          .add(() => {
+            this.emit('process:item:start', { bv })
+            return taskFn(bv)
+          })
+          .then(duration => {
+            count.success += 1
+
+            this.emit('process:item:end', {
+              bvid: bv.bvid,
+              success: true,
+              message: `耗时: ${duration} ms`
+            })
+          })
+          .catch(error => {
+            count.fail += 1
+
+            this.emit('process:item:end', {
+              bvid: bv.bvid,
+              success: false,
+              message: error instanceof Error ? error.message : String(error)
+            })
+          })
+      })
+      this.processQueue.onIdle().then(() => {
+        logger.info('所有任务已经完成')
+        this.emit('process:success', {
+          count
+        })
+        resolve()
+      })
+    })
+  }
+
+  /**
+   * 检查BVS并分类
+   * @param bvs bvs列表
+   * @returns [validBVS, invalidBVS]
+   */
+  private async pickupBVS(bvs: VideoTaskInfo[]) {
+    if (bvs.length === 0) {
+      return [[], []]
+    }
+    const validBVS: VideoTaskInfo[] = []
+    const inValidBVS: VideoTaskInfo[] = []
+
+    for (const bv of bvs) {
+      const { videoM4sPath, audioM4sPath } = bv.fileInfo
+
+      // 视频未缓存完成
+      if (bv.status !== 'completed') {
+        inValidBVS.push(bv)
+
+        const message = `未缓存完成,跳过合成: ${bv.fileInfo.fileName}`
+        logger.warn(message)
+        this.emit('process:item:progress', {
+          bvid: bv.bvid,
+          type: 'preprocess',
+          progress: 0
+        })
+        continue
+      }
+
+      // 检查视频源文件
+      const videoValidError = await isValidFile(videoM4sPath, fs.constants.R_OK)
+      if (videoValidError) {
+        inValidBVS.push(bv)
+
+        const message = `${videoValidError}: ${videoM4sPath}, 跳过处理`
+        logger.warn(message)
+        this.emit('process:item:progress', {
+          bvid: bv.bvid,
+          type: 'preprocess',
+          progress: 0
+        })
+        continue
+      }
+
+      // 检查音频源文件
+      const audioValidError = await isValidFile(audioM4sPath, fs.constants.R_OK)
+      if (audioValidError) {
+        inValidBVS.push(bv)
+
+        const message = `${audioValidError}, 跳过: ${audioM4sPath}`
+        logger.warn(message)
+        this.emit('process:item:progress', {
+          bvid: bv.bvid,
+          type: 'preprocess',
+          progress: 0
+        })
+        continue
+      }
+
+      validBVS.push(bv)
+    }
+
+    return [validBVS, inValidBVS]
   }
 
   /**
@@ -187,6 +301,9 @@ export class ComposEngine extends EventEmitter<EngineEventMap> {
   private async generateBVS(cachePath: string): Promise<VideoTaskInfo[]> {
     try {
       const cacheDirs = await this.getCacheDirs(cachePath)
+      if (cacheDirs.length === 0) {
+        return []
+      }
       const bvs: VideoTaskInfo[] = []
       for (const cacheDir of cacheDirs) {
         const videoTaskInfo = await this.getVideoTaskInfo(cacheDir)
@@ -221,9 +338,7 @@ export class ComposEngine extends EventEmitter<EngineEventMap> {
 
       return dirs
     } catch (error) {
-      logger.error(
-        `获取缓存目录失败: ${cachePath}, 错误: ${error instanceof Error ? error.message : String(error)}`
-      )
+      logger.error(`获取缓存目录失败: ${cachePath}, 错误: ${error instanceof Error ? error.message : String(error)}`)
       throw error
     }
   }
@@ -246,6 +361,7 @@ export class ComposEngine extends EventEmitter<EngineEventMap> {
       fileInfo: {
         fileName: '',
         dirPath: '',
+        filePath: '',
         videoM4sPath: '',
         audioM4sPath: '',
         videoMp4Path: '',
@@ -299,6 +415,10 @@ export class ComposEngine extends EventEmitter<EngineEventMap> {
       videoTaskInfo.fileInfo.dirPath = dirPath
       videoTaskInfo.fileInfo.fileName =
         `${this.filterFileName(videoTaskInfo.title)}-[${videoTaskInfo.uname}]` + MP4_SUFFIX
+      videoTaskInfo.fileInfo.filePath = path.join(
+        this.configManager.getStore()['convert-config'].outputDir,
+        videoTaskInfo.fileInfo.fileName
+      )
 
       return videoTaskInfo
 
@@ -376,9 +496,7 @@ export class ComposEngine extends EventEmitter<EngineEventMap> {
         readStream.pipe(writeStream)
       })
     } catch (error) {
-      logger.error(
-        `转换文件失败: ${src} -> ${dst}, 错误: ${error instanceof Error ? error.message : String(error)}`
-      )
+      logger.error(`转换文件失败: ${src} -> ${dst}, 错误: ${error instanceof Error ? error.message : String(error)}`)
       throw error
     } finally {
       if (srcFile) await srcFile.close()
@@ -389,11 +507,11 @@ export class ComposEngine extends EventEmitter<EngineEventMap> {
   /**
    * 调用 MP4Box 进行合成
    */
-  private async compose(binPath: string, options: CompositionOptions): Promise<void> {
+  private async compose(binPath: string, options: CompositionOptions): Promise<EngineResponse> {
     const engine = new Engine(binPath, options)
-    engine.on('progress', (progressData) => {
-      this.emit('progress', progressData)
+    engine.on('process:item:progress', progressData => {
+      this.emit('process:item:progress', progressData)
     })
-    await engine.start()
+    return engine.start()
   }
 }

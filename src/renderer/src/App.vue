@@ -10,7 +10,7 @@ import { mittbus } from './ipc'
 
 const toast = useToast()
 
-mittbus.on('toast:add', (payload) => toast.add(payload))
+mittbus.on('toast:add', payload => toast.add(payload))
 
 onUnmounted(() => {
   toast.removeAllGroups()

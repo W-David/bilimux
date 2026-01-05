@@ -5,21 +5,25 @@ import { CompositionOptions, EngineEventMap, EngineResponse } from '../config/ty
 import logger from './Logger'
 
 export default class Engine extends EventEmitter<EngineEventMap> {
-  static instance: ChildProcess | null
+  #instance: ChildProcess | null
   #engineBinPath: string
   #options: CompositionOptions
 
   constructor(engineBinPath: string, options: CompositionOptions) {
     super()
+    this.#instance = null
     this.#engineBinPath = engineBinPath
     this.#options = options
-
-    logger.info(this.constructor.name, 'inited')
   }
 
-  async start(): Promise<EngineResponse | void> {
-    if (Engine.instance) {
-      return
+  async start(): Promise<EngineResponse> {
+    if (this.#instance) {
+      logger.warn('Engine instance already exists, killing previous instance')
+      try {
+        this.stop()
+      } catch (error) {
+        logger.error(`Failed to stop previous instance: ${error}`)
+      }
     }
 
     const args = this.getStartArgs()
@@ -27,32 +31,32 @@ export default class Engine extends EventEmitter<EngineEventMap> {
     return new Promise((resolve, reject) => {
       try {
         logger.info(`开始合成视频: ${path.basename(this.#options.outputFile)}`)
-        Engine.instance = spawn(this.#engineBinPath, args, {
+        this.#instance = spawn(this.#engineBinPath, args, {
           windowsHide: true,
           stdio: 'pipe'
         })
-        if (!Engine.instance) {
-          throw new Error('无效的进程')
+        if (!this.#instance) {
+          throw new Error('无效的Mp4Box进程')
         }
 
-        Engine.instance.once('close', (code, signal) => {
+        this.#instance.once('close', (code, signal) => {
           if (code === 0) {
             logger.info(`文件合成完毕: ${path.basename(this.#options.outputFile)}`)
             resolve({ success: true, code })
           } else {
-            reject(new Error(`程序异常退出: ${signal}`))
+            reject(new Error(`Mp4Box程序异常退出: ${signal} (Code: ${code})`))
           }
-          Engine.instance = null
+          this.stop()
         })
-        Engine.instance.on('error', (error) => {
+        this.#instance.on('error', error => {
           reject(error)
-          Engine.instance = null
+          this.stop()
         })
 
-        Engine.instance.stdout?.on('data', (data: Buffer) => this.parseProgress(data))
-        Engine.instance.stderr?.on('data', (data: Buffer) => this.parseProgress(data))
+        this.#instance.stdout?.on('data', (data: Buffer) => this.parseProgress(data))
+        this.#instance.stderr?.on('data', (data: Buffer) => this.parseProgress(data))
       } catch (error) {
-        logger.error(`MP4Box 启动失败: ${error instanceof Error ? error.message : String(error)}`)
+        logger.error(`Mp4Box进程启动失败: ${error instanceof Error ? error.message : String(error)}`)
         reject(error)
       }
     })
@@ -75,19 +79,16 @@ export default class Engine extends EventEmitter<EngineEventMap> {
       const progressTypeStrategies = {
         Importing: 'importing',
         Writing: 'writing'
-      } as Record<string, string>
+      }
 
       // 使用策略模式确定进度类型
-      const matchedKeyword = Object.keys(progressTypeStrategies).find((keyword) =>
-        output.includes(keyword)
-      )
-      const type = matchedKeyword ? progressTypeStrategies[matchedKeyword] : 'unknown'
+      const matchedKeyword = Object.keys(progressTypeStrategies).find(keyword => output.includes(keyword))
+      const type = matchedKeyword ? progressTypeStrategies[matchedKeyword] : 'preprocess'
 
-      this.emit('progress', {
+      this.emit('process:item:progress', {
+        bvid: this.#options.bvInfo.bvid,
         type,
-        progress,
-        file: path.basename(this.#options.outputFile),
-        raw: output.trim()
+        progress
       })
     }
   }
@@ -104,17 +105,19 @@ export default class Engine extends EventEmitter<EngineEventMap> {
     try {
       return process.kill(pid, 0)
     } catch (error) {
-      logger.error(`关闭 GPAC 出错: ${(error as Error).message}`)
+      logger.error(`关闭Mp4Box进程出错: ${(error as Error).message}`)
       return true
     }
   }
+
   stop(): void {
-    logger.info(`关闭 GPAC ...`)
-    if (Engine.instance) {
-      Engine.instance.kill()
-      Engine.instance = null
+    if (this.#instance) {
+      logger.info(`关闭Mp4Box进程, PID: ${this.#instance.pid}`)
+      this.#instance.kill()
+      this.#instance = null
     }
   }
+
   restart(): void {
     this.stop()
     this.start()

@@ -1,11 +1,6 @@
 import { ipcMain } from 'electron'
 import { IpcMainEvents, IpcRendererEvents } from '../../preload/ipcEvent'
-import type {
-  ExtractArgs,
-  ExtractHandler,
-  IpcEventMap,
-  IpcListenEventMap
-} from '../../preload/ipcTypes'
+import type { ExtractArgs, ExtractHandler, IpcEventMap, IpcListenEventMap } from '../../preload/ipcTypes'
 import logger from './Logger'
 
 /**
@@ -37,19 +32,16 @@ class IpcListener<T extends IpcEventMap> {
     ) => ReturnType<ExtractHandler<T>[E]> | Promise<ReturnType<ExtractHandler<T>[E]>>
   ): void {
     this.handlers.push(channel)
-    ipcMain.handle(
-      channel,
-      listener as (event: Electron.IpcMainInvokeEvent, ...args: unknown[]) => unknown
-    )
+    ipcMain.handle(channel, listener as (event: Electron.IpcMainInvokeEvent, ...args: unknown[]) => unknown)
   }
 
   /**
    * Dispose all listeners and handlers.
    */
   dispose(): void {
-    this.listeners.forEach((c) => ipcMain.removeAllListeners(c))
+    this.listeners.forEach(c => ipcMain.removeAllListeners(c))
     this.listeners = []
-    this.handlers.forEach((c) => ipcMain.removeHandler(c))
+    this.handlers.forEach(c => ipcMain.removeHandler(c))
     this.handlers = []
   }
 }
@@ -61,11 +53,7 @@ class IpcEmitter<T extends IpcListenEventMap> {
   /**
    * Send an asynchronous message to the renderer process.
    */
-  send<E extends keyof T>(
-    sender: Electron.WebContents,
-    channel: Extract<E, string>,
-    ...args: T[E]
-  ): void {
+  send<E extends keyof T>(sender: Electron.WebContents, channel: Extract<E, string>, ...args: T[E]): void {
     sender.send(channel, ...args)
   }
 }

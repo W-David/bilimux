@@ -4,6 +4,7 @@ import { defineConfig } from 'electron-vite'
 import path from 'path'
 import UnoCSS from 'unocss/vite'
 import Components from 'unplugin-vue-components/vite'
+import Inspector from 'unplugin-vue-inspector/vite'
 
 export default defineConfig({
   main: {
@@ -39,6 +40,9 @@ export default defineConfig({
       }),
       Components({
         resolvers: [PrimeVueResolver()]
+      }),
+      Inspector({
+        enabled: true
       })
     ],
     build: {

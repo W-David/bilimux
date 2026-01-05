@@ -1,7 +1,6 @@
 import is from 'electron-is'
 import path from 'node:path'
 import { pathToFileURL } from 'url'
-import MainIcon from '../../../resources/icon.png?asset'
 import { Pages } from './types'
 
 const preloadPath = path.join(__dirname, '../preload/index.js')
@@ -10,11 +9,12 @@ export const pages: Pages = {
   // 主窗口
   main: {
     attrs: {
-      icon: MainIcon,
       title: 'bilimux',
       width: 1024,
       height: 768,
-      resizable: false,
+      minWidth: 800,
+      minHeight: 600,
+      resizable: true,
       transparent: is.macOS(),
       vibrancy: is.macOS() ? 'fullscreen-ui' : undefined,
       visualEffectState: is.macOS() ? 'active' : undefined,

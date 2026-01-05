@@ -1,52 +1,83 @@
 appId: com.codyw.bilimux
-productName: bilimux
+productName: BiliMux
 directories:
   buildResources: build
   output: dist
 files:
   - 'out/**/*'
   - 'package.json'
-  - '!node_modules/**/*'
-  - '!**/.vscode/*'
-  - '!src/*'
-  - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
-  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
-  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
-  - resources/**
+  - extra/**
 win:
-  icon: build/icon.ico
+  icon: build/bilimux.ico
   executableName: bilimux
+  target:
+    - target: nsis
+      arch:
+        - x64
+  extraResources:
+    from: ./extra/win32/
+    to: ./
+    filter:
+      - '**/*'
 nsis:
-  artifactName: ${name}-${version}-setup.${ext}
+  oneClick: false # 改为 false，允许用户选择安装目录（工具类应用标配）
+  allowToChangeInstallationDirectory: true
+  perMachine: true
+  allowElevation: true # 允许管理员权限安装
+  installerIcon: build/bilimux.ico
+  uninstallerIcon: build/bilimux.ico
+  createDesktopShortcut: always
+  artifactName: ${productName}-v${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
-  createDesktopShortcut: always
 mac:
-  icon: build/icon.icns
+  icon: build/bilimux.icns
   entitlementsInherit: build/entitlements.mac.plist
+  hardenedRuntime: true
   extendInfo:
-    - NSCameraUsageDescription: Application requests access to the device's camera.
-    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   notarize: false
+  target:
+    - target: dmg
+      arch: arm64
+  extraResources:
+    from: ./extra/darwin/
+    to: ./
+    filter:
+      - '**/*'
 dmg:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${productName}-v${version}.${ext}
+  window:
+    width: 540
+    height: 380
+  contents:
+    - x: 410
+      y: 230
+      type: link
+      path: /Applications
+    - x: 130
+      y: 230
+      type: file
 linux:
-  icon: build/icon.png
+  icon: build/bilimux.png
   target:
     - AppImage
-    - snap
     - deb
-  maintainer: electronjs.org
   category: Utility
+  extraResources:
+    from: ./extra/linux/
+    to: ./
+    filter:
+      - '**/*'
 appImage:
-  artifactName: ${name}-${version}.${ext}
+  artifactName: ${productName}-v${version}.${ext}
 npmRebuild: false
 publish:
-  provider: generic
-  url: https://example.com/auto-updates
+  provider: github
+  owner: W-David
+  repo: bilimux
+  releaseType: draft
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/

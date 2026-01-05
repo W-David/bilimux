@@ -3,10 +3,7 @@ export type EventType = string | symbol
 // An event handler can take an optional event argument
 // and should not return a value
 export type Handler<T = unknown> = (event: T) => void
-export type WildcardHandler<T = Record<string, unknown>> = (
-  type: keyof T,
-  event: T[keyof T]
-) => void
+export type WildcardHandler<T = Record<string, unknown>> = (type: keyof T, event: T[keyof T]) => void
 
 // An array of all currently registered event handlers for a type
 export type EventHandlerList<T = unknown> = Array<Handler<T>>
@@ -94,14 +91,14 @@ export default function mitt<Events extends Record<EventType, unknown>>(
     emit<Key extends keyof Events>(type: Key, evt?: Events[Key]) {
       let handlers = all!.get(type)
       if (handlers) {
-        ;(handlers as EventHandlerList<Events[keyof Events]>).slice().map((handler) => {
+        ;(handlers as EventHandlerList<Events[keyof Events]>).slice().map(handler => {
           handler(evt!)
         })
       }
 
       handlers = all!.get('*')
       if (handlers) {
-        ;(handlers as WildCardEventHandlerList<Events>).slice().map((handler) => {
+        ;(handlers as WildCardEventHandlerList<Events>).slice().map(handler => {
           handler(type, evt!)
         })
       }

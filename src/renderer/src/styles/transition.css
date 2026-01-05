@@ -1,0 +1,93 @@
+/* 列表过渡动画 */
+.list-move,
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s ease;
+}
+
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.list-leave-active {
+  position: absolute;
+}
+
+/* 滑动渐入滑动 */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition:
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* 向下划入 */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: 0.3s ease;
+  will-change: transform;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+  transform: translateY(-60px);
+}
+
+/* 向上划入 */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: 0.3s ease;
+  will-change: transform;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(60px);
+}
+
+/* 日志流动画 */
+.log-flow-move,
+.log-flow-enter-active,
+.log-flow-leave-active {
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, opacity;
+}
+
+.log-flow-enter-from {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.log-flow-leave-to {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+.log-flow-leave-active {
+  position: absolute;
+}
+
+/* 淡入淡出 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+  will-change: opacity;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}

@@ -4,10 +4,7 @@ import type { ExtractArgs, ExtractHandler, IpcEventMap, IpcListenEventMap } from
  * Typed emitter for Electron `ipcRenderer`.
  */
 export class IpcEmitter<T extends IpcEventMap> {
-  send<E extends keyof ExtractArgs<T>>(
-    channel: Extract<E, string>,
-    ...args: ExtractArgs<T>[E]
-  ): void {
+  send<E extends keyof ExtractArgs<T>>(channel: Extract<E, string>, ...args: ExtractArgs<T>[E]): void {
     window.electron.ipcRenderer.send(channel, ...args)
   }
 

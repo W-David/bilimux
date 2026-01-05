@@ -1,8 +1,4 @@
-import {
-  RendererEmitterInvokeFn,
-  RendererEmitterSendFn,
-  RendererHandlerFn
-} from '@preload/ipcEvent'
+import { RendererEmitterInvokeFn, RendererEmitterSendFn, RendererHandlerFn } from '@preload/ipcEvent'
 import { emitter, ipc } from '@renderer/ipc'
 
 /**
@@ -58,14 +54,14 @@ export const startProcess: RendererEmitterInvokeFn<'start:process'> = () => {
 /**
  * 打开指定路径
  */
-export const openPath: RendererEmitterInvokeFn<'open-path'> = (path) => {
+export const openPath: RendererEmitterInvokeFn<'open-path'> = path => {
   return emitter.invoke('open-path', path)
 }
 
 /**
  * 打开指定文件夹
  */
-export const openFolder: RendererEmitterInvokeFn<'open-folder'> = (path) => {
+export const openFolder: RendererEmitterInvokeFn<'open-folder'> = path => {
   return emitter.invoke('open-folder', path)
 }
 
@@ -79,7 +75,7 @@ export const openLogFile: RendererEmitterInvokeFn<'open-log-file'> = () => {
 /**
  * 保存配置到本地存储
  */
-export const saveConfigToNativeStore: RendererEmitterSendFn<'save-preference'> = (setting) => {
+export const saveConfigToNativeStore: RendererEmitterSendFn<'save-preference'> = setting => {
   emitter.send('save-preference', setting)
 }
 
@@ -91,29 +87,50 @@ export const clearNativeStore: RendererEmitterSendFn<'reset-preference'> = () =>
 }
 
 /**
- * 订阅处理进度事件
+ * 订阅处理准备事件
  */
-export const subscribeProcessProgressEvent: RendererHandlerFn<'process:progress'> = (listener) => {
-  return ipc.on('process:progress', (_, args) => listener(args))
+export const subscribeProcessReadyEvent: RendererHandlerFn<'process:ready'> = listener => {
+  return ipc.on('process:ready', (_, args) => listener(args))
+}
+
+/**
+ * 订阅处理中断事件
+ */
+export const subscribeProcessBrokeEvent: RendererHandlerFn<'process:broke'> = listener => {
+  return ipc.on('process:broke', (_, args) => listener(args))
+}
+
+/**
+ * 订阅处理成功事件
+ */
+export const subscribeProcessSuccessEvent: RendererHandlerFn<'process:success'> = listener => {
+  return ipc.on('process:success', (_, args) => listener(args))
 }
 
 /**
  * 订阅处理进度事件
  */
-export const subscribeItemProgressEvent: RendererHandlerFn<'item:progress'> = (listener) => {
-  return ipc.on('item:progress', (_, args) => listener(args))
+export const subscribeProcessProgressEvent: RendererHandlerFn<'process:item:progress'> = listener => {
+  return ipc.on('process:item:progress', (_, args) => listener(args))
+}
+
+/**
+ * 订阅处理开始事件
+ */
+export const subscribeProcessStartEvent: RendererHandlerFn<'process:item:start'> = listener => {
+  return ipc.on('process:item:start', (_, args) => listener(args))
+}
+
+/**
+ * 订阅处理结束事件
+ */
+export const subscribeProcessEndEvent: RendererHandlerFn<'process:item:end'> = listener => {
+  return ipc.on('process:item:end', (_, args) => listener(args))
 }
 
 /**
  * 订阅获取偏好设置事件
  */
-export const subscribeFetchPreferenceEvent: RendererHandlerFn<'fetch-preference'> = (listener) => {
+export const subscribeFetchPreferenceEvent: RendererHandlerFn<'fetch-preference'> = listener => {
   return ipc.on('fetch-preference', () => listener())
-}
-
-/**
- * 处理主进程发送的toast消息事件
- */
-export const subscribeToastMessageEvent: RendererHandlerFn<'toast:message'> = (callback) => {
-  return ipc.on('toast:message', (_, arg) => callback(arg))
 }

@@ -35,27 +35,14 @@ export interface TraverseContext {
  * 遍历的回调函数签名。
  * 如果返回 `false`，将跳过当前节点及其所有子节点的遍历。
  */
-export type TraverseCallback = (
-  key: PathSegment,
-  value: unknown,
-  context: TraverseContext
-) => boolean | void
+export type TraverseCallback = (key: PathSegment, value: unknown, context: TraverseContext) => boolean | void
 
 /**
  * 工业级对象深度遍历工具。
  * 能够安全地处理循环引用、特殊集合（Map/Set）以及自定义深度限制。
  */
-export function traverse<T>(
-  obj: T,
-  callback: TraverseCallback,
-  options: TraverseOptions = {}
-): void {
-  const {
-    traverseArrays = true,
-    traverseCollections = true,
-    maxDepth = 100,
-    includeNonEnumerable = false
-  } = options
+export function traverse<T>(obj: T, callback: TraverseCallback, options: TraverseOptions = {}): void {
+  const { traverseArrays = true, traverseCollections = true, maxDepth = 100, includeNonEnumerable = false } = options
 
   // 使用 WeakSet 存储已访问的对象，用于循环引用保护，且不影响垃圾回收
   const visited = new WeakSet<object>()
@@ -116,7 +103,7 @@ export function traverse<T>(
         })
       } else if (current instanceof Set) {
         let idx = 0
-        current.forEach((val) => {
+        current.forEach(val => {
           internalTraverse(val, idx, [...path, idx], depth + 1, current)
           idx++
         })
@@ -129,7 +116,7 @@ export function traverse<T>(
       // 包含不可枚举属性和 Symbol 属性
       const props = Object.getOwnPropertyNames(current)
       const symbols = Object.getOwnPropertySymbols(current)
-      ;[...props, ...symbols].forEach((k) => {
+      ;[...props, ...symbols].forEach(k => {
         internalTraverse(current[k], k, [...path, k], depth + 1, current)
       })
     } else {

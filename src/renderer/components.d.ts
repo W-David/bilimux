@@ -13,28 +13,19 @@ declare module 'vue' {
   export interface GlobalComponents {
     About: typeof import('./src/components/About.vue')['default']
     Button: typeof import('primevue/button')['default']
-    Card: typeof import('primevue/card')['default']
-    Convert: typeof import('./src/components/Convert.vue')['default']
-    Divider: typeof import('primevue/divider')['default']
-    HMenu: typeof import('./src/components/HMenu.vue')['default']
+    ConvertTask: typeof import('./src/components/ConvertTask.vue')['default']
     InputGroup: typeof import('primevue/inputgroup')['default']
     InputText: typeof import('primevue/inputtext')['default']
     Layout: typeof import('./src/components/Layout.vue')['default']
     Main: typeof import('./src/components/Main.vue')['default']
-    Menu: typeof import('primevue/menu')['default']
+    Message: typeof import('primevue/message')['default']
     Prefer: typeof import('./src/components/Prefer.vue')['default']
     ProgressBar: typeof import('primevue/progressbar')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    ScrollPanel: typeof import('primevue/scrollpanel')['default']
     SelectButton: typeof import('primevue/selectbutton')['default']
-    Settings: typeof import('./src/components/Settings.vue')['default']
     Sidebar: typeof import('./src/components/Sidebar.vue')['default']
     Toast: typeof import('primevue/toast')['default']
     ToggleSwitch: typeof import('primevue/toggleswitch')['default']
-    VirtualScroller: typeof import('primevue/virtualscroller')['default']
-  }
-  export interface GlobalDirectives {
-    Ripple: typeof import('primevue/ripple')['default']
   }
 }

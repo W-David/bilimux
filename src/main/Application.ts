@@ -7,6 +7,7 @@ import ConfigManager from './core/ConfigManager'
 import Context from './core/Context'
 import IPCManager from './core/IPCManager'
 import logger from './core/Logger'
+import ProcessQueue from './core/ProcessQueue'
 import UpdateManager from './core/UpdateManager'
 import WindowManager from './core/WindowManager'
 
@@ -18,6 +19,7 @@ export default class Application {
   ipcManager: IPCManager
   composEngine: ComposEngine
   updateManager: UpdateManager
+  processQueue: ProcessQueue<number>
 
   constructor() {
     this.context = new Context()
@@ -30,7 +32,9 @@ export default class Application {
 
     this.ipcManager = new IPCManager()
 
-    this.composEngine = new ComposEngine(this.configManager)
+    this.processQueue = new ProcessQueue({ concurrency: 1 })
+
+    this.composEngine = new ComposEngine(this.processQueue, this.configManager)
 
     this.initComposEngine()
 
@@ -49,26 +53,37 @@ export default class Application {
     const logLevel = this.configManager.store.get('log-level')
     logger.transports.file.level = logLevel
 
-    this.configManager.onChangedListener('log-level', (nv) => {
+    this.configManager.onChangedListener('log-level', nv => {
       logger.transports.file.level = nv as LogLevel
     })
   }
 
   initComposEngine(): void {
-    this.composEngine.on('progress', (progressData) => {
-      this.windowManager.sendCommandToAll('process:progress', progressData)
+    this.composEngine.on('process:ready', data => {
+      this.windowManager.sendCommandToAll('process:ready', data)
     })
-    this.composEngine.on('itemProgress', (itemData) => {
-      this.windowManager.sendCommandToAll('item:progress', itemData)
+    this.composEngine.on('process:item:start', data => {
+      this.windowManager.sendCommandToAll('process:item:start', data)
+    })
+    this.composEngine.on('process:item:progress', data => {
+      this.windowManager.sendCommandToAll('process:item:progress', data)
+    })
+    this.composEngine.on('process:item:end', data => {
+      this.windowManager.sendCommandToAll('process:item:end', data)
+    })
+    this.composEngine.on('process:broke', data => {
+      this.windowManager.sendCommandToAll('process:broke', data)
+    })
+    this.composEngine.on('process:success', data => {
+      this.windowManager.sendCommandToAll('process:success', data)
     })
   }
 
   handleConfigEvents(): void {
-    // this.configManager.store.onDidAnyChange(() => {})
-    this.configManager.onChangedListener('open-at-login', (val) => {
+    this.configManager.onChangedListener('open-at-login', val => {
       val ? this.autoLauncher.enable() : this.autoLauncher.disable()
     })
-    this.configManager.onChangedListener('auto-hide-window', (val) => {
+    this.configManager.onChangedListener('auto-hide-window', val => {
       val ? this.windowManager.bindWindowBlur() : this.windowManager.unbindWindowBlur()
     })
   }
@@ -98,7 +113,7 @@ export default class Application {
           .then(({ canceled, filePaths }) => {
             resolve(canceled ? '' : filePaths[0])
           })
-          .catch((err) => {
+          .catch(err => {
             const message = err instanceof Error ? err.message : String(err)
             logger.error(message)
             reject(message)

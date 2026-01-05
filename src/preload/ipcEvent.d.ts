@@ -1,5 +1,6 @@
 import { OpenDialogOptions } from 'electron'
-import type { ItemData, ProgressData, UserStore } from '../main/config/types'
+import type { UpdateCheckResult } from 'electron-updater'
+import type { ComposEventMap, UserStore } from '../main/config/types'
 
 //主进程 handle IPC 事件
 type IpcMainHandleEvents = {
@@ -10,7 +11,7 @@ type IpcMainHandleEvents = {
   'open-folder': (path: string) => void
   'open-log-file': () => string
   'start:process': () => void
-  'check-for-update': () => import('electron-updater').UpdateCheckResult | null
+  'check-for-update': () => UpdateCheckResult | null
   'download-update': () => string[]
   'quit-and-install': () => void
 }
@@ -22,12 +23,7 @@ type IpcMainListenEvents = {
 }
 
 // 渲染进程 listen IPC 事件
-type IpcRendererEvents = {
-  'process:progress': [ProgressData]
-  'item:progress': [ItemData]
-  'toast:message': [
-    { type: 'success' | 'info' | 'warn' | 'error' | 'secondary' | 'contrast'; message: string }
-  ]
+type IpcRendererEvents = ComposEventMap & {
   'fetch-preference': []
 }
 
@@ -35,9 +31,7 @@ type RendererEmitterInvokeFn<T extends keyof IpcMainHandleEvents> = (
   ...args: Parameters<IpcMainHandleEvents[T]>
 ) => Promise<ReturnType<IpcMainHandleEvents[T]>>
 
-type RendererEmitterSendFn<T extends keyof IpcMainListenEvents> = (
-  ...args: IpcMainListenEvents[T]
-) => void
+type RendererEmitterSendFn<T extends keyof IpcMainListenEvents> = (...args: IpcMainListenEvents[T]) => void
 
 type RendererHandlerFn<T extends keyof IpcRendererEvents> = (
   listener: (...args: IpcRendererEvents[T]) => void

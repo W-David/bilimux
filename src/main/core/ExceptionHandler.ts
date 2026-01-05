@@ -15,7 +15,7 @@ export default class ExceptionHandler {
       return
     }
     const showDialog = this.showDialog
-    process.on('uncaughtException', (err) => {
+    process.on('uncaughtException', err => {
       const { message, stack } = err
       logger.error(`UncaughtException: ${message}`)
       logger.error(stack)

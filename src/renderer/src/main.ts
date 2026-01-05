@@ -57,7 +57,7 @@ router.isReady().then(() => {
       app.mount('#app')
       router.push({ name: 'convert' })
     })
-    .catch((error) => {
+    .catch(error => {
       throw error
     })
 })

@@ -8,5 +8,12 @@
     <true/>
     <key>com.apple.security.cs.allow-dyld-environment-variables</key>
     <true/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+    <!-- 针对音视频应用的存储访问权限 -->
+    <key>com.apple.security.assets.movies.read-write</key>
+    <true/>
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
   </dict>
 </plist>

@@ -16,7 +16,7 @@ export async function fileStats(path: string): Promise<Stats | null> {
     const stats = await fs.stat(path)
     return stats
   } catch (error) {
-    logger.error(`未获取到文件信息: ${error instanceof Error ? error.message : String(error)}`)
+    logger.info(`未获取到文件信息: ${error instanceof Error ? error.message : String(error)}`)
     return null
   }
 }
@@ -31,7 +31,7 @@ export async function isExist(path: string): Promise<boolean> {
     await fs.access(path, fs.constants.F_OK)
     return true
   } catch (error) {
-    logger.error(`该文件不存在: ${error instanceof Error ? error.message : String(error)}`)
+    logger.info(`该文件不存在: ${path}`)
     return false
   }
 }
@@ -60,17 +60,29 @@ export async function createDirIfNotExist(path: string): Promise<void> {
  * @param mode 访问模式，默认为 fs.constants.F_OK
  * @returns 如果文件合法，返回空字符串；否则返回错误
  */
-export async function isValidFile(
-  filePath: string,
-  mode: number = fs.constants.F_OK
-): Promise<string> {
+export async function isValidFile(filePath: string, mode: number = fs.constants.F_OK): Promise<string> {
   try {
     await fs.access(filePath, mode)
     return ''
   } catch (error) {
-    const message = `检查文件合法性失败: ${error instanceof Error ? error.message : String(error)}`
-    logger.error(message)
-    return message
+    const errorMsg = error instanceof Error ? error.message : String(error)
+    const errorCode = error instanceof Error && 'code' in error ? (error as NodeJS.ErrnoException).code : undefined
+    const codeMap: Record<string, string> = {
+      ENOENT: '文件或目录不存在',
+      EACCES: '权限被拒绝',
+      EPERM: '操作不被允许',
+      ENOTDIR: '路径不是目录',
+      EISDIR: '路径是目录',
+      ELOOP: '符号链接嵌套过深',
+      ENAMETOOLONG: '文件名过长'
+    }
+    let userMessage = `文件验证失败: ${errorMsg}`
+    if (errorCode && codeMap[errorCode]) {
+      userMessage = `文件验证失败: ${codeMap[errorCode]}`
+    }
+    const fullMessage = `[${filePath}] ${userMessage}`
+    logger.error(fullMessage)
+    return fullMessage
   }
 }
 
@@ -88,10 +100,12 @@ export function getDevEngineBinPath(platform: NodeJS.Platform): string {
 
 /**
  * 获取打包环境的的 mp4box 可执行文件路径
+ * @param platform 平台
  * @returns mp4box文件路径
  */
-export function getProdEngineBinPath(): string {
-  return path.resolve(app.getAppPath(), '../')
+export function getProdEngineBinPath(platform: NodeJS.Platform): string {
+  const bin = ENGINE_BIN_MAP[platform]
+  return path.resolve(app.getAppPath(), '../', bin)
 }
 
 /**
@@ -100,5 +114,5 @@ export function getProdEngineBinPath(): string {
  * @returns mp4box文件路径
  */
 export function getEngineBinPath(platform: NodeJS.Platform): string {
-  return is.dev() ? getDevEngineBinPath(platform) : getProdEngineBinPath()
+  return is.dev() ? getDevEngineBinPath(platform) : getProdEngineBinPath(platform)
 }

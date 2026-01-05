@@ -1,10 +1,4 @@
-import {
-  defineConfig,
-  presetAttributify,
-  presetIcons,
-  presetWind3 as presetUno,
-  presetWebFonts
-} from 'unocss'
+import { defineConfig, presetAttributify, presetIcons, presetWind3 as presetUno, presetWebFonts } from 'unocss'
 
 export default defineConfig({
   presets: [
@@ -12,7 +6,7 @@ export default defineConfig({
     presetAttributify(),
     presetIcons({
       collections: {
-        mdi: () => import('@iconify-json/mdi/icons.json').then((i) => i.default)
+        mdi: () => import('@iconify-json/mdi/icons.json').then(i => i.default)
       },
       extraProperties: {
         display: 'inline-block',

@@ -80,7 +80,7 @@ export default class WindowManager extends EventEmitter {
     })
 
     // 窗口关闭时的特殊处理
-    createdWindow.on('close', (event) => {
+    createdWindow.on('close', event => {
       if (config['bind-close-to-hide'] && !this.willQuit) {
         // 组织默认的关闭行为
         event.preventDefault()
@@ -162,7 +162,7 @@ export default class WindowManager extends EventEmitter {
   }
 
   getWindowList(): BrowserWindow[] {
-    return Object.values(this.windows).filter((window) => !!window)
+    return Object.values(this.windows).filter(window => !!window)
   }
 
   sendCommandTo<T extends keyof IpcRendererEvents>(
@@ -177,7 +177,7 @@ export default class WindowManager extends EventEmitter {
     command: Extract<T, string>,
     ...args: IpcRendererEvents[T]
   ): void {
-    this.getWindowList().forEach((window) => {
+    this.getWindowList().forEach(window => {
       this.ipcManager.mainEmitter.send(window.webContents, command, ...args)
     })
   }

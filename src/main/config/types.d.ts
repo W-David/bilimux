@@ -32,28 +32,58 @@ type CompositionOptions = {
   outputFile: string
 }
 
-type ProgressData = {
-  type: string
-  progress?: number
-  file: string
-  raw: string
+type ProcessStartArgs = {
+  bv: VideoTaskInfo
 }
 
-type ItemData = {
-  idx: number
-  len: number
+type ProgressStatus = 'waiting' | 'preprocess' | 'importing' | 'writing' | 'success' | 'fail'
+
+type ProcessProgressArgs = {
+  bvid: string
+  type: ProgressStatus
+  progress: number
+}
+
+type ProcessEndArgs = {
+  bvid: string
+  success: boolean
+  message: string
+}
+
+type ProcessBrokeArgs = {
+  reason: string
+}
+
+type ProcessReadyArgs = {
+  bvs: VideoTaskInfo[]
+}
+
+type ProcessFinishArgs = {
+  count: {
+    success: number
+    fail: number
+  }
 }
 
 // 引擎事件映射
 type EngineEventMap = {
-  progress: [ProgressData]
-  itemProgress: [ItemData]
+  'process:item:start': [ProcessStartArgs]
+  'process:item:progress': [ProcessProgressArgs]
+  'process:item:end': [ProcessEndArgs]
+}
+
+// 合成引擎事件映射
+type ComposEventMap = EngineEventMap & {
+  'process:ready': [ProcessReadyArgs]
+  'process:broke': [ProcessBrokeArgs]
+  'process:success': [ProcessFinishArgs]
 }
 
 //文件结构信息
 type FileInfo = {
   dirPath: string
   fileName: string
+  filePath: string
   videoM4sPath: string
   audioM4sPath: string
   videoMp4Path: string
@@ -71,6 +101,10 @@ type VideoTaskInfo = {
   groupTitle: string
   status: string
   fileInfo: FileInfo
+}
+
+type VideoTaskMessage = Pick<VideoTaskInfo, 'bvid' | 'type' | 'title'> & {
+  fileName: Pick<FileInfo, 'fileName'>
 }
 
 // 合成任务配置
@@ -93,16 +127,17 @@ type UserStore = {
 }
 
 export type {
+  ComposEventMap,
   CompositionOptions,
   ConfigOptions,
   EngineBinMap,
   EngineEventMap,
   EngineResponse,
   FileInfo,
-  ItemData,
   Page,
   Pages,
-  ProgressData,
+  ProcessProgressArgs as ProgressData,
+  ProgressStatus,
   UserStore,
   VideoTaskInfo
 }

@@ -73,6 +73,6 @@ export default class ConfigManager {
 
   removeAllChangedListener(): void {
     logger.info(this.constructor.name, 'removeAllChangedListener')
-    this.#unsubscribe.forEach((fn) => fn())
+    this.#unsubscribe.forEach(fn => fn())
   }
 }

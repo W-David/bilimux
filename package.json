@@ -4,10 +4,14 @@
   "description": "An Electron application with Vue and TypeScript",
   "main": "./out/main/index.js",
   "author": "rushwang cooody@163.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/W-David/bilimux.git"
+  },
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint .",
-    "lint:fix": "eslint --fix .",
+    "lint:fix": "eslint --fix --debug .",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "vue-tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
@@ -27,7 +31,6 @@
     "electron-updater": "^6.3.9"
   },
   "devDependencies": {
-    "@electron-toolkit/eslint-config-prettier": "3.0.0",
     "@electron-toolkit/eslint-config-ts": "^3.1.0",
     "@electron-toolkit/tsconfig": "^2.0.0",
     "@iconify-json/material-symbols": "^1.2.50",
@@ -42,6 +45,8 @@
     "electron-builder": "^25.1.8",
     "electron-vite": "^5.0.0",
     "eslint": "^9.36.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-vue": "^10.4.0",
     "pinia": "^3.0.4",
     "prettier": "^3.6.2",
@@ -49,6 +54,7 @@
     "typescript": "^5.9.2",
     "unocss": "^66.5.10",
     "unplugin-vue-components": "^30.0.0",
+    "unplugin-vue-inspector": "^2.3.2",
     "vite": "^7.1.6",
     "vue": "^3.5.21",
     "vue-eslint-parser": "^10.2.0",
