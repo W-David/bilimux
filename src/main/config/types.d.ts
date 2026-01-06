@@ -32,19 +32,19 @@ type CompositionOptions = {
   outputFile: string
 }
 
-type ProcessStartArgs = {
+type ProcessItemStartArgs = {
   bv: VideoTaskInfo
 }
 
 type ProgressStatus = 'waiting' | 'preprocess' | 'importing' | 'writing' | 'success' | 'fail'
 
-type ProcessProgressArgs = {
+type ProcessItemProgressArgs = {
   bvid: string
   type: ProgressStatus
   progress: number
 }
 
-type ProcessEndArgs = {
+type ProcessItemEndArgs = {
   bvid: string
   success: boolean
   message: string
@@ -67,13 +67,14 @@ type ProcessFinishArgs = {
 
 // 引擎事件映射
 type EngineEventMap = {
-  'process:item:start': [ProcessStartArgs]
-  'process:item:progress': [ProcessProgressArgs]
-  'process:item:end': [ProcessEndArgs]
+  'process:item:start': [ProcessItemStartArgs]
+  'process:item:progress': [ProcessItemProgressArgs]
+  'process:item:end': [ProcessItemEndArgs]
 }
 
 // 合成引擎事件映射
 type ComposEventMap = EngineEventMap & {
+  'process:start': []
   'process:ready': [ProcessReadyArgs]
   'process:broke': [ProcessBrokeArgs]
   'process:success': [ProcessFinishArgs]
@@ -136,7 +137,7 @@ export type {
   FileInfo,
   Page,
   Pages,
-  ProcessProgressArgs as ProgressData,
+  ProcessItemProgressArgs,
   ProgressStatus,
   UserStore,
   VideoTaskInfo

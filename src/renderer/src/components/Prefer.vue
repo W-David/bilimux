@@ -60,7 +60,13 @@
           </div>
 
           <div class="flex flex-col gap-2">
-            <label class="font-normal">内置 GPAC(MP4Box) 路径</label>
+            <div class="flex items-center justify-start gap-4">
+              <label class="font-normal">内置 GPAC(MP4Box) 路径</label>
+              <div
+                class="i-mdi-lightning-bolt-circle cursor-pointer hover:shadow"
+                :class="[isValidEngine ? 'color-green' : 'color-red']"
+                @click="checkMp4Box(true)"></div>
+            </div>
             <InputGroup>
               <InputText
                 :model-value="preference['convert-config'].gpacBinPath"
@@ -102,7 +108,14 @@
 </template>
 
 <script setup lang="ts">
-import { clearNativeStore, openFileDialog, openFolder, openLogFile, subscribeFetchPreferenceEvent } from '@renderer/api'
+import {
+  checkEngine,
+  clearNativeStore,
+  openFileDialog,
+  openFolder,
+  openLogFile,
+  subscribeFetchPreferenceEvent
+} from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
 import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
@@ -114,7 +127,7 @@ const { preference } = storeToRefs(store)
 const { fetchPreference, savePreference } = store
 
 const logLevelOptions = ref(['verbose', 'info', 'warn', 'error'])
-const showFooter = ref(true)
+const isValidEngine = ref(true)
 
 const subscribe = subscribeFetchPreferenceEvent(async () => {
   try {
@@ -141,7 +154,8 @@ const selectCachePath = async (): Promise<void> => {
   const newPath = await openFileDialog({
     title: 'Select Directory',
     properties: ['openDirectory', 'createDirectory'],
-    defaultPath: preference.value['convert-config'].cachePath
+    defaultPath: preference.value['convert-config'].cachePath,
+    buttonLabel: 'Select'
   })
   if (newPath) {
     preference.value['convert-config'].cachePath = newPath
@@ -152,7 +166,8 @@ const selectOutputDir = async (): Promise<void> => {
   const newPath = await openFileDialog({
     title: 'Select Directory',
     properties: ['openDirectory', 'createDirectory'],
-    defaultPath: preference.value['convert-config'].outputDir
+    defaultPath: preference.value['convert-config'].outputDir,
+    buttonLabel: 'Select'
   })
   if (newPath) {
     preference.value['convert-config'].outputDir = newPath
@@ -170,6 +185,20 @@ const openGpacPath = async (): Promise<void> => {
   })
 }
 
+const checkMp4Box = async (toastShow?: boolean): Promise<void> => {
+  const isValid = await checkEngine()
+  isValidEngine.value = isValid
+  if (toastShow) {
+    mittbus.emit('toast:add', {
+      severity: isValid ? 'success' : 'error',
+      summary: isValid ? '成功' : '出错了',
+      detail: isValid ? '已成功安装Mp4box' : '请确认您已安装Mp4Box',
+      closable: false,
+      life: 2000
+    })
+  }
+}
+
 const openLog = async (): Promise<void> => {
   const err = await openLogFile()
   if (err) {
@@ -177,7 +206,9 @@ const openLog = async (): Promise<void> => {
     mittbus.emit('toast:add', {
       severity: 'error',
       summary: '错误',
-      detail: err
+      detail: err,
+      closable: false,
+      life: 2000
     })
   }
 }
@@ -193,9 +224,7 @@ const clear = (): void => {
 logger.debug('Prefer created')
 onUnmounted(() => {
   subscribe()
-  setTimeout(() => {
-    showFooter.value = true
-  }, 500)
+  checkMp4Box()
   logger.debug('Prefer unmounted')
 })
 </script>

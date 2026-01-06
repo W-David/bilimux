@@ -59,9 +59,6 @@ export default class Application {
   }
 
   initComposEngine(): void {
-    this.composEngine.on('process:ready', data => {
-      this.windowManager.sendCommandToAll('process:ready', data)
-    })
     this.composEngine.on('process:item:start', data => {
       this.windowManager.sendCommandToAll('process:item:start', data)
     })
@@ -70,6 +67,13 @@ export default class Application {
     })
     this.composEngine.on('process:item:end', data => {
       this.windowManager.sendCommandToAll('process:item:end', data)
+    })
+
+    this.composEngine.on('process:start', () => {
+      this.windowManager.sendCommandToAll('process:start')
+    })
+    this.composEngine.on('process:ready', data => {
+      this.windowManager.sendCommandToAll('process:ready', data)
     })
     this.composEngine.on('process:broke', data => {
       this.windowManager.sendCommandToAll('process:broke', data)
@@ -143,6 +147,9 @@ export default class Application {
     })
     this.ipcManager.mainIpc.handle('quit-and-install', async () => {
       return this.updateManager.quitAndInstall()
+    })
+    this.ipcManager.mainIpc.handle('check-engine', async () => {
+      return this.composEngine.checkEngine()
     })
   }
 }

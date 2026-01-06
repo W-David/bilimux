@@ -63,6 +63,33 @@ export default class Engine extends EventEmitter<EngineEventMap> {
   }
 
   /**
+   * 检查引擎是否可用
+   * @returns 是否可用
+   */
+  checkEngine(): Promise<boolean> {
+    return new Promise(resolve => {
+      // 使用 spawn 启动 mp4box 进程，--version 用来检查版本
+      const child = spawn(this.#engineBinPath, ['-version'])
+
+      // 监听进程退出
+      child.on('close', code => {
+        if (code === 0) {
+          // 退出码为 0 表示成功
+          resolve(true)
+        } else {
+          logger.error(`Mp4Box不可用，退出码: ${code}`)
+          resolve(false)
+        }
+      })
+
+      child.on('error', err => {
+        logger.error(`检查Mp4Box可用性失败: ${err instanceof Error ? err.message : String(err)}`)
+        resolve(false)
+      })
+    })
+  }
+
+  /**
    * 解析MP4Box输出，提取进度信息
    * @param data MP4Box输出数据
    */

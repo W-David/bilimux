@@ -14,6 +14,7 @@ type IpcMainHandleEvents = {
   'check-for-update': () => UpdateCheckResult | null
   'download-update': () => string[]
   'quit-and-install': () => void
+  'check-engine': () => boolean
 }
 
 // 主进程 listen IPC 事件

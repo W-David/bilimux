@@ -3,21 +3,38 @@
     <!-- 完成状态 (Success/Error) headbar -->
     <Transition name="slide-down">
       <div
-        v-if="status === ConvertStatus.Success || status === ConvertStatus.Error"
-        class="h-15 w-full bg-transparent pl-4 shadow backdrop-blur">
+        v-if="status !== ConvertStatus.Idle"
+        class="h-15 w-full bg-transparent bg-transparent pl-4 shadow backdrop-blur">
         <div
           v-if="status === ConvertStatus.Success"
-          class="h-full w-full flex justify-start gap-4">
-          <div class="w-50 flex items-center justify-start">
-            <span class="ml-2 w-90% truncate text-4 text-green font-mono">{{ endMessage }}</span>
-          </div>
+          class="h-full w-full flex items-center justify-start gap-4">
+          <Message
+            icon="i-mdi-archive-success"
+            size="small"
+            variant="outlined"
+            severity="success">
+            {{ `转换完成: ${successMessage.success}` }}
+          </Message>
+          <Message
+            icon="i-mdi-archive-alert-outline"
+            size="small"
+            variant="outlined"
+            severity="warn">
+            {{ `转换中断: ${successMessage.failed}` }}
+          </Message>
         </div>
         <div
           v-else
-          class="h-full w-full flex justify-start gap-4">
-          <div class="w-50 flex items-center justify-center">
-            <span class="ml-2 w-90% truncate text-4 text-red font-mono">{{ endMessage }}</span>
-          </div>
+          class="h-full w-full flex items-center justify-end gap-4">
+          <Message
+            icon="i-mdi-error"
+            size="small"
+            variant="outlined"
+            severity="error">
+            <span class="w-50 truncate">
+              {{ errorMessage.reason }}
+            </span>
+          </Message>
         </div>
       </div>
     </Transition>
@@ -56,7 +73,7 @@
       <div
         v-else
         class="h-full w-full flex-1 overflow-y-auto">
-        <!-- 处理情况 (Processing) -->
+        <!-- 处理情况 -->
         <div
           v-if="hasTasks"
           class="min-h-full w-full flex flex-col items-center justify-center gap-2 py-4">
@@ -64,97 +81,65 @@
             <div
               v-for="task in taskArray"
               :key="task.id"
-              class="max-w-4xl min-w-2xl w-80% rounded-xl bg-black/30 p-4 shadow-sm hover:bg-black/50 hover:shadow-lg">
+              class="max-w-4xl min-w-2xl w-80% rounded-xl bg-black/50 p-4 shadow-sm backdrop-blur hover:shadow-lg">
               <!-- 文件名 -->
-              <div class="mb-3 flex items-center justify-between">
-                <div class="truncate text-sm text-light font-bold tracking-wide">
-                  {{ task.fileName }}
-                </div>
-                <Button
-                  severity="success"
-                  size="small"
-                  variant="text">
-                  <div
-                    class="i-mdi-movie-open-play"
-                    @click="openTaskFile(task)"></div>
-                </Button>
-              </div>
-
-              <div class="flex items-center justify-between gap-4">
+              <div class="h-full flex items-center justify-between gap-3">
                 <!-- 状态 -->
-                <div class="w-24 shrink-0">
-                  <Message
-                    v-if="task.status === 'importing'"
-                    icon="i-mdi-import"
-                    variant="simple"
-                    size="small"
-                    severity="warn">
-                    <span class="animate-pulse">导入中</span>
-                  </Message>
-                  <Message
-                    v-else-if="task.status === 'writing'"
-                    icon="i-mdi-export"
-                    severity="warn"
-                    size="small"
-                    variant="simple">
-                    <span class="animate-pulse">写入中</span>
-                  </Message>
-                  <Message
-                    v-else-if="task.status === 'preprocess'"
-                    icon="i-mdi-progress-pencil"
-                    size="small"
-                    variant="simple"
-                    severity="info">
-                    <span>预处理</span>
-                  </Message>
-                  <Message
-                    v-else-if="task.status === 'success'"
-                    size="small"
-                    variant="simple"
-                    severity="success"
-                    icon="i-mdi-check-circle">
-                    <span>已完成</span>
-                  </Message>
-                  <Message
-                    v-else-if="task.status === 'fail'"
-                    icon="i-mdi-alert-circle"
-                    size="small"
-                    variant="simple"
-                    severity="error">
-                    <span>出错了</span>
-                  </Message>
-                  <Message
-                    v-else
-                    icon="i-mdi-timer-sand"
-                    size="small"
-                    variant="simple"
-                    severity="secondary">
-                    <span>等待中</span>
-                  </Message>
+                <div class="h-8 w-24 shrink-0">
+                  <div
+                    class="h-full w-full flex select-none items-center justify-center gap-2 border rounded text-sm backdrop-blur"
+                    :class="{
+                      'bg-orange-500/10 border-orange-500/20 text-orange-500':
+                        task.status === 'importing' || task.status === 'writing',
+                      'bg-blue-500/10 border-blue-500/20 text-blue-500': task.status === 'preprocess',
+                      'bg-green-500/10 border-green-500/20 text-green-500': task.status === 'success',
+                      'bg-red-500/10 border-red-500/20 text-red-500': task.status === 'fail',
+                      'bg-gray-500/10 border-gray-500/20 text-gray-500': task.status === 'waiting',
+                      'animate-pulse':
+                        task.status === 'preprocess' || task.status === 'importing' || task.status === 'writing'
+                    }">
+                    <div
+                      class="text-lg"
+                      :class="{
+                        'i-mdi-import': task.status === 'importing',
+                        'i-mdi-export': task.status === 'writing',
+                        'i-mdi-progress-pencil': task.status === 'preprocess',
+                        'i-mdi-check-circle': task.status === 'success',
+                        'i-mdi-alert-circle': task.status === 'fail',
+                        'i-mdi-timer-sand': task.status === 'waiting'
+                      }"></div>
+                    <span>
+                      {{ statusTextMap[task.status] || '---' }}
+                    </span>
+                  </div>
                 </div>
-
-                <!-- 进度条 -->
+                <!-- 文件名 -->
                 <div
-                  v-if="task.status === 'success'"
-                  class="flex-1">
-                  <ProgressBar
-                    :value="task.progress ?? 0"
-                    :mode="task.progress === null ? 'indeterminate' : 'determinate'"
-                    :show-value="false"
-                    class="h-1.5 bg-white/10!"></ProgressBar>
+                  class="h-8 flex-1 truncate border border-indigo-500/20 rounded bg-indigo-500/10 px-3 text-start text-sm text-light-500 line-height-8 tracking-wide">
+                  <span>
+                    {{ task.fileName }}
+                  </span>
                 </div>
-
-                <!-- 百分比 -->
-                <div
-                  v-if="task.status === 'success'"
-                  class="w-12 text-end text-xs text-gray-400">
-                  {{ task.progress ? `${task.progress}%` : '--' }}
-                </div>
-
-                <div
-                  v-if="task.status === 'fail'"
-                  class="flex-1 truncate text-end font-size-3 text-red-300 font-italic underline">
-                  {{ task.message }}
+                <!-- 进度和结果 -->
+                <div class="flex items-center justify-center">
+                  <div
+                    class="h-8 w-8 flex cursor-pointer items-center justify-center rounded bg-transparent font-size-4 backdrop-blur">
+                    <div
+                      v-if="task.status === 'success'"
+                      class="i-mdi-movie-open-play color-green hover:scale-[1.2]"
+                      transition="~ transform 300 ease"
+                      @click="openTaskFile(task)"></div>
+                    <div
+                      v-else-if="task.status === 'fail'"
+                      v-tooltip.left="task.message"
+                      class="i-mdi-warning color-red"></div>
+                    <ProgressSpinner
+                      v-else
+                      class="h-4 w-4"
+                      stroke-width="8"
+                      fill="transparent"
+                      animation-duration="1s" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -162,9 +147,15 @@
         </div>
 
         <div
-          v-else
-          class="h-full w-full flex px-8 py-4">
-          <div class="i-mdi-file-document-remove-outline font-size-20 color-gray"></div>
+          v-if="status === ConvertStatus.Scanning"
+          class="h-full w-full flex">
+          <div class="i-mdi-file-document-box-search-outline m-auto animate-pulse font-size-20 color-pink"></div>
+        </div>
+
+        <div
+          v-if="status === ConvertStatus.Error"
+          class="h-full w-full flex">
+          <div class="i-mdi-file-document-remove-outline m-auto font-size-20 color-gray"></div>
         </div>
       </div>
     </Transition>
@@ -172,8 +163,8 @@
     <!-- 完成状态 (Success/Error) footbar -->
     <Transition name="slide-up">
       <div
-        v-if="status === ConvertStatus.Success || status === ConvertStatus.Error"
-        class="h-15 w-full bg-transparent pl-4 shadow backdrop-blur">
+        v-if="status !== ConvertStatus.Idle"
+        class="h-15 w-full bg-transparent pl-4 shadow backdrop-blur-2px">
         <div
           v-if="status === ConvertStatus.Success"
           class="h-full w-full flex justify-end gap-4 p-3">
@@ -226,8 +217,9 @@ import {
   openPath,
   startProcess,
   subscribeProcessBrokeEvent,
-  subscribeProcessEndEvent,
-  subscribeProcessProgressEvent,
+  subscribeProcessItemEndEvent,
+  subscribeProcessItemProgressEvent,
+  subscribeProcessItemStartEvent,
   subscribeProcessReadyEvent,
   subscribeProcessStartEvent,
   subscribeProcessSuccessEvent
@@ -237,7 +229,7 @@ import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
 import { storeToRefs } from 'pinia'
 import type { ProgressStatus } from 'src/main/config/types'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const store = usePreferenceStore()
@@ -247,6 +239,7 @@ const { preference } = storeToRefs(store)
 // 引擎状态管理
 enum ConvertStatus {
   Idle = 'idle',
+  Scanning = 'scanning',
   Processing = 'processing',
   Success = 'success',
   Error = 'error'
@@ -262,8 +255,24 @@ interface Task {
   message: string
 }
 
+const statusTextMap: Record<string, string> = {
+  importing: '导入中',
+  writing: '写入中',
+  preprocess: '预处理',
+  success: '已完成',
+  fail: '出错了',
+  waiting: '等待中'
+}
+
 const status = ref<ConvertStatus>(ConvertStatus.Idle)
-const endMessage = ref('')
+
+const successMessage = reactive({
+  success: 0,
+  failed: 0
+})
+const errorMessage = reactive({
+  reason: ''
+})
 
 // 任务列表
 const tasks = ref<Map<string, Task>>(new Map())
@@ -281,8 +290,16 @@ const unregisterSubscribes = (): void => {
 }
 
 registerSubscribe(
+  subscribeProcessStartEvent(() => {
+    logger.debug('process:start')
+    status.value = ConvertStatus.Scanning
+  })
+)
+
+registerSubscribe(
   subscribeProcessReadyEvent(({ bvs }) => {
     logger.debug('process:ready', bvs)
+    status.value = ConvertStatus.Processing
     // const statusList = ['success', 'fail', 'importing', 'preprocess', 'waiting', 'writing'] as ProgressStatus[]
     // statusList.forEach((status, id) => {
     //   tasks.value.set(id.toString(), {
@@ -295,14 +312,17 @@ registerSubscribe(
     //     message: 'TEST ------------------------------------------------------- INFO'
     //   })
     // })
-  })
-)
-
-registerSubscribe(
-  subscribeProcessBrokeEvent(data => {
-    logger.debug('process:broke', data)
-    status.value = ConvertStatus.Error
-    endMessage.value = data.reason
+    bvs.forEach(task => {
+      tasks.value.set(task.bvid, {
+        id: task.bvid,
+        fileName: task.fileInfo.fileName,
+        filePath: task.fileInfo.filePath,
+        status: 'waiting',
+        progress: 0,
+        finished: false,
+        message: ''
+      })
+    })
   })
 )
 
@@ -310,28 +330,27 @@ registerSubscribe(
   subscribeProcessSuccessEvent(data => {
     logger.debug('process:success', data)
     status.value = ConvertStatus.Success
-    endMessage.value = `转换完成: [${data.count.success}/${data.count.success + data.count.fail}]`
+    successMessage.success = data.count.success
+    successMessage.failed = data.count.fail
   })
 )
 
 registerSubscribe(
-  subscribeProcessStartEvent(args => {
+  subscribeProcessBrokeEvent(data => {
+    logger.debug('process:broke', data)
+    status.value = ConvertStatus.Error
+    errorMessage.reason = data.reason
+  })
+)
+
+registerSubscribe(
+  subscribeProcessItemStartEvent(args => {
     logger.debug('process:item:start', args)
-    const task = args.bv
-    tasks.value.set(task.bvid, {
-      id: task.bvid,
-      fileName: task.fileInfo.fileName,
-      filePath: task.fileInfo.filePath,
-      status: 'waiting',
-      progress: 0,
-      finished: false,
-      message: ''
-    })
   })
 )
 
 registerSubscribe(
-  subscribeProcessProgressEvent(progressData => {
+  subscribeProcessItemProgressEvent(progressData => {
     // logger.debug('process:item:progress', progressData)
     const task = tasks.value.get(progressData.bvid)
     if (task) {
@@ -342,7 +361,7 @@ registerSubscribe(
 )
 
 registerSubscribe(
-  subscribeProcessEndEvent(resultData => {
+  subscribeProcessItemEndEvent(resultData => {
     logger.debug('process:item:end', resultData)
     const task = tasks.value.get(resultData.bvid)
     if (task) {
@@ -362,8 +381,9 @@ registerSubscribe(
 )
 
 const start = async (): Promise<void> => {
-  status.value = ConvertStatus.Processing
-  endMessage.value = ''
+  successMessage.success = 0
+  successMessage.failed = 0
+  errorMessage.reason = ''
   tasks.value = new Map()
 
   const start = new Date().getTime()
@@ -375,7 +395,9 @@ const start = async (): Promise<void> => {
 
 const reset = (): void => {
   status.value = ConvertStatus.Idle
-  endMessage.value = ''
+  successMessage.success = 0
+  successMessage.failed = 0
+  errorMessage.reason = ''
   tasks.value = new Map()
 }
 

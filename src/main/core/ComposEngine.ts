@@ -39,15 +39,18 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
 
     this.isRunning = true
     try {
+      this.emit('process:start')
+
       const config = this.configManager.store.get('convert-config')
       const { gpacBinPath, outputDir, cachePath, genConfig } = config
 
       // 检查 GPAC 可执行文件
       const gpacErrMessage = await isValidFile(gpacBinPath, fs.constants.X_OK)
-      if (gpacErrMessage) {
+      const isValidEngine = await this.checkEngine()
+      if (gpacErrMessage || !isValidEngine) {
         logger.error(gpacErrMessage)
         this.emit('process:broke', {
-          reason: '无效的 MP4Box 可执行文件，请检查配置'
+          reason: '无效的MP4Box可执行文件，请检查配置'
         })
         return
       }
@@ -192,10 +195,10 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
         bvs: bvs
       })
 
-      bvs.forEach(bv => {
-        // 启动队列任务
-        logger.info('启动队列任务')
+      // 启动队列任务
+      logger.info('启动队列任务:', `总任务数: [${bvs.length}]`)
 
+      bvs.forEach(bv => {
         this.processQueue
           .add(() => {
             this.emit('process:item:start', { bv })
@@ -513,5 +516,21 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       this.emit('process:item:progress', progressData)
     })
     return engine.start()
+  }
+
+  /**
+   * 检查引擎是否可用
+   * @returns 是否可用
+   */
+  public checkEngine(): Promise<boolean> {
+    const config = this.configManager.getStore()
+    const gpacBinPath = config['convert-config'].gpacBinPath
+    const engine = new Engine(gpacBinPath, {
+      bvInfo: {} as VideoTaskInfo,
+      videoFile: '',
+      audioFile: '',
+      outputFile: ''
+    })
+    return engine.checkEngine()
   }
 }

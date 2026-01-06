@@ -10,23 +10,24 @@ import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
+import Tooltip from 'primevue/tooltip'
 import router from './router'
 import { usePreferenceStore } from './store/preference'
 
-const MyPreset = definePreset(Aura, {
+const bilimuxPreset = definePreset(Aura, {
   semantic: {
     primary: {
-      50: '#fff0f5',
-      100: '#ffe3ec',
-      200: '#ffc6da',
-      300: '#ff9aba',
-      400: '#ff6496',
-      500: '#fb7299',
-      600: '#e6537d',
-      700: '#c33960',
-      800: '#a1264b',
-      900: '#85223f',
-      950: '#4d0e1f'
+      50: '{pink.50}',
+      100: '{pink.100}',
+      200: '{pink.200}',
+      300: '{pink.300}',
+      400: '{pink.400}',
+      500: '{pink.500}',
+      600: '{pink.600}',
+      700: '{pink.700}',
+      800: '{pink.800}',
+      900: '{pink.900}',
+      950: '{pink.950}'
     }
   }
 })
@@ -37,11 +38,12 @@ const app = createApp(App)
 app.use(pinia)
 app.use(router)
 app.use(ToastService)
+app.directive('tooltip', Tooltip)
 app.use(ConfirmationService)
 app.use(PrimeVue, {
   ripple: true,
   theme: {
-    preset: MyPreset,
+    preset: bilimuxPreset,
     options: {
       cssLayer: {
         name: 'primevue'

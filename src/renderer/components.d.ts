@@ -21,11 +21,15 @@ declare module 'vue' {
     Message: typeof import('primevue/message')['default']
     Prefer: typeof import('./src/components/Prefer.vue')['default']
     ProgressBar: typeof import('primevue/progressbar')['default']
+    ProgressSpinner: typeof import('primevue/progressspinner')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SelectButton: typeof import('primevue/selectbutton')['default']
     Sidebar: typeof import('./src/components/Sidebar.vue')['default']
     Toast: typeof import('primevue/toast')['default']
     ToggleSwitch: typeof import('primevue/toggleswitch')['default']
+  }
+  export interface GlobalDirectives {
+    Tooltip: typeof import('primevue/tooltip')['default']
   }
 }

@@ -16,6 +16,13 @@ export const getAppVersion: RendererEmitterInvokeFn<'get-app-version'> = () => {
 }
 
 /**
+ * 检查引擎是否可用
+ */
+export const checkEngine: RendererEmitterInvokeFn<'check-engine'> = () => {
+  return emitter.invoke('check-engine')
+}
+
+/**
  * 检查更新
  */
 export const checkForUpdate: RendererEmitterInvokeFn<'check-for-update'> = () => {
@@ -87,6 +94,13 @@ export const clearNativeStore: RendererEmitterSendFn<'reset-preference'> = () =>
 }
 
 /**
+ * 订阅处理开始事件
+ */
+export const subscribeProcessStartEvent: RendererHandlerFn<'process:start'> = listener => {
+  return ipc.on('process:start', () => listener())
+}
+
+/**
  * 订阅处理准备事件
  */
 export const subscribeProcessReadyEvent: RendererHandlerFn<'process:ready'> = listener => {
@@ -110,21 +124,21 @@ export const subscribeProcessSuccessEvent: RendererHandlerFn<'process:success'> 
 /**
  * 订阅处理进度事件
  */
-export const subscribeProcessProgressEvent: RendererHandlerFn<'process:item:progress'> = listener => {
+export const subscribeProcessItemProgressEvent: RendererHandlerFn<'process:item:progress'> = listener => {
   return ipc.on('process:item:progress', (_, args) => listener(args))
 }
 
 /**
  * 订阅处理开始事件
  */
-export const subscribeProcessStartEvent: RendererHandlerFn<'process:item:start'> = listener => {
+export const subscribeProcessItemStartEvent: RendererHandlerFn<'process:item:start'> = listener => {
   return ipc.on('process:item:start', (_, args) => listener(args))
 }
 
 /**
  * 订阅处理结束事件
  */
-export const subscribeProcessEndEvent: RendererHandlerFn<'process:item:end'> = listener => {
+export const subscribeProcessItemEndEvent: RendererHandlerFn<'process:item:end'> = listener => {
   return ipc.on('process:item:end', (_, args) => listener(args))
 }
 
