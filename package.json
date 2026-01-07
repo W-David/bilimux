@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "description": "An Electron application with Vue and TypeScript",
   "main": "./out/main/index.js",
-  "author": "rushwang cooody@163.com",
+  "author": {
+    "name": "rushwang",
+    "email": "cooody@163.com"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/W-David/bilimux.git"
