@@ -148,3 +148,38 @@ export const subscribeProcessItemEndEvent: RendererHandlerFn<'process:item:end'>
 export const subscribeFetchPreferenceEvent: RendererHandlerFn<'fetch-preference'> = listener => {
   return ipc.on('fetch-preference', () => listener())
 }
+
+/**
+ * 订阅更新可用事件
+ */
+export const subscribeUpdateAvailable: RendererHandlerFn<'update:available'> = listener => {
+  return ipc.on('update:available', (_, args) => listener(args))
+}
+
+/**
+ * 订阅没有更新事件
+ */
+export const subscribeUpdateNotAvailable: RendererHandlerFn<'update:not-available'> = listener => {
+  return ipc.on('update:not-available', () => listener())
+}
+
+/**
+ * 订阅更新错误事件
+ */
+export const subscribeUpdateError: RendererHandlerFn<'update:error'> = listener => {
+  return ipc.on('update:error', (_, args) => listener(args))
+}
+
+/**
+ * 订阅更新进度事件
+ */
+export const subscribeUpdateProgress: RendererHandlerFn<'update:progress'> = listener => {
+  return ipc.on('update:progress', (_, args) => listener(args))
+}
+
+/**
+ * 订阅更新下载完成事件
+ */
+export const subscribeUpdateDownloaded: RendererHandlerFn<'update:downloaded'> = listener => {
+  return ipc.on('update:downloaded', () => listener())
+}

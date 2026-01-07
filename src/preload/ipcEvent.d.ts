@@ -1,5 +1,5 @@
 import { OpenDialogOptions } from 'electron'
-import type { UpdateCheckResult } from 'electron-updater'
+import type { ProgressInfo, UpdateCheckResult, UpdateInfo } from 'electron-updater'
 import type { ComposEventMap, UserStore } from '../main/config/types'
 
 //主进程 handle IPC 事件
@@ -26,6 +26,12 @@ type IpcMainListenEvents = {
 // 渲染进程 listen IPC 事件
 type IpcRendererEvents = ComposEventMap & {
   'fetch-preference': []
+  'update:checking': []
+  'update:available': [UpdateInfo]
+  'update:not-available': []
+  'update:error': [string]
+  'update:progress': [ProgressInfo]
+  'update:downloaded': []
 }
 
 type RendererEmitterInvokeFn<T extends keyof IpcMainHandleEvents> = (
