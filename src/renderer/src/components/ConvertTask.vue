@@ -4,37 +4,55 @@
     <Transition name="slide-down">
       <div
         v-if="status !== ConvertStatus.Idle"
-        class="h-15 w-full bg-transparent bg-transparent pl-4 shadow backdrop-blur">
-        <div
-          v-if="status === ConvertStatus.Success"
-          class="h-full w-full flex items-center justify-start gap-4">
-          <Message
-            icon="i-mdi-archive-success"
-            size="small"
-            variant="outlined"
-            severity="success">
-            {{ `转换完成: ${successMessage.success}` }}
-          </Message>
-          <Message
-            icon="i-mdi-archive-alert-outline"
-            size="small"
-            variant="outlined"
-            severity="warn">
-            {{ `转换中断: ${successMessage.failed}` }}
-          </Message>
-        </div>
-        <div
-          v-else
-          class="h-full w-full flex items-center justify-end gap-4">
-          <Message
-            icon="i-mdi-error"
-            size="small"
-            variant="outlined"
-            severity="error">
-            <span class="w-50 truncate">
-              {{ errorMessage.reason }}
-            </span>
-          </Message>
+        class="h-18 w-full flex-none bg-transparent px-4 shadow backdrop-blur-2px">
+        <div class="h-full w-full flex items-center justify-between p-3">
+          <div class="flex items-center gap-4">
+            <!-- 状态图标 -->
+            <div
+              class="h-10 w-10 flex items-center justify-center rounded-xl shadow-inner transition-all"
+              :class="{
+                'bg-green-500/10 text-green-500': status === ConvertStatus.Success,
+                'bg-red-500/10 text-red-500': status === ConvertStatus.Error,
+                'bg-blue-500/10 text-blue-500': status === ConvertStatus.Scanning,
+                'bg-orange-500/10 text-orange-500': status === ConvertStatus.Processing
+              }">
+              <div
+                class="text-xl"
+                :class="{
+                  'i-mdi-check-circle': status === ConvertStatus.Success,
+                  'i-mdi-search': status === ConvertStatus.Scanning,
+                  'i-mdi-close-circle': status === ConvertStatus.Error,
+                  'i-mdi-loading animate-spin': status === ConvertStatus.Processing
+                }"></div>
+            </div>
+
+            <!-- 状态文本 -->
+            <div class="flex flex-col justify-center gap-0.5">
+              <span class="text-sm text-light font-bold">
+                <span v-if="status === ConvertStatus.Success">任务已完成</span>
+                <span v-else-if="status === ConvertStatus.Error">任务执行出错</span>
+                <span v-else-if="status === ConvertStatus.Scanning">正在扫描文件</span>
+                <span v-else>正在处理任务</span>
+              </span>
+
+              <!-- 副文本/错误详情 -->
+              <span
+                v-if="status === ConvertStatus.Error"
+                class="max-w-xs truncate text-xs text-red-400 font-medium">
+                {{ errorMessage.reason }}
+              </span>
+              <span
+                v-else-if="status === ConvertStatus.Success"
+                class="text-xs text-light">
+                成功: {{ successMessage.success }} / 失败: {{ successMessage.failed }}
+              </span>
+              <span
+                v-else
+                class="text-xs text-gray-300">
+                请勿关闭应用
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </Transition>
@@ -53,7 +71,7 @@
               src="../assets/bilimux.svg"
               alt="Logo"
               class="h-20 w-20" />
-            <div class="from-[#FB7299] to-[#00A1D6] bg-gradient-to-r bg-clip-text text-6xl text-transparent font-black">
+            <div class="from-pink to-sky bg-gradient-to-r bg-clip-text text-6xl text-transparent font-black">
               BiliMux
             </div>
           </div>
@@ -63,7 +81,7 @@
         <Button
           size="large"
           rounded
-          class="border-none bg-[#FB7299] px-8 py-4 text-xl font-bold shadow transition-all hover:shadow-2xl hover:-translate-y-1"
+          class="border-none bg-pink px-8 py-4 text-xl font-bold shadow transition-all hover:shadow-2xl hover:-translate-y-1"
           @click="start">
           <i class="i-mdi-play mr-2 text-2xl"></i>
           开始转换
@@ -81,25 +99,30 @@
             <div
               v-for="task in taskArray"
               :key="task.id"
-              class="max-w-4xl min-w-2xl w-80% rounded-xl bg-black/50 p-4 shadow-sm backdrop-blur hover:shadow-lg">
-              <!-- 文件名 -->
-              <div class="h-full flex items-center justify-between gap-3">
-                <!-- 状态 -->
-                <div class="h-8 w-24 shrink-0">
+              class="relative max-w-4xl min-w-2xl w-80% overflow-hidden rounded-xl bg-gray-800/40 p-3 shadow-sm ring-1 ring-white/5 backdrop-blur transition-all duration-300 hover:bg-gray-800/60 hover:shadow-lg hover:ring-white/10">
+              <!-- 背景进度条 -->
+              <div
+                class="absolute bottom-0 left-0 top-0 bg-green-500/5 transition-all duration-300 ease-out"
+                :style="{ width: `${task.progress}%` }"></div>
+
+              <!-- 内容区域 -->
+              <div class="relative z-10 flex items-center justify-between gap-4">
+                <!-- 状态徽章 -->
+                <div class="w-20 shrink-0">
                   <div
-                    class="h-full w-full flex select-none items-center justify-center gap-2 border rounded text-sm backdrop-blur"
+                    class="flex select-none items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors"
                     :class="{
-                      'bg-orange-500/10 border-orange-500/20 text-orange-500':
+                      'bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20':
                         task.status === 'importing' || task.status === 'writing',
-                      'bg-blue-500/10 border-blue-500/20 text-blue-500': task.status === 'preprocess',
-                      'bg-green-500/10 border-green-500/20 text-green-500': task.status === 'success',
-                      'bg-red-500/10 border-red-500/20 text-red-500': task.status === 'fail',
-                      'bg-gray-500/10 border-gray-500/20 text-gray-500': task.status === 'waiting',
+                      'bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20': task.status === 'preprocess',
+                      'bg-green-500/10 text-green-400 ring-1 ring-green-500/20': task.status === 'success',
+                      'bg-red-500/10 text-red-400 ring-1 ring-red-500/20': task.status === 'fail',
+                      'bg-gray-500/10 text-gray-400 ring-1 ring-gray-500/20': task.status === 'waiting',
                       'animate-pulse':
                         task.status === 'preprocess' || task.status === 'importing' || task.status === 'writing'
                     }">
                     <div
-                      class="text-lg"
+                      class="text-base"
                       :class="{
                         'i-mdi-import': task.status === 'importing',
                         'i-mdi-export': task.status === 'writing',
@@ -108,38 +131,33 @@
                         'i-mdi-alert-circle': task.status === 'fail',
                         'i-mdi-timer-sand': task.status === 'waiting'
                       }"></div>
-                    <span>
-                      {{ statusTextMap[task.status] || '---' }}
-                    </span>
+                    <span>{{ statusTextMap[task.status] || '等待中' }}</span>
                   </div>
                 </div>
+
                 <!-- 文件名 -->
-                <div
-                  class="h-8 flex-1 truncate border border-indigo-500/20 rounded bg-indigo-500/10 px-3 text-start text-sm text-light-500 line-height-8 tracking-wide">
-                  <span>
+                <div class="flex-1 truncate">
+                  <div class="truncate text-sm text-gray-200 font-medium tracking-wide">
                     {{ task.fileName }}
-                  </span>
-                </div>
-                <!-- 进度和结果 -->
-                <div class="flex items-center justify-center">
-                  <div
-                    class="h-8 w-8 flex cursor-pointer items-center justify-center rounded bg-transparent font-size-4 backdrop-blur">
-                    <div
-                      v-if="task.status === 'success'"
-                      class="i-mdi-movie-open-play color-green hover:scale-[1.2]"
-                      transition="~ transform 300 ease"
-                      @click="openTaskFile(task)"></div>
-                    <div
-                      v-else-if="task.status === 'fail'"
-                      v-tooltip.left="task.message"
-                      class="i-mdi-warning color-red"></div>
-                    <ProgressSpinner
-                      v-else
-                      class="h-4 w-4"
-                      stroke-width="8"
-                      fill="transparent"
-                      animation-duration="1s" />
                   </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="h-8 w-8 flex shrink-0 items-center justify-center">
+                  <div
+                    v-if="task.status === 'success'"
+                    class="i-mdi-play-circle cursor-pointer text-2xl text-green-400 transition-transform duration-200 hover:scale-110 hover:text-green-300"
+                    @click="openTaskFile(task)"></div>
+                  <div
+                    v-else-if="task.status === 'fail'"
+                    v-tooltip.left="task.message"
+                    class="i-mdi-alert-circle cursor-help text-2xl text-red-400"></div>
+                  <ProgressSpinner
+                    v-else
+                    class="h-5 w-5"
+                    stroke-width="6"
+                    fill="transparent"
+                    animation-duration="1s" />
                 </div>
               </div>
             </div>
@@ -164,12 +182,11 @@
     <Transition name="slide-up">
       <div
         v-if="status !== ConvertStatus.Idle"
-        class="h-15 w-full bg-transparent pl-4 shadow backdrop-blur-2px">
-        <div
-          v-if="status === ConvertStatus.Success"
-          class="h-full w-full flex justify-end gap-4 p-3">
+        class="h-18 w-full bg-transparent pl-4 shadow backdrop-blur-2px">
+        <div class="h-full w-full flex justify-end gap-4 p-3">
           <div class="flex gap-2">
             <Button
+              v-if="status === ConvertStatus.Success"
               severity="help"
               variant="text"
               @click="reset">
@@ -178,19 +195,15 @@
             </Button>
 
             <Button
+              v-if="status === ConvertStatus.Success"
               severity="success"
               variant="text"
               @click="openOutputFolder">
               <i class="i-mdi-folder-open mr-1"></i>
               打开输出目录
             </Button>
-          </div>
-        </div>
-        <div
-          v-else
-          class="h-full w-full flex justify-end gap-4 p-3">
-          <div class="flex gap-2">
             <Button
+              v-if="status === ConvertStatus.Error"
               severity="danger"
               variant="text"
               @click="reset">
@@ -199,6 +212,7 @@
             </Button>
 
             <Button
+              v-if="status === ConvertStatus.Error"
               severity="help"
               variant="text"
               @click="openSetting">

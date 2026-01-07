@@ -5,16 +5,28 @@
         <RouterLink
           v-for="item in hItems"
           :key="item.to.name"
-          :to="item.to">
-          <span :class="[item.icon, route.name === item.to.name ? 'color-[#FB7299]' : 'color-light']"></span>
+          :to="item.to"
+          class="h-12 w-12 flex items-center justify-center rounded-xl transition-all duration-300"
+          :class="
+            route.name === item.to.name
+              ? 'bg-pink/20 text-pink ring ring-1 ring-pink backdrop-blur'
+              : 'text-gray-400 hover:bg-white/5 hover:text-white'
+          ">
+          <span :class="item.icon"></span>
         </RouterLink>
       </div>
       <div class="flex flex-col items-center gap-4">
         <RouterLink
           v-for="item in fItems"
           :key="item.to.name"
-          :to="item.to">
-          <span :class="[item.icon, route.name === item.to.name ? 'color-[#FB7299]' : 'color-light']"></span>
+          :to="item.to"
+          class="h-12 w-12 flex items-center justify-center rounded-xl transition-all duration-300"
+          :class="
+            route.name === item.to.name
+              ? 'bg-pink/20 text-pink ring ring-1 ring-inset shadow-pink/20 ring-pink backdrop-blur'
+              : 'text-gray-400 hover:bg-white/5 hover:text-white'
+          ">
+          <span :class="item.icon"></span>
         </RouterLink>
       </div>
     </div>

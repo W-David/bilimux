@@ -90,7 +90,7 @@ onUnmounted(() => {
 
         <div class="relative text-center space-y-2">
           <h1
-            class="from-[#FB7299] to-[#00A1D6] bg-gradient-to-r bg-clip-text text-4xl text-transparent font-black tracking-tight drop-shadow-sm">
+            class="from-pink to-sky bg-gradient-to-r bg-clip-text text-4xl text-transparent font-black tracking-tight drop-shadow-sm">
             BiliMux
           </h1>
           <p class="text-sm text-gray-400 font-medium tracking-wide opacity-90">B站缓存视频转换工具</p>

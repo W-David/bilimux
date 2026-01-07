@@ -2,7 +2,7 @@
   <div class="mx-auto h-full w-full flex flex-col gap-4">
     <div class="flex-1">
       <div class="mt-8 flex flex-col px-8">
-        <div class="mb-6 border-l-4 border-l-[#FB7299] border-l-style-solid pl-2 font-size-5 font-bold">常规设置</div>
+        <div class="mb-6 border-l-4 border-l-pink border-l-style-solid pl-2 font-size-5 font-bold">常规设置</div>
         <div class="flex flex-col gap-4 pl-4">
           <div class="flex items-center justify-between">
             <label class="font-normal">开机自启</label>
@@ -20,8 +20,8 @@
             <div>
               <label class="font-normal">日志等级</label>
               <div
-                title="查看日志"
-                class="i-mdi-open-in-new ml-2 cursor-pointer text-[18px] hover:color-[#FB7299]"
+                v-tooltip.right="'查看日志文件'"
+                class="i-mdi-open-in-new ml-2 cursor-pointer text-[18px] hover:color-pink"
                 @click="openLog"></div>
             </div>
             <SelectButton
@@ -33,7 +33,7 @@
       </div>
 
       <div class="mt-4 flex flex-col px-8">
-        <div class="mb-6 border-l-4 border-l-[#FB7299] border-l-style-solid pl-2 font-size-5 font-bold">转换配置</div>
+        <div class="mb-6 border-l-4 border-l-pink border-l-style-solid pl-2 font-size-5 font-bold">转换配置</div>
         <div class="flex flex-col gap-4 pl-4">
           <div class="flex flex-col gap-2">
             <label class="font-normal">缓存目录 (B站下载目录)</label>
@@ -61,8 +61,9 @@
 
           <div class="flex flex-col gap-2">
             <div class="flex items-center justify-start gap-4">
-              <label class="font-normal">内置 GPAC(MP4Box) 路径</label>
+              <label class="font-normal">内置 GPAC(Mp4box) 路径</label>
               <div
+                v-tooltip.right="'检测Mp4box是否正常'"
                 class="i-mdi-lightning-bolt-circle cursor-pointer hover:shadow"
                 :class="[isValidEngine ? 'color-green' : 'color-red']"
                 @click="checkMp4Box(true)"></div>
