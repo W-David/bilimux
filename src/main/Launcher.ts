@@ -33,7 +33,7 @@ export default class Launcher {
     // 启动程序异常处理
     this.exceptionHandler.setup()
     app.whenReady().then(() => {
-      app.setAppUserModelId('com.codyw.bilimux')
+      app.setAppUserModelId('com.rushwang.bilimux')
       globalThis.application = this.application
       app.on('activate', () => {
         globalThis.application.windowManager.openWindow('main')

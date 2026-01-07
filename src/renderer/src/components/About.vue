@@ -46,21 +46,21 @@ const versionList = computed(() => [
     value: '关于我们',
     icon: 'i-mdi-about',
     color: 'text-sky-400',
-    link: 'https://github.com/codyw/bilimux' // Assuming a link or keep empty if not known
+    link: 'https://github.com/W-David/bilimux' // Assuming a link or keep empty if not known
   },
   {
     label: 'License',
     value: '开源许可',
     icon: 'i-mdi-license',
     color: 'text-emerald-400',
-    link: 'https://github.com/codyw/bilimux/blob/main/LICENSE'
+    link: 'https://github.com/W-David/bilimux/blob/main/LICENSE'
   },
   {
     label: 'Bug Report',
     value: '问题反馈',
     icon: 'i-mdi-bug',
     color: 'text-rose-400',
-    link: 'https://github.com/codyw/bilimux/issues'
+    link: 'https://github.com/W-David/bilimux/issues'
   }
 ])
 
