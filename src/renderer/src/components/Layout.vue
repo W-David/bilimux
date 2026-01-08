@@ -2,7 +2,7 @@
 import logger from 'electron-log/renderer'
 import { onUnmounted } from 'vue'
 import Sidebar from './Sidebar.vue'
-import UpdateNotification from './UpdateNotification.vue'
+import UpdateNotification from './Update.vue'
 logger.debug('Layout created')
 onUnmounted(() => {
   logger.debug('Layout unmounted')

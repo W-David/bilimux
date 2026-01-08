@@ -1,5 +1,10 @@
 <template>
-  <Toast />
+  <Toast
+    position="top-right"
+    group="tr" />
+  <Toast
+    position="bottom-right"
+    group="br" />
   <RouterView />
 </template>
 
@@ -10,7 +15,7 @@ import { mittbus } from './ipc'
 
 const toast = useToast()
 
-mittbus.on('toast:add', payload => toast.add(payload))
+mittbus.on('toast:add', payload => toast.add({ ...{ group: 'tr' }, ...payload }))
 
 onUnmounted(() => {
   toast.removeAllGroups()

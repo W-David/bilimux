@@ -28,6 +28,7 @@ declare module 'vue' {
     Sidebar: typeof import('./src/components/Sidebar.vue')['default']
     Toast: typeof import('primevue/toast')['default']
     ToggleSwitch: typeof import('primevue/toggleswitch')['default']
+    Update: typeof import('./src/components/Update.vue')['default']
     UpdateNotification: typeof import('./src/components/UpdateNotification.vue')['default']
   }
   export interface GlobalDirectives {
