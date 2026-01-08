@@ -2,7 +2,6 @@
   <img src="build/bilimux.png" width="120" height="120" alt="BiliMux Logo" />
   <h1>BiliMux</h1>
   <p><b>高效、快速的 Bilibili 缓存音视频合并工具</b></p>
-  <p>An Electron application with Vue and TypeScript</p>
 
   <p>
     <a href="https://github.com/W-David/bilimux/releases">
