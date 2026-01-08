@@ -18,15 +18,13 @@
 
 ## 📖 简介 | Introduction
 
-**BiliMux** 是一款基于 Electron + Vue 3 开发的跨平台桌面应用，专为 Bilibili 用户设计。它可以自动扫描 Bilibili 客户端下载的缓存文件（音视频分离的 m4s 文件），并调用高性能的 MP4Box 工具将其无损合并为通用的 MP4 格式，方便本地收藏与播放。
+**BiliMux** 是一款基于 Electron 开发的跨平台桌面应用。可以自动扫描 Bilibili 客户端下载的缓存文件（音视频分离的 m4s 文件），调用 MP4Box 工具合并为通用的 MP4 格式。
 
 ## ✨ 功能特性 | Features
 
 - **⚡️ 高效合并**: 内置 MP4Box 引擎，实现无损、快速的音视频流混流。
 - **🔍 智能扫描**: 自动识别并扫描 Bilibili 缓存目录，批量处理任务。
-- **🎨 现代界面**: 基于 UnoCSS 和 PrimeVue 构建的现代化 UI，支持深色模式。
-- **🔄 自动更新**: 集成 Electron-Updater，支持应用内自动检查并更新版本。
-- **🛠 灵活配置**: 支持自定义缓存目录、输出目录及日志管理。
+- **🎨 现代界面**: 基于 UnoCSS 和 PrimeVue 构建的现代化 UI，目前只有深色模式。
 - **💻 跨平台**: 支持 Windows, macOS 和 Linux。
 
 ## 🛠 技术栈 | Tech Stack
@@ -37,7 +35,7 @@
 - **Framework**: [Vue 3](https://vuejs.org/), [Vite](https://vitejs.dev/)
 - **UI/Styling**: [UnoCSS](https://unocss.dev/), [PrimeVue](https://primevue.org/)
 - **State Management**: [Pinia](https://pinia.vuejs.org/)
-- **Tooling**: [Electron-Builder](https://www.electron.build/), [ESLint](https://eslint.org/), [Prettier](https://prettier.io/)
+- **Code Format and Lint**: [Prettier](https://prettier.io/),[ESLint](https://eslint.org/)
 - **Media Engine**: [GPAC / MP4Box](https://gpac.wp.imt.fr/mp4box/)
 
 ## 🚀 快速开始 | Getting Started
@@ -46,13 +44,27 @@
 
 请前往 [Releases](https://github.com/W-David/bilimux/releases) 页面下载适合您系统的最新安装包。
 
+### MAC报错应用已损坏
+
+#### 原因
+
+macOS 默认只信任 App Store 下载的应用或拥有“已识别开发者”签名的应用。对于未签名或未公证的应用，macOS 会直接拦截。
+
+#### 解决
+
+你可以手动移除该应用的“隔离属性”，先将应用拖入“应用程序”文件夹，然后在终端运行此命令。
+
+```bash
+sudo xattr -r -d com.apple.quarantine /Applications/BiliMux.app
+```
+
 ### 开发 | Development
 
 如果您想参与开发或自行构建，请按照以下步骤操作：
 
 #### 1. 环境准备
 
-确保您的系统已安装 [Node.js](https://nodejs.org/) 和 [pnpm](https://pnpm.io/)。
+确保您的系统已安装 [Node.js >= v22](https://nodejs.org) 和 [pnpm >= v10](https://pnpm.io/)。
 
 #### 2. 克隆项目
 
@@ -86,19 +98,11 @@ pnpm build:mac
 pnpm build:linux
 ```
 
-## ⚙️ 推荐 IDE 设置 | Recommended IDE Setup
-
-- [VSCode](https://code.visualstudio.com/)
-- 插件:
-  - [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
-  - [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
-  - [Vue - Official (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.volar)
-
-## 📄 许可证 | License
+## License
 
 本项目基于 [MIT License](LICENSE) 开源。
 
-## 👨‍💻 作者 | Author
+## About Me
 
 **rushwang**
 
