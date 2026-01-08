@@ -14,7 +14,7 @@
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint .",
-    "lint:fix": "eslint --fix --debug .",
+    "lint:fix": "eslint --fix .",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "vue-tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",

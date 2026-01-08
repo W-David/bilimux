@@ -7,7 +7,7 @@ import vueParser from 'vue-eslint-parser'
 import prettierConfig from './.prettierrc.mjs'
 
 export default defineConfig(
-  { ignores: ['**/node_modules', '**/dist', '**/out'] },
+  { ignores: ['**/node_modules', '**/dist', '**/out', '.github'] },
   tseslint.configs.recommended,
   unocss,
   eslintPluginVue.configs['flat/recommended'],
