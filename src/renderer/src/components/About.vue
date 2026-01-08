@@ -19,8 +19,6 @@ const handleCheckUpdate = async () => {
     const result = await checkForUpdate()
     if (result && result.updateInfo) {
       logger.info('Update available:', result.updateInfo)
-      // Here you might want to show a dialog or notification
-      // For now, we just log it as per request "add function"
     } else {
       logger.info('No update available')
     }

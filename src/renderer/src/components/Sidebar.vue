@@ -1,7 +1,7 @@
 <template>
   <div class="h-full bg-dark-500">
     <div class="h-full flex flex-col justify-between flex-items-center pb-6 pt-16">
-      <div class="flex flex-col items-center gap-4">
+      <div class="flex flex-col items-center gap-2">
         <RouterLink
           v-for="item in hItems"
           :key="item.to.name"
@@ -15,7 +15,7 @@
           <span :class="item.icon"></span>
         </RouterLink>
       </div>
-      <div class="flex flex-col items-center gap-4">
+      <div class="flex flex-col items-center gap-2">
         <RouterLink
           v-for="item in fItems"
           :key="item.to.name"

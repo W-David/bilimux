@@ -5,7 +5,7 @@ import { reactive, toRaw, watch } from 'vue'
 
 interface UserPreference extends UserStore {}
 
-export const usePreferenceStore = defineStore('setting', () => {
+export const usePreferenceStore = defineStore('preference', () => {
   const preference = reactive<UserPreference>({
     'convert-config': {
       cachePath: '',
