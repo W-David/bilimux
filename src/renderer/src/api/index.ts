@@ -1,5 +1,5 @@
-import { RendererEmitterInvokeFn, RendererEmitterSendFn, RendererHandlerFn } from '@preload/ipcEvent'
 import { emitter, ipc } from '@renderer/ipc'
+import { RendererEmitterInvokeFn, RendererEmitterSendFn, RendererHandlerFn } from '@shared/ipc/events'
 
 /**
  * 从本地存储加载配置

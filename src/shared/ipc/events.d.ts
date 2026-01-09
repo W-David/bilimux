@@ -1,6 +1,6 @@
 import { OpenDialogOptions } from 'electron'
 import type { ProgressInfo, UpdateCheckResult, UpdateInfo } from 'electron-updater'
-import type { ComposEventMap, UserStore } from '../main/config/types'
+import type { ComposEventMap, UserStore } from '../../main/config/types'
 
 //主进程 handle IPC 事件
 type IpcMainHandleEvents = {

@@ -3,8 +3,8 @@
   "include": [
     "src/renderer/src/**/*",
     "src/renderer/src/**/*.vue",
-    "src/main/config/*.d.ts",
     "src/preload/**/*.d.ts",
+    "src/shared/**/*",
     "uno.config.ts",
   ],
   "compilerOptions": {
@@ -17,6 +17,9 @@
       ],
       "@preload/*": [
         "src/preload/*"
+      ],
+      "@shared/*": [
+        "src/shared/*"
       ]
     }
   }
