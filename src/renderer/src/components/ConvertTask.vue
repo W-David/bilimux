@@ -71,7 +71,7 @@
               src="../assets/bilimux.svg"
               alt="Logo"
               class="h-20 w-20" />
-            <div class="from-pink to-sky bg-gradient-to-r bg-clip-text text-6xl text-transparent font-black">
+            <div class="from-pink to-sky bg-gradient-to-r bg-clip-text text-6xl text-transparent font-black font-sans">
               BiliMux
             </div>
           </div>

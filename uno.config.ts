@@ -19,11 +19,6 @@ export default defineConfig({
         sans: 'Roboto',
         mono: 'Fira Code'
       }
-      // processors: createLocalFontProcessor({
-      //   cacheDir: 'node_modules/.cache/unocss/fonts',
-      //   fontAssetsDir: 'resources/assets/fonts',
-      //   fontServeBaseUrl: '/assets/fonts'
-      // })
     })
   ]
 })
