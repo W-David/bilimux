@@ -1,4 +1,4 @@
-import { IpcMainEvents, IpcRendererEvents } from '@preload/ipcEvent'
+import { IpcMainEvents, IpcRendererEvents } from '@shared/ipc/events'
 import { IpcEmitter, IpcListener } from './ipc'
 import mitt from './mitt'
 import { MittEventMap } from './types'

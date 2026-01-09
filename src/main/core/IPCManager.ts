@@ -1,6 +1,6 @@
+import { IpcMainEvents, IpcRendererEvents } from '@shared/ipc/events'
+import type { ExtractArgs, ExtractHandler, IpcEventMap, IpcListenEventMap } from '@shared/ipc/types'
 import { ipcMain } from 'electron'
-import { IpcMainEvents, IpcRendererEvents } from '../../preload/ipcEvent'
-import type { ExtractArgs, ExtractHandler, IpcEventMap, IpcListenEventMap } from '../../preload/ipcTypes'
 import logger from './Logger'
 
 /**

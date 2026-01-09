@@ -1,7 +1,7 @@
+import { IpcRendererEvents } from '@shared/ipc/events'
 import { app, BrowserWindow, shell, WebContents } from 'electron'
 import is from 'electron-is'
 import EventEmitter from 'node:events'
-import { IpcRendererEvents } from '../../preload/ipcEvent'
 import { pages } from '../config/page'
 import type { Pages } from '../config/types'
 import ConfigManager from './ConfigManager'

@@ -6,9 +6,16 @@
     ".prettierrc.mjs",
     "src/main/**/*", 
     "src/preload/*",
+    "src/shared/**/*"
   ],
   "compilerOptions": {
     "composite": true,
-    "types": ["electron-vite/node"]
+    "types": ["electron-vite/node"],
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": [
+        "src/shared/*"
+      ]
+    }
   }
 }

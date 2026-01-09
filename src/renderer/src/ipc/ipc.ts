@@ -1,4 +1,4 @@
-import type { ExtractArgs, ExtractHandler, IpcEventMap, IpcListenEventMap } from '@preload/ipcTypes'
+import type { ExtractArgs, ExtractHandler, IpcEventMap, IpcListenEventMap } from '@shared/ipc/types'
 
 /**
  * Typed emitter for Electron `ipcRenderer`.
