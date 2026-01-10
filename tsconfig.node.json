@@ -5,7 +5,6 @@
     "eslint.config.mjs",
     ".prettierrc.mjs",
     "src/main/**/*", 
-    "src/preload/*",
     "src/shared/**/*"
   ],
   "compilerOptions": {

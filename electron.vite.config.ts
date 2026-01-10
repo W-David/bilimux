@@ -11,7 +11,7 @@ export default defineConfig({
     plugins: [],
     build: {
       externalizeDeps: {
-        exclude: ['electron-store']
+        exclude: ['electron-store', 'got']
       },
       outDir: 'out/main'
     }

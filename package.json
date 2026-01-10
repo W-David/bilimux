@@ -28,10 +28,15 @@
     "build:linux": "npm run build && electron-builder --linux"
   },
   "dependencies": {
+    "@types/tough-cookie": "^4.0.5",
+    "@types/user-agents": "^1.0.4",
     "electron-is": "^3.0.0",
     "electron-log": "^5.4.3",
     "electron-store": "^11.0.2",
-    "electron-updater": "^6.3.9"
+    "electron-updater": "^6.3.9",
+    "got": "^14.6.6",
+    "tough-cookie": "^6.0.0",
+    "user-agents": "^1.1.669"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-ts": "^3.1.0",

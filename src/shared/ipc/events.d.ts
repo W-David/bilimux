@@ -1,5 +1,7 @@
 import { OpenDialogOptions } from 'electron'
 import type { ProgressInfo, UpdateCheckResult, UpdateInfo } from 'electron-updater'
+import type { Options } from 'got'
+import { BiliResponseType } from 'src/main/core/HttpClient'
 import type { ComposEventMap, UserStore } from '../../main/config/types'
 
 //主进程 handle IPC 事件
@@ -15,6 +17,8 @@ type IpcMainHandleEvents = {
   'download-update': () => string[]
   'quit-and-install': () => void
   'check-engine': () => boolean
+  'http-get': (url, options?: Options) => BiliResponseType
+  'http-post': (url, options?: Options) => BiliResponseType
 }
 
 // 主进程 listen IPC 事件
@@ -32,6 +36,7 @@ type IpcRendererEvents = ComposEventMap & {
   'update:error': [string]
   'update:progress': [ProgressInfo]
   'update:downloaded': []
+  'download:video': [string, Options?]
 }
 
 type RendererEmitterInvokeFn<T extends keyof IpcMainHandleEvents> = (
