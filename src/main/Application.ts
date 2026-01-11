@@ -1,10 +1,12 @@
 import { shell } from 'electron'
 import { LogLevel } from 'electron-log'
 import { dialog } from 'electron/main'
+import type { Options } from 'got'
 import AutoLauncher from './core/AutoLauncher'
 import { ComposEngine } from './core/ComposEngine'
 import ConfigManager from './core/ConfigManager'
 import Context from './core/Context'
+import HttpClient from './core/HttpClient'
 import IPCManager from './core/IPCManager'
 import logger from './core/Logger'
 import ProcessQueue from './core/ProcessQueue'
@@ -19,6 +21,7 @@ export default class Application {
   ipcManager: IPCManager
   composEngine: ComposEngine
   updateManager: UpdateManager
+  httpClient: HttpClient
   processQueue: ProcessQueue<number>
 
   constructor() {
@@ -31,6 +34,8 @@ export default class Application {
     this.setupLogger()
 
     this.ipcManager = new IPCManager()
+
+    this.httpClient = new HttpClient(this.configManager)
 
     this.processQueue = new ProcessQueue({ concurrency: 1 })
 
@@ -152,6 +157,12 @@ export default class Application {
     })
     this.ipcManager.mainIpc.handle('check-engine', async () => {
       return this.composEngine.checkEngine()
+    })
+    this.ipcManager.mainIpc.handle('http-get', async (_, url: string, options?: Options) => {
+      return this.httpClient.get(url, options)
+    })
+    this.ipcManager.mainIpc.handle('http-post', async (_, url: string, options?: Options) => {
+      return this.httpClient.post(url, options)
     })
   }
 }

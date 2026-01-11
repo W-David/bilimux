@@ -3,6 +3,8 @@ plans
 dist
 out
 .trea
+.gemini
+.shared
 .continue
 .trae
 .DS_Store

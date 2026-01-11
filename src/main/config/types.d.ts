@@ -37,6 +37,7 @@ type ProcessItemStartArgs = {
 }
 
 type ProgressStatus = 'waiting' | 'preprocess' | 'importing' | 'writing' | 'success' | 'fail'
+type DownloadTaskStatus = 'waiting' | 'downloading' | 'success' | 'fail'
 
 type ProcessItemProgressArgs = {
   bvid: string
@@ -131,6 +132,7 @@ export type {
   ComposEventMap,
   CompositionOptions,
   ConfigOptions,
+  DownloadTaskStatus,
   EngineBinMap,
   EngineEventMap,
   EngineResponse,

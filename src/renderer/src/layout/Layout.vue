@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import Update from '@renderer/components/Update.vue'
 import logger from 'electron-log/renderer'
 import { onUnmounted } from 'vue'
 import Sidebar from './Sidebar.vue'
-import UpdateNotification from './Update.vue'
 logger.debug('Layout created')
 onUnmounted(() => {
   logger.debug('Layout unmounted')
@@ -11,7 +11,7 @@ onUnmounted(() => {
 
 <template>
   <div class="h-full w-full">
-    <UpdateNotification />
+    <Update />
     <div
       class="grid grid-cols-[82px_1fr] h-full w-full"
       :style="{ 'grid-template-columns': '--sidebar-width 1fr' }">

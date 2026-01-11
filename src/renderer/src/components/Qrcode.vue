@@ -1,0 +1,273 @@
+<template>
+  <div
+    class="h-full w-full flex flex-col items-center justify-center gap-2 rounded-md bg-zinc-950 p-6 backdrop-blur-md hover:shadow">
+    <div class="relative h-44 w-44 flex items-center justify-center overflow-hidden rounded-xl bg-transparent">
+      <Transition
+        name="fade"
+        mode="out-in"
+        appear>
+        <!-- Loading State -->
+        <div
+          v-if="status === 'loading'"
+          class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-zinc-900/90 backdrop-blur-sm">
+          <div class="i-mdi-loading animate-spin text-3xl text-pink-500"></div>
+        </div>
+
+        <!-- Loaded QR Code Image -->
+        <div
+          v-else-if="status === 'loaded' && qrCodeUrl"
+          class="h-full w-full rounded-xl bg-white p-2">
+          <img
+            :src="qrCodeUrl"
+            class="h-full w-full object-contain"
+            alt="Login QR Code" />
+        </div>
+
+        <!-- Scanned State -->
+        <div
+          v-else-if="status === 'scanned'"
+          class="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-xl bg-zinc-900/90 p-4 text-center backdrop-blur-md">
+          <div class="i-mdi-cellphone-check animate-pulse text-5xl text-green-500"></div>
+        </div>
+
+        <!-- Expired State -->
+        <div
+          v-else-if="status === 'expired'"
+          class="absolute inset-0 z-20 flex flex-col cursor-pointer items-center justify-center rounded-xl bg-black/80 text-white backdrop-blur-sm transition-all hover:bg-black/90"
+          @click="initQRCode">
+          <div
+            class="i-mdi-refresh text-4xl text-gray-400 transition-transform duration-500 group-hover:rotate-180"></div>
+        </div>
+
+        <!-- Success State -->
+        <div
+          v-else-if="status === 'success'"
+          class="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-xl bg-zinc-900/95">
+          <div class="i-mdi-check-circle animate-bounce text-5xl text-green-500"></div>
+        </div>
+
+        <!-- Initial State -->
+        <div
+          v-else
+          class="group absolute inset-0 z-10 flex flex-col cursor-pointer items-center justify-center border-2 border-zinc-700 rounded-xl border-dashed bg-zinc-800/50 transition-colors duration-300 hover:border-pink-500/50 hover:bg-zinc-800"
+          @click="initQRCode">
+          <div
+            class="i-mdi-qrcode-scan mb-3 transform text-5xl text-gray-600 transition-colors duration-300 group-hover:scale-110 group-hover:text-pink-500"></div>
+          <span class="text-xs text-gray-500 font-medium transition-colors group-hover:text-gray-300">获取二维码</span>
+        </div>
+      </Transition>
+    </div>
+
+    <!-- Status Text -->
+    <div
+      class="mt-4 w-full text-sm text-gray-200"
+      flex="~ items-center justify-center">
+      <div v-if="status === 'loading'">正在加载二维码...</div>
+      <div v-else-if="status === 'loaded'">
+        <div class="mb-1">请使用 Bilibili 移动端扫码</div>
+        <div
+          class="font-size-3 color-gray-200"
+          flex="~ justify-center items-center">
+          <div>即将于</div>
+          <div class="w-10 text-center text-pink-500 font-mono">{{ countdown }}s</div>
+          <div>后过期</div>
+        </div>
+      </div>
+      <div
+        v-else-if="status === 'scanned'"
+        class="text-green-400">
+        扫描成功，请在手机上确认
+      </div>
+      <div
+        v-else-if="status === 'expired'"
+        class="text-red-400">
+        二维码已过期，请刷新
+      </div>
+      <div
+        v-else-if="status === 'success'"
+        class="text-green-400 font-bold">
+        登录成功
+      </div>
+      <div v-else>点击上方图标开始登录</div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { $dt } from '@primeuix/themes'
+import { httpGet } from '@renderer/api'
+import { mittbus } from '@renderer/ipc'
+import logger from 'electron-log/renderer'
+import QRCode from 'qrcode'
+import { onUnmounted, ref } from 'vue'
+
+// 登录状态类型
+type LoginStatus = 'initial' | 'loading' | 'loaded' | 'scanned' | 'expired' | 'success'
+
+// 扫码状态
+enum QRCodeStatus {
+  SUCCESS = 0,
+  SCANNED = 86090,
+  EXPIRED = 86038,
+  WAITING = 86101
+}
+
+// 状态定义
+const status = ref<LoginStatus>('initial')
+const qrCodeUrl = ref('')
+const qrCodeKey = ref('')
+const countdown = ref(180)
+
+// 定时器状态管理
+const timerState = {
+  pollTimer: null as ReturnType<typeof setInterval> | null,
+  rafId: null as number | null,
+  endTime: 0
+}
+
+// 初始化二维码
+const initQRCode = async () => {
+  try {
+    resetState()
+    status.value = 'loading'
+
+    // 获取二维码 Key 和 Url
+    const res = await httpGet('https://passport.bilibili.com/x/passport-login/web/qrcode/generate')
+
+    if (res.code === 0 && res.data) {
+      const { url, qrcode_key } = res.data
+      qrCodeKey.value = qrcode_key
+
+      // 生成二维码图片
+      qrCodeUrl.value = await QRCode.toDataURL(url, {
+        margin: 1,
+        width: 200,
+        color: {
+          dark: $dt('pink.600').value as string,
+          light: '#ffffff'
+        }
+      })
+
+      status.value = 'loaded'
+      startCountdown()
+      startPolling()
+    } else {
+      const message = `获取登录二维码失败(${res.code})`
+      logger.error(message)
+      mittbus.emit('toast:add', {
+        severity: 'error',
+        closable: false,
+        life: 3000,
+        summary: 'error',
+        detail: message
+      })
+    }
+  } catch (error) {
+    console.error('Error init QR code:', error)
+  }
+}
+
+// 重置状态
+const resetState = () => {
+  stopPolling()
+  stopCountdown()
+  qrCodeUrl.value = ''
+  qrCodeKey.value = ''
+  countdown.value = 180
+}
+
+// 开始倒计时
+const startCountdown = () => {
+  stopCountdown()
+  timerState.endTime = Date.now() + 180 * 1000 // 180秒后过期
+
+  const tick = () => {
+    const remaining = Math.ceil((timerState.endTime - Date.now()) / 1000)
+
+    if (remaining <= 0) {
+      countdown.value = 0
+      handleExpired()
+    } else {
+      countdown.value = remaining
+      timerState.rafId = requestAnimationFrame(tick)
+    }
+  }
+
+  tick()
+}
+
+// 处理过期
+const handleExpired = () => {
+  status.value = 'expired'
+  stopPolling()
+  stopCountdown()
+}
+
+// 开始轮询
+const startPolling = () => {
+  stopPolling()
+  timerState.pollTimer = setInterval(async () => {
+    try {
+      if (!qrCodeKey.value) return
+
+      const res = await httpGet(
+        `https://passport.bilibili.com/x/passport-login/web/qrcode/poll?qrcode_key=${qrCodeKey.value}`
+      )
+
+      if (res.data) {
+        const { code } = res.data
+
+        switch (code) {
+          case QRCodeStatus.SUCCESS: // 登录成功
+            status.value = 'success'
+            stopPolling()
+            stopCountdown()
+            // 这里可以触发事件通知父组件或进行跳转
+            console.log('Login success:', res.data)
+            break
+          case QRCodeStatus.SCANNED: // 已扫码未确认
+            status.value = 'scanned'
+            break
+          case QRCodeStatus.EXPIRED: // 二维码已失效
+            handleExpired()
+            break
+          case QRCodeStatus.WAITING: // 未扫码 (waiting)
+            // 保持 waiting 状态，不需要额外操作
+            break
+          default:
+            console.warn('Unknown poll code:', code)
+        }
+      }
+    } catch (error) {
+      console.error('Polling error:', error)
+    }
+  }, 2000) // 每2秒轮询一次
+}
+
+// 停止轮询
+const stopPolling = () => {
+  if (timerState.pollTimer) {
+    clearInterval(timerState.pollTimer)
+    timerState.pollTimer = null
+  }
+}
+
+// 停止倒计时
+const stopCountdown = () => {
+  if (timerState.rafId) {
+    cancelAnimationFrame(timerState.rafId)
+    timerState.rafId = null
+  }
+}
+
+logger.info('Qrcode created')
+
+onUnmounted(() => {
+  resetState()
+  logger.info('Qrcode unmounted')
+})
+</script>
+
+<style scoped>
+/* 如果没有 UnoCSS，可以在这里添加样式，但项目中似乎使用了 UnoCSS */
+</style>

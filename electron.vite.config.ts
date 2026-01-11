@@ -11,7 +11,7 @@ export default defineConfig({
     plugins: [],
     build: {
       externalizeDeps: {
-        exclude: ['electron-store']
+        exclude: ['electron-store', 'got']
       },
       outDir: 'out/main'
     }
@@ -39,6 +39,7 @@ export default defineConfig({
         configFile: './uno.config.ts'
       }),
       Components({
+        dirs: ['src/renderer/src/components', 'src/renderer/src/layout'],
         resolvers: [PrimeVueResolver()]
       }),
       Inspector({

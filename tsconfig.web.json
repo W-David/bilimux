@@ -3,7 +3,7 @@
   "include": [
     "src/renderer/src/**/*",
     "src/renderer/src/**/*.vue",
-    "src/preload/**/*.d.ts",
+    "src/preload/**/*",
     "src/shared/**/*",
     "uno.config.ts",
   ],
