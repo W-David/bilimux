@@ -1,10 +1,10 @@
+import Layout from '@renderer/layout/Layout.vue'
+import Main from '@renderer/layout/Main.vue'
+import About from '@renderer/pages/About.vue'
+import Convert from '@renderer/pages/Convert.vue'
+import Download from '@renderer/pages/Download.vue'
+import Prefer from '@renderer/pages/Prefer.vue'
 import { createMemoryHistory, createRouter, RouteRecordRaw } from 'vue-router'
-
-const About = () => import('@renderer/components/About.vue')
-const Convert = () => import('@renderer/components/ConvertTask.vue')
-const Layout = () => import('@renderer/components/Layout.vue')
-const Main = () => import('@renderer/components/Main.vue')
-const Settings = () => import('@renderer/components/Prefer.vue')
 
 const routes: RouteRecordRaw[] = [
   {
@@ -25,19 +25,27 @@ const routes: RouteRecordRaw[] = [
             }
           },
           {
-            path: 'about',
-            name: 'about',
-            component: About,
+            path: 'download',
+            name: 'download',
+            component: Download,
             meta: {
               order: 2
             }
           },
           {
-            path: 'settings',
-            name: 'settings',
-            component: Settings,
+            path: 'about',
+            name: 'about',
+            component: About,
             meta: {
               order: 3
+            }
+          },
+          {
+            path: 'prefer',
+            name: 'prefer',
+            component: Prefer,
+            meta: {
+              order: 4
             }
           }
         ]

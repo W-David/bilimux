@@ -80,6 +80,20 @@ export const openLogFile: RendererEmitterInvokeFn<'open-log-file'> = () => {
 }
 
 /**
+ * 发送 HTTP GET 请求
+ */
+export const httpGet: RendererEmitterInvokeFn<'http-get'> = (url, options?) => {
+  return emitter.invoke('http-get', url, options)
+}
+
+/**
+ * 发送 HTTP POST 请求
+ */
+export const httpPost: RendererEmitterInvokeFn<'http-post'> = (url, options?) => {
+  return emitter.invoke('http-post', url, options)
+}
+
+/**
  * 保存配置到本地存储
  */
 export const saveConfigToNativeStore: RendererEmitterSendFn<'save-preference'> = setting => {

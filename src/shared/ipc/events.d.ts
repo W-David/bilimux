@@ -17,8 +17,8 @@ type IpcMainHandleEvents = {
   'download-update': () => string[]
   'quit-and-install': () => void
   'check-engine': () => boolean
-  'http-get': (url, options?: Options) => BiliResponseType
-  'http-post': (url, options?: Options) => BiliResponseType
+  'http-get': (url: string, options?: Options) => BiliResponseType
+  'http-post': (url: string, options?: Options) => BiliResponseType
 }
 
 // 主进程 listen IPC 事件

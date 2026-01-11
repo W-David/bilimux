@@ -11,22 +11,17 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    About: typeof import('./src/components/About.vue')['default']
     Button: typeof import('primevue/button')['default']
-    ConvertTask: typeof import('./src/components/ConvertTask.vue')['default']
     InputGroup: typeof import('primevue/inputgroup')['default']
     InputText: typeof import('primevue/inputtext')['default']
-    Layout: typeof import('./src/components/Layout.vue')['default']
-    Main: typeof import('./src/components/Main.vue')['default']
-    Prefer: typeof import('./src/components/Prefer.vue')['default']
     ProgressSpinner: typeof import('primevue/progressspinner')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SelectButton: typeof import('primevue/selectbutton')['default']
-    Sidebar: typeof import('./src/components/Sidebar.vue')['default']
+    Sidebar: typeof import('primevue/sidebar')['default']
+    Textarea: typeof import('primevue/textarea')['default']
     Toast: typeof import('primevue/toast')['default']
     ToggleSwitch: typeof import('primevue/toggleswitch')['default']
-    Update: typeof import('./src/components/Update.vue')['default']
   }
   export interface GlobalDirectives {
     Tooltip: typeof import('primevue/tooltip')['default']

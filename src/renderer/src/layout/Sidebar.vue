@@ -1,30 +1,30 @@
 <template>
   <div class="h-full bg-dark-500">
-    <div class="h-full flex flex-col justify-between flex-items-center pb-6 pt-16">
-      <div class="flex flex-col items-center gap-2">
+    <div class="h-full flex flex-col justify-between flex-items-center pb-6 pt-14">
+      <div class="flex flex-col items-center gap-3">
         <RouterLink
           v-for="item in hItems"
           :key="item.to.name"
           :to="item.to"
-          class="h-12 w-12 flex items-center justify-center rounded-xl transition-all duration-300"
+          class="h-11 w-11 flex items-center justify-center rounded-2xl transition-all duration-300"
           :class="
             route.name === item.to.name
-              ? 'bg-pink/20 text-pink ring ring-1 ring-pink backdrop-blur'
-              : 'text-gray-400 hover:bg-white/5 hover:text-white'
+              ? 'bg-pink/15 text-pink ring-1 ring-pink/20'
+              : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
           ">
           <span :class="item.icon"></span>
         </RouterLink>
       </div>
-      <div class="flex flex-col items-center gap-2">
+      <div class="flex flex-col items-center gap-3">
         <RouterLink
           v-for="item in fItems"
           :key="item.to.name"
           :to="item.to"
-          class="h-12 w-12 flex items-center justify-center rounded-xl transition-all duration-300"
+          class="h-11 w-11 flex items-center justify-center rounded-2xl transition-all duration-300"
           :class="
             route.name === item.to.name
-              ? 'bg-pink/20 text-pink ring ring-1 ring-inset shadow-pink/20 ring-pink backdrop-blur'
-              : 'text-gray-400 hover:bg-white/5 hover:text-white'
+              ? 'bg-pink/15 text-pink ring-1 ring-pink/20'
+              : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
           ">
           <span :class="item.icon"></span>
         </RouterLink>
@@ -43,8 +43,13 @@ const route = useRoute()
 const hItems = ref([
   {
     label: '转换',
-    icon: 'i-mdi-sync-circle text-4xl',
+    icon: 'i-mdi-sync-circle text-2xl',
     to: { name: 'convert' }
+  },
+  {
+    label: '下载',
+    icon: 'i-mdi-download text-2xl',
+    to: { name: 'download' }
   }
 ])
 
@@ -56,8 +61,8 @@ const fItems = ref([
   },
   {
     label: '设置',
-    icon: 'i-mdi-cog text-4xl',
-    to: { name: 'settings' }
+    icon: 'i-mdi-cog text-2xl',
+    to: { name: 'prefer' }
   }
 ])
 

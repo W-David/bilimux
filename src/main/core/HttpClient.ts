@@ -5,9 +5,10 @@ import UserAgent from 'user-agents'
 import ConfigManager from './ConfigManager'
 import logger from './Logger'
 
-export type BiliResponseType<T = unknown> = {
+export type BiliResponseType = {
   ttl: number
-  data?: T
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: any
   code: number
   message: string
 }

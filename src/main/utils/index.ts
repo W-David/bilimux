@@ -116,3 +116,46 @@ export function getProdEngineBinPath(platform: NodeJS.Platform): string {
 export function getEngineBinPath(platform: NodeJS.Platform): string {
   return is.dev() ? getDevEngineBinPath(platform) : getProdEngineBinPath(platform)
 }
+
+/**
+ * 使用 setTimeout 模拟 setInterval
+ * 确保上一次任务执行完成后，再经过指定延迟才开始下一次任务，避免任务堆积
+ * @param callback 回调函数，支持异步
+ * @param delay 延迟时间（毫秒）
+ * @param immediate 是否立即执行一次，默认为 false
+ * @returns 停止定时器的函数
+ */
+export function setTimerInterval(
+  callback: () => void | Promise<void>,
+  delay: number,
+  immediate: boolean = false
+): () => void {
+  let timer: NodeJS.Timeout | null = null
+  let stopped = false
+
+  const tick = async (): Promise<void> => {
+    if (stopped) return
+    try {
+      await callback()
+    } catch (error) {
+      logger.error(`定时任务执行出错: ${error instanceof Error ? error.message : String(error)}`)
+    }
+    if (!stopped) {
+      timer = setTimeout(tick, delay)
+    }
+  }
+
+  if (immediate) {
+    tick()
+  } else {
+    timer = setTimeout(tick, delay)
+  }
+
+  return () => {
+    stopped = true
+    if (timer) {
+      clearTimeout(timer)
+      timer = null
+    }
+  }
+}

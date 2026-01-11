@@ -252,11 +252,11 @@ const { preference } = storeToRefs(store)
 
 // 引擎状态管理
 enum ConvertStatus {
-  Idle = 'idle',
-  Scanning = 'scanning',
-  Processing = 'processing',
-  Success = 'success',
-  Error = 'error'
+  Idle,
+  Scanning,
+  Processing,
+  Success,
+  Error
 }
 
 interface Task {
@@ -416,7 +416,7 @@ const reset = (): void => {
 }
 
 const openSetting = (): void => {
-  router.push({ name: 'settings' })
+  router.push({ name: 'prefer' })
 }
 
 const openOutputFolder = async (): Promise<void> => {

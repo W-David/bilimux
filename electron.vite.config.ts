@@ -39,6 +39,7 @@ export default defineConfig({
         configFile: './uno.config.ts'
       }),
       Components({
+        dirs: ['src/renderer/src/components', 'src/renderer/src/layout'],
         resolvers: [PrimeVueResolver()]
       }),
       Inspector({
