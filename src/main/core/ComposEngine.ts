@@ -1,3 +1,4 @@
+import { ComposEventMap, CompositionOptions, ConfigOptions, EngineResponse, VideoTaskInfo } from '@shared/types'
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -9,7 +10,6 @@ import {
   PLAYURL_FILE_NAME,
   VIDEO_INFO_FILE_NAME
 } from '../config/constants'
-import { ComposEventMap, CompositionOptions, ConfigOptions, EngineResponse, VideoTaskInfo } from '../config/types'
 import { createDirIfNotExist, isExist, isValidFile } from '../utils'
 import ConfigManager from './ConfigManager'
 import Engine from './Engine'

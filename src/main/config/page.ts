@@ -1,7 +1,7 @@
+import { Pages } from '@shared/types'
 import is from 'electron-is'
 import path from 'node:path'
 import { pathToFileURL } from 'url'
-import { Pages } from './types'
 
 const preloadPath = path.join(__dirname, '../preload/index.js')
 

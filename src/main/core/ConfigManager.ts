@@ -1,8 +1,8 @@
+import { ConfigOptions, UserStore } from '@shared/types'
 import Store from 'electron-store'
 import { app } from 'electron/main'
 import path from 'node:path'
 import { OUTPUT_DIR_NAME } from '../config/constants'
-import { ConfigOptions, UserStore } from '../config/types'
 import { getEngineBinPath } from '../utils'
 import Context from './Context'
 import logger from './Logger'
@@ -25,7 +25,8 @@ export default class ConfigManager {
     logger.info(this.constructor.name, 'inited')
   }
 
-  genDefaultConfig(): UserStore {
+  genDefaultConfig() {
+    // 系统视频路径
     const downloadPath = app.getPath('videos')
     // 默认哔哩哔哩缓存路径
     const cachePath = path.resolve(downloadPath, './bilibili')
@@ -44,6 +45,7 @@ export default class ConfigManager {
     }
 
     const defaultConfig: Required<UserStore> = {
+      'user-cookie': '',
       'convert-config': defaultConvertConfig,
       'open-at-login': false,
       'auto-hide-window': false,

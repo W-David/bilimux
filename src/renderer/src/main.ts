@@ -12,6 +12,7 @@ import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import router from './router'
+import { useAuthStore } from './store/auth'
 import { usePreferenceStore } from './store/preference'
 
 const bilimuxPreset = definePreset(Aura, {
@@ -52,7 +53,8 @@ app.use(PrimeVue, {
   }
 })
 
-router.isReady().then(() => {
+const initApp = () => {
+  useAuthStore().refreshAuth()
   usePreferenceStore()
     .fetchPreference()
     .then(() => {
@@ -62,4 +64,6 @@ router.isReady().then(() => {
     .catch(error => {
       throw error
     })
-})
+}
+
+router.isReady().then(() => initApp())

@@ -9,6 +9,12 @@ import Inspector from 'unplugin-vue-inspector/vite'
 export default defineConfig({
   main: {
     plugins: [],
+    resolve: {
+      alias: {
+        '@main': path.resolve(__dirname, './src/main'),
+        '@shared': path.resolve(__dirname, './src/shared')
+      }
+    },
     build: {
       externalizeDeps: {
         exclude: ['electron-store', 'got']
@@ -30,7 +36,8 @@ export default defineConfig({
     resolve: {
       alias: {
         '@renderer': path.resolve(__dirname, './src/renderer/src'),
-        '@preload': path.resolve(__dirname, './src/preload')
+        '@preload': path.resolve(__dirname, './src/preload'),
+        '@shared': path.resolve(__dirname, './src/shared')
       }
     },
     plugins: [
@@ -43,7 +50,7 @@ export default defineConfig({
         resolvers: [PrimeVueResolver()]
       }),
       Inspector({
-        enabled: true
+        enabled: false
       })
     ],
     build: {

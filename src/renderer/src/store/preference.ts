@@ -1,6 +1,6 @@
 import { loadConfigFromNativeStore, saveConfigToNativeStore } from '@renderer/api'
 import { defineStore } from 'pinia'
-import { UserStore } from 'src/main/config/types'
+import { UserStore } from 'src/shared/types'
 import { reactive, toRaw, watch } from 'vue'
 
 interface UserPreference extends UserStore {}
@@ -18,7 +18,8 @@ export const usePreferenceStore = defineStore('preference', () => {
     'open-at-login': false,
     'auto-hide-window': false,
     'bind-close-to-hide': false,
-    'log-level': 'verbose'
+    'log-level': 'verbose',
+    'user-cookie': ''
   })
 
   // open-at-login, auto-hide-window 触发自动保存

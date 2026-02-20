@@ -1,5 +1,5 @@
 import type { LogLevel } from 'electron-log'
-import { BrowserWindowConstructorOptions } from 'electron/main'
+import type { BrowserWindowConstructorOptions } from 'electron/main'
 
 type Page = {
   attrs: BrowserWindowConstructorOptions
@@ -121,6 +121,7 @@ type ConfigOptions = {
 
 // electron-store 配置类型
 type UserStore = {
+  'user-cookie'?: string
   'convert-config': ConfigOptions
   'open-at-login': boolean
   'auto-hide-window': boolean
@@ -128,7 +129,22 @@ type UserStore = {
   'log-level': LogLevel
 }
 
+type BiliResponseType<D = unknown> = {
+  ttl: number
+  data: D
+  code: number
+  message: string
+}
+
+type VideoType = 'BV' | 'BVS' | 'FESTIVAl' | 'BANGUMI' | 'CHEESE'
+
+type RegType = {
+  reg: RegExp
+  type: VideoType
+}
+
 export type {
+  BiliResponseType,
   ComposEventMap,
   CompositionOptions,
   ConfigOptions,
@@ -141,6 +157,8 @@ export type {
   Pages,
   ProcessItemProgressArgs,
   ProgressStatus,
+  RegType,
   UserStore,
-  VideoTaskInfo
+  VideoTaskInfo,
+  VideoType
 }

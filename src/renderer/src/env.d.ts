@@ -14,6 +14,8 @@ declare module 'vue-router' {
   interface RouteMeta {
     order?: number
     transition?: string
+    requireAuth?: boolean
+    activeMenu?: string
   }
 }
 
