@@ -10,13 +10,12 @@
   "compilerOptions": {
     "composite": true,
     "types": ["electron-vite/node"],
-    "baseUrl": ".",
     "paths": {
       "@main/*": [
-        "src/main/*"
+        "./src/main/*"
       ],
       "@shared/*": [
-        "src/shared/*"
+        "./src/shared/*"
       ]
     }
   }
