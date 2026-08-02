@@ -242,7 +242,7 @@ import { mittbus } from '@renderer/ipc'
 import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
 import { storeToRefs } from 'pinia'
-import type { ProgressStatus } from 'src/shared/types'
+import type { ProgressStatus } from '@shared/types'
 import { computed, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 

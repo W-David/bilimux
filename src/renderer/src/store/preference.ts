@@ -1,6 +1,6 @@
 import { loadConfigFromNativeStore, saveConfigToNativeStore } from '@renderer/api'
 import { defineStore } from 'pinia'
-import { UserStore } from 'src/shared/types'
+import { UserStore } from '@shared/types'
 import { reactive, toRaw, watch } from 'vue'
 
 interface UserPreference extends UserStore {}
