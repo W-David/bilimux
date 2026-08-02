@@ -1,6 +1,7 @@
 {
   "name": "bilimux",
   "version": "1.0.0",
+  "packageManager": "pnpm@11.18.0",
   "description": "An Electron application with Vue and TypeScript",
   "main": "./out/main/index.js",
   "author": {
@@ -70,11 +71,5 @@
     "vue-eslint-parser": "^10.2.0",
     "vue-router": "^4.6.4",
     "vue-tsc": "^3.0.7"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "electron",
-      "esbuild"
-    ]
   }
 }

@@ -1,0 +1,5 @@
+allowBuilds:
+  electron: true
+  esbuild: true
+shamefullyHoist: true
+pmOnFail: ignore
