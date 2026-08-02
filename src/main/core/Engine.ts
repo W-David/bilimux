@@ -1,7 +1,7 @@
+import { CompositionOptions, EngineEventMap, EngineResponse } from '@shared/types'
 import { ChildProcess, spawn } from 'node:child_process'
 import { EventEmitter } from 'node:events'
 import path from 'node:path'
-import { CompositionOptions, EngineEventMap, EngineResponse } from '../config/types'
 import logger from './Logger'
 
 export default class Engine extends EventEmitter<EngineEventMap> {

@@ -5,11 +5,11 @@
       <p class="mt-1 text-sm text-gray-200">请在浏览器中登录 Bilibili，复制 Cookie 并粘贴到下方</p>
     </div>
 
-    <div class="w-full">
+    <div class="w-full flex-1">
       <Textarea
         v-model="cookieInput"
         auto-resize
-        rows="5"
+        rows="8"
         class="w-full border-zinc-700 bg-zinc-900 text-sm text-gray-300 focus:border-pink-500 focus:ring-pink-500/20"
         placeholder="在此粘贴 Cookie (包含 SESSDATA 等关键字段)..." />
     </div>
@@ -19,7 +19,7 @@
         label="验证并登录"
         icon="i-mdi-login"
         :loading="validating"
-        class="w-full border-pink-500 bg-pink-500 hover:border-pink-600 hover:bg-pink-600"
+        severity="primary"
         @click="handleLogin" />
 
       <Transition name="slide-down">
@@ -35,9 +35,9 @@
 </template>
 
 <script setup lang="ts">
-import { httpGet } from '@renderer/api'
 import logger from 'electron-log/renderer'
 import { ref } from 'vue'
+import { checkLoginStatus } from '../api/network'
 
 const cookieInput = ref('')
 const validating = ref(false)
@@ -61,7 +61,7 @@ const handleLogin = async () => {
   validating.value = true
 
   try {
-    const res = await httpGet('https://api.bilibili.com/x/web-interface/nav')
+    const res = await checkLoginStatus()
     if (res.code === 0 && res.data?.isLogin) {
       logger.debug('登录成功:', cookieStr)
     } else {

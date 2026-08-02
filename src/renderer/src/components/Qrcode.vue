@@ -88,18 +88,24 @@
         class="text-green-400 font-bold">
         登录成功
       </div>
-      <div v-else>点击上方图标开始登录</div>
+      <div
+        v-else
+        class="color-pink">
+        点击上方图标开始登录
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { $dt } from '@primeuix/themes'
-import { httpGet } from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
+import { useAuthStore } from '@renderer/store/auth'
 import logger from 'electron-log/renderer'
 import QRCode from 'qrcode'
 import { onUnmounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { checkQrCodeLoginStatus, getQrCode } from '../api/network'
 
 // 登录状态类型
 type LoginStatus = 'initial' | 'loading' | 'loaded' | 'scanned' | 'expired' | 'success'
@@ -114,6 +120,8 @@ enum QRCodeStatus {
 
 // 状态定义
 const status = ref<LoginStatus>('initial')
+const authStore = useAuthStore()
+const router = useRouter()
 const qrCodeUrl = ref('')
 const qrCodeKey = ref('')
 const countdown = ref(180)
@@ -132,7 +140,7 @@ const initQRCode = async () => {
     status.value = 'loading'
 
     // 获取二维码 Key 和 Url
-    const res = await httpGet('https://passport.bilibili.com/x/passport-login/web/qrcode/generate')
+    const res = await getQrCode()
 
     if (res.code === 0 && res.data) {
       const { url, qrcode_key } = res.data
@@ -163,7 +171,7 @@ const initQRCode = async () => {
       })
     }
   } catch (error) {
-    console.error('Error init QR code:', error)
+    logger.error('Error init QR code:', error)
   }
 }
 
@@ -208,11 +216,16 @@ const startPolling = () => {
   stopPolling()
   timerState.pollTimer = setInterval(async () => {
     try {
-      if (!qrCodeKey.value) return
+      if (!qrCodeKey.value) {
+        logger.warn('二维码 Key 为空，无法轮询检查状态')
+        return
+      }
 
-      const res = await httpGet(
-        `https://passport.bilibili.com/x/passport-login/web/qrcode/poll?qrcode_key=${qrCodeKey.value}`
-      )
+      const res = await checkQrCodeLoginStatus({
+        searchParams: {
+          qrcode_key: qrCodeKey.value
+        }
+      })
 
       if (res.data) {
         const { code } = res.data
@@ -222,24 +235,28 @@ const startPolling = () => {
             status.value = 'success'
             stopPolling()
             stopCountdown()
-            // 这里可以触发事件通知父组件或进行跳转
-            console.log('Login success:', res.data)
+            logger.debug('扫码已确认')
+            authStore.isAuthenticated = true
+            router.push({ name: 'download-task' })
+            // TODO 登录成功后，触发事件通知父组件或进行跳转
             break
           case QRCodeStatus.SCANNED: // 已扫码未确认
+            logger.debug('扫码未确认')
             status.value = 'scanned'
             break
           case QRCodeStatus.EXPIRED: // 二维码已失效
+            logger.debug('二维码已过期')
             handleExpired()
             break
           case QRCodeStatus.WAITING: // 未扫码 (waiting)
-            // 保持 waiting 状态，不需要额外操作
+            logger.debug('interval waiting...')
             break
           default:
-            console.warn('Unknown poll code:', code)
+            logger.warn('未知的扫码状态:', res.data)
         }
       }
     } catch (error) {
-      console.error('Polling error:', error)
+      logger.error('检查扫码状态失败:', error)
     }
   }, 2000) // 每2秒轮询一次
 }
@@ -267,7 +284,3 @@ onUnmounted(() => {
   logger.info('Qrcode unmounted')
 })
 </script>
-
-<style scoped>
-/* 如果没有 UnoCSS，可以在这里添加样式，但项目中似乎使用了 UnoCSS */
-</style>

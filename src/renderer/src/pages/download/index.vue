@@ -1,8 +1,8 @@
 <template>
-  <div class="relative h-full flex flex-col overflow-auto bg-dark-800">
+  <div class="relative h-full flex items-center justify-center overflow-auto">
     <RouterView v-slot="{ Component, route }">
       <Transition
-        :name="route.meta.transition"
+        name="fade"
         mode="out-in"
         appear>
         <KeepAlive>
@@ -19,8 +19,8 @@
 import logger from 'electron-log/renderer'
 import { KeepAlive, onUnmounted } from 'vue'
 
-logger.debug('Main created')
+logger.debug('Download index created')
 onUnmounted(() => {
-  logger.debug('Main unmounted')
+  logger.debug('Download index unmounted')
 })
 </script>

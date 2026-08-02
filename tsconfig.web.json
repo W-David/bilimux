@@ -9,17 +9,16 @@
   ],
   "compilerOptions": {
     "composite": true,
-    "baseUrl": ".",
     "types": ["primevue"],
     "paths": {
       "@renderer/*": [
-        "src/renderer/src/*"
+        "./src/renderer/src/*"
       ],
       "@preload/*": [
-        "src/preload/*"
+        "./src/preload/*"
       ],
       "@shared/*": [
-        "src/shared/*"
+        "./src/shared/*"
       ]
     }
   }

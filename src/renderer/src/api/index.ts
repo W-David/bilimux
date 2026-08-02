@@ -9,6 +9,13 @@ export const loadConfigFromNativeStore: RendererEmitterInvokeFn<'get-preference'
 }
 
 /**
+ * 获取指定 Cookie 值
+ */
+export const getCookie: RendererEmitterInvokeFn<'get-cookie'> = key => {
+  return emitter.invoke('get-cookie', key)
+}
+
+/**
  * 获取应用版本号
  */
 export const getAppVersion: RendererEmitterInvokeFn<'get-app-version'> = () => {
@@ -77,20 +84,6 @@ export const openFolder: RendererEmitterInvokeFn<'open-folder'> = path => {
  */
 export const openLogFile: RendererEmitterInvokeFn<'open-log-file'> = () => {
   return emitter.invoke('open-log-file')
-}
-
-/**
- * 发送 HTTP GET 请求
- */
-export const httpGet: RendererEmitterInvokeFn<'http-get'> = (url, options?) => {
-  return emitter.invoke('http-get', url, options)
-}
-
-/**
- * 发送 HTTP POST 请求
- */
-export const httpPost: RendererEmitterInvokeFn<'http-post'> = (url, options?) => {
-  return emitter.invoke('http-post', url, options)
 }
 
 /**

@@ -1,8 +1,8 @@
 import { OpenDialogOptions } from 'electron'
 import type { ProgressInfo, UpdateCheckResult, UpdateInfo } from 'electron-updater'
-import type { Options } from 'got'
-import { BiliResponseType } from 'src/main/core/HttpClient'
-import type { ComposEventMap, UserStore } from '../../main/config/types'
+import type { Options, OptionsOfJSONResponseBody } from 'got'
+import type { Cookie } from 'tough-cookie'
+import type { BiliResponseType, ComposEventMap, UserStore } from '../types'
 
 //主进程 handle IPC 事件
 type IpcMainHandleEvents = {
@@ -17,8 +17,10 @@ type IpcMainHandleEvents = {
   'download-update': () => string[]
   'quit-and-install': () => void
   'check-engine': () => boolean
-  'http-get': (url: string, options?: Options) => BiliResponseType
-  'http-post': (url: string, options?: Options) => BiliResponseType
+  'get-cookie': (key: string) => Cookie | undefined
+  'http-get-video-metadata': (url: string) => [string[] | null, string | null]
+  'http-get': (url: string, options?: OptionsOfJSONResponseBody) => BiliResponseType
+  'http-post': (url: string, options?: OptionsOfJSONResponseBody) => BiliResponseType
 }
 
 // 主进程 listen IPC 事件
@@ -39,9 +41,12 @@ type IpcRendererEvents = ComposEventMap & {
   'download:video': [string, Options?]
 }
 
-type RendererEmitterInvokeFn<T extends keyof IpcMainHandleEvents> = (
-  ...args: Parameters<IpcMainHandleEvents[T]>
-) => Promise<ReturnType<IpcMainHandleEvents[T]>>
+// 支持泛型函数的 RendererEmitterInvokeFn 类型
+type RendererEmitterInvokeFn<T extends keyof IpcMainHandleEvents> = IpcMainHandleEvents[T] extends (
+  ...args: infer A
+) => infer R
+  ? (...args: A) => Promise<R>
+  : never
 
 type RendererEmitterSendFn<T extends keyof IpcMainListenEvents> = (...args: IpcMainListenEvents[T]) => void
 
@@ -52,6 +57,7 @@ type RendererHandlerFn<T extends keyof IpcRendererEvents> = (
 type IpcMainEvents = IpcMainHandleEvents | IpcMainListenEvents
 
 export type {
+  Cookie,
   RendererInvokeFn as InvokeFunction,
   IpcMainEvents,
   IpcMainHandleEvents,

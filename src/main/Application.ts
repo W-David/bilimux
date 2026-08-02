@@ -1,17 +1,18 @@
 import { shell } from 'electron'
 import { LogLevel } from 'electron-log'
 import { dialog } from 'electron/main'
-import type { Options } from 'got'
 import AutoLauncher from './core/AutoLauncher'
 import { ComposEngine } from './core/ComposEngine'
 import ConfigManager from './core/ConfigManager'
 import Context from './core/Context'
+import type { HttpGetJson, HttpPostJson } from './core/HttpClient'
 import HttpClient from './core/HttpClient'
 import IPCManager from './core/IPCManager'
 import logger from './core/Logger'
 import ProcessQueue from './core/ProcessQueue'
 import UpdateManager from './core/UpdateManager'
 import WindowManager from './core/WindowManager'
+import { parseVideoType, resolveVideoMetaData } from './utils/url'
 
 export default class Application {
   context: Context
@@ -158,11 +159,24 @@ export default class Application {
     this.ipcManager.mainIpc.handle('check-engine', async () => {
       return this.composEngine.checkEngine()
     })
-    this.ipcManager.mainIpc.handle('http-get', async (_, url: string, options?: Options) => {
-      return this.httpClient.get(url, options)
+    this.ipcManager.mainIpc.handle('get-cookie', async (_, key: string) => {
+      const cookie = await this.httpClient.getCookieKey(key)
+      return cookie
     })
-    this.ipcManager.mainIpc.handle('http-post', async (_, url: string, options?: Options) => {
-      return this.httpClient.post(url, options)
+    this.ipcManager.mainIpc.handle('http-get-video-metadata', async (_, url: string) => {
+      const [type, errMsg] = parseVideoType(url)
+      if (type) {
+        const { html } = await this.httpClient.getHtml(url)
+        return resolveVideoMetaData(html, type)
+      } else {
+        return [null, errMsg]
+      }
+    })
+    this.ipcManager.mainIpc.handle('http-get', async (_, ...params: Parameters<HttpGetJson>) => {
+      return this.httpClient.get(...params)
+    })
+    this.ipcManager.mainIpc.handle('http-post', async (_, ...params: Parameters<HttpPostJson>) => {
+      return this.httpClient.post(...params)
     })
   }
 }
