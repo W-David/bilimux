@@ -25,8 +25,8 @@ git checkout -b codex/pnpm-migration
 
 | 文件 | 改动 |
 | --- | --- |
-| `pnpm-workspace.yaml`（新增） | `allowBuilds: { electron: true, esbuild: true }`、`shamefullyHoist: true` |
-| `package.json` | 新增 `"packageManager": "pnpm@11.13.0"`；删除整个 `pnpm.onlyBuiltDependencies` 字段 |
+| `pnpm-workspace.yaml`（新增） | `allowBuilds: { electron: true, esbuild: true }`、`shamefullyHoist: true`、`pmOnFail: ignore`（本地 pnpm 版本与 packageManager 不一致时直接使用本地版本，不触发自动下载切换） |
+| `package.json` | 新增 `"packageManager": "pnpm@11.18.0"`（11.13.0 已被 npm 标记为 broken 版本，故直接升到最新 11.x）；删除整个 `pnpm.onlyBuiltDependencies` 字段 |
 | `.npmrc` | 删除 `shamefully-hoist=true`；保留两条 electron 镜像配置 |
 
 `pnpm-lock.yaml` 无变化（lockfileVersion 9.0 与 pnpm 11 兼容）。
