@@ -34,14 +34,19 @@
 - **Framework**: [Vue 3](https://vuejs.org/), [Vite](https://vitejs.dev/)
 - **UI/Styling**: [UnoCSS](https://unocss.dev/), [PrimeVue](https://primevue.org/)
 - **State Management**: [Pinia](https://pinia.vuejs.org/)
-- **Code Format and Lint**: [Prettier](https://prettier.io/),[ESLint](https://eslint.org/)
-- **Media Engine**: [GPAC / MP4Box](https://gpac.wp.imt.fr/mp4box/)
+- **Code Format and Lint**: [Prettier](https://prettier.io/), [ESLint](https://eslint.org/)
+- **Media Engine**: [GPAC / MP4Box](https://gpac.io/)
+- **Package Manager**: [pnpm](https://pnpm.io/)
 
 ## 🚀 快速开始 | Getting Started
 
 ### 安装 | Installation
 
-请前往 [Releases](https://github.com/W-David/bilimux/releases) 页面下载适合您系统的最新安装包。
+请前往 [Releases](https://github.com/W-David/bilimux/releases) 页面下载适合您系统的最新安装包：
+
+- Windows：x64 NSIS 安装包（`.exe`）
+- macOS：Apple Silicon（arm64）DMG
+- Linux：AppImage 与 deb
 
 ### MAC报错应用已损坏
 
@@ -63,7 +68,7 @@ sudo xattr -r -d com.apple.quarantine /Applications/BiliMux.app
 
 #### 1. 环境准备
 
-确保您的系统已安装 [Node.js >= v22](https://nodejs.org) 和 [pnpm >= v10](https://pnpm.io/)。
+确保您的系统已安装 [Node.js >= v22](https://nodejs.org) 和 [pnpm >= 11](https://pnpm.io/)（项目使用 `pnpm@11.18.0`）。
 
 #### 2. 克隆项目
 
@@ -95,6 +100,13 @@ pnpm build:mac
 
 # 构建 Linux 版本
 pnpm build:linux
+```
+
+#### 6. 代码检查与类型检查
+
+```bash
+pnpm lint       # ESLint
+pnpm typecheck  # TypeScript + vue-tsc
 ```
 
 ## License
