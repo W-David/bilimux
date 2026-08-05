@@ -27,6 +27,20 @@ No test suite. CI (`.github/workflows/lint.yml`): `pnpm lint:fix` then `pnpm typ
 
 `package.json` scripts chain via `npm run …`; prefer invoking top-level scripts with `pnpm`.
 
+## Release
+
+- Bump the version and create the matching tag with one command (tag prefix `v` matches the release workflow):
+
+  ```bash
+  pnpm version patch --message "chore: release v%s"   # or minor / major / an explicit version
+  git push origin <branch> --tags
+  ```
+
+- `release.yml` first verifies that the pushed `v*` tag equals `package.json` `version` and fails the build on mismatch —
+  never hand-tag without bumping `package.json` first.
+- CI builds Windows (NSIS x64), macOS (DMG arm64) and Linux (AppImage + deb), then uploads to a **draft** GitHub Release
+  (`publish.releaseType: draft`); publish the draft manually in GitHub before users can see/update to it.
+
 ## Layout
 
 | Path | Role |
