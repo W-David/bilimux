@@ -96,71 +96,10 @@
           v-if="hasTasks"
           class="min-h-full w-full flex flex-col items-center justify-center gap-2 py-4">
           <TransitionGroup name="log-flow">
-            <div
+            <ConvertTaskItem
               v-for="task in taskArray"
               :key="task.id"
-              class="relative max-w-4xl min-w-2xl w-80% overflow-hidden rounded-xl bg-gray-800/40 p-3 shadow-sm ring-1 ring-white/5 backdrop-blur transition-all duration-300 hover:bg-gray-800/60 hover:shadow-lg hover:ring-white/10">
-              <!-- 背景进度条 -->
-              <div
-                class="absolute bottom-0 left-0 top-0 bg-green-500/5 transition-all duration-300 ease-out"
-                :style="{ width: `${task.progress}%` }"></div>
-
-              <!-- 内容区域 -->
-              <div class="relative z-10 flex items-center justify-between gap-4">
-                <!-- 状态徽章 -->
-                <div class="w-20 shrink-0">
-                  <div
-                    class="flex select-none items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors"
-                    :class="{
-                      'bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20':
-                        task.status === 'importing' || task.status === 'writing',
-                      'bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/20': task.status === 'preprocess',
-                      'bg-green-500/10 text-green-400 ring-1 ring-green-500/20': task.status === 'success',
-                      'bg-red-500/10 text-red-400 ring-1 ring-red-500/20': task.status === 'fail',
-                      'bg-gray-500/10 text-gray-400 ring-1 ring-gray-500/20': task.status === 'waiting',
-                      'animate-pulse':
-                        task.status === 'preprocess' || task.status === 'importing' || task.status === 'writing'
-                    }">
-                    <div
-                      class="text-base"
-                      :class="{
-                        'i-mdi-import': task.status === 'importing',
-                        'i-mdi-export': task.status === 'writing',
-                        'i-mdi-progress-pencil': task.status === 'preprocess',
-                        'i-mdi-check-circle': task.status === 'success',
-                        'i-mdi-alert-circle': task.status === 'fail',
-                        'i-mdi-timer-sand': task.status === 'waiting'
-                      }"></div>
-                    <span>{{ statusTextMap[task.status] || '等待中' }}</span>
-                  </div>
-                </div>
-
-                <!-- 文件名 -->
-                <div class="flex-1 truncate">
-                  <div class="truncate text-sm text-gray-200 font-medium tracking-wide">
-                    {{ task.fileName }}
-                  </div>
-                </div>
-
-                <!-- 操作按钮 -->
-                <div class="h-8 w-8 flex shrink-0 items-center justify-center">
-                  <div
-                    v-if="task.status === 'success'"
-                    class="i-mdi-play-circle cursor-pointer text-2xl text-green-400 transition-transform duration-200 hover:scale-110 hover:text-green-300"
-                    @click="openTaskFile(task)"></div>
-                  <div
-                    v-else-if="task.status === 'fail'"
-                    v-tooltip.left="task.message"
-                    class="i-mdi-alert-circle cursor-help text-2xl text-red-400"></div>
-                  <ProgressSpinner
-                    v-else
-                    class="h-5 w-5"
-                    stroke-width="6"
-                    fill="transparent"
-                    animation-duration="1s" />
-                </div>
-              </div>
-            </div>
+              :task="task" />
           </TransitionGroup>
         </div>
 
@@ -188,6 +127,7 @@
             <Button
               v-if="status === ConvertStatus.Success"
               severity="help"
+              size="small"
               variant="text"
               @click="reset">
               <i class="i-mdi-step-backward mr-1"></i>
@@ -197,6 +137,7 @@
             <Button
               v-if="status === ConvertStatus.Success"
               severity="success"
+              size="small"
               variant="text"
               @click="openOutputFolder">
               <i class="i-mdi-folder-open mr-1"></i>
@@ -205,6 +146,7 @@
             <Button
               v-if="status === ConvertStatus.Error"
               severity="danger"
+              size="small"
               variant="text"
               @click="reset">
               <i class="i-mdi-refresh mr-1"></i>
@@ -214,6 +156,7 @@
             <Button
               v-if="status === ConvertStatus.Error"
               severity="help"
+              size="small"
               variant="text"
               @click="openSetting">
               <i class="i-mdi-cog mr-1"></i>
@@ -238,11 +181,11 @@ import {
   subscribeProcessStartEvent,
   subscribeProcessSuccessEvent
 } from '@renderer/api'
+import ConvertTaskItem, { type ConvertTask } from '@renderer/components/ConvertTaskItem.vue'
 import { mittbus } from '@renderer/ipc'
 import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
 import { storeToRefs } from 'pinia'
-import type { ProgressStatus } from '@shared/types'
 import { computed, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -259,25 +202,6 @@ enum ConvertStatus {
   Error
 }
 
-interface Task {
-  id: string
-  fileName: string
-  filePath: string
-  status: ProgressStatus
-  progress: number
-  finished: boolean
-  message: string
-}
-
-const statusTextMap: Record<string, string> = {
-  importing: '导入中',
-  writing: '写入中',
-  preprocess: '预处理',
-  success: '已完成',
-  fail: '出错了',
-  waiting: '等待中'
-}
-
 const status = ref<ConvertStatus>(ConvertStatus.Idle)
 
 const successMessage = reactive({
@@ -289,7 +213,7 @@ const errorMessage = reactive({
 })
 
 // 任务列表
-const tasks = ref<Map<string, Task>>(new Map())
+const tasks = ref<Map<string, ConvertTask>>(new Map())
 const taskArray = computed(() => Array.from(tasks.value.values()))
 const hasTasks = computed(() => tasks.value.size > 0)
 
@@ -421,31 +345,6 @@ const openSetting = (): void => {
 
 const openOutputFolder = async (): Promise<void> => {
   const errMessage = await openPath(preference.value['convert-config'].outputDir)
-  if (errMessage) {
-    mittbus.emit('toast:add', {
-      severity: 'error',
-      summary: '错误',
-      detail: errMessage,
-      life: 3000
-    })
-  }
-}
-
-/**
- * 使用系统默认程序打开视频文件
- */
-const openTaskFile = async (task: Task): Promise<void> => {
-  if (!task.filePath) {
-    mittbus.emit('toast:add', {
-      severity: 'warn',
-      summary: '提示',
-      detail: '文件路径不存在',
-      life: 3000
-    })
-    return
-  }
-
-  const errMessage = await openPath(task.filePath)
   if (errMessage) {
     mittbus.emit('toast:add', {
       severity: 'error',

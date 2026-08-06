@@ -33,6 +33,11 @@ const hItems = ref([
     to: { name: 'convert' }
   },
   {
+    label: '转换管理',
+    icon: 'i-mdi-format-list-bulleted text-2xl',
+    to: { name: 'convert-manager', activeMenu: 'convert-manager' }
+  },
+  {
     label: '下载',
     icon: 'i-mdi-download text-2xl',
     to: { name: 'download-task', activeMenu: 'download' }

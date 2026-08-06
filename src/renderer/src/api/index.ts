@@ -16,6 +16,27 @@ export const getCookie: RendererEmitterInvokeFn<'get-cookie'> = key => {
 }
 
 /**
+ * 退出登录（清空主进程与本地持久化的登录信息）
+ */
+export const logout: RendererEmitterInvokeFn<'logout'> = () => {
+  return emitter.invoke('logout')
+}
+
+/**
+ * 获取转换历史
+ */
+export const getConvertHistories: RendererEmitterInvokeFn<'convert:history:list'> = () => {
+  return emitter.invoke('convert:history:list')
+}
+
+/**
+ * 清空转换历史
+ */
+export const clearConvertHistories: RendererEmitterInvokeFn<'convert:history:clear'> = () => {
+  return emitter.invoke('convert:history:clear')
+}
+
+/**
  * 获取应用版本号
  */
 export const getAppVersion: RendererEmitterInvokeFn<'get-app-version'> = () => {
@@ -27,6 +48,41 @@ export const getAppVersion: RendererEmitterInvokeFn<'get-app-version'> = () => {
  */
 export const checkEngine: RendererEmitterInvokeFn<'check-engine'> = () => {
   return emitter.invoke('check-engine')
+}
+
+/**
+ * 开始下载收藏视频
+ */
+export const startDownloadVideo: RendererEmitterInvokeFn<'download:video'> = task => {
+  return emitter.invoke('download:video', task)
+}
+
+/**
+ * 暂停下载视频
+ */
+export const pauseDownloadVideo: RendererEmitterInvokeFn<'download:pause'> = bvid => {
+  return emitter.invoke('download:pause', bvid)
+}
+
+/**
+ * 恢复下载视频
+ */
+export const resumeDownloadVideo: RendererEmitterInvokeFn<'download:resume'> = bvid => {
+  return emitter.invoke('download:resume', bvid)
+}
+
+/**
+ * 批量查询下载历史
+ */
+export const getDownloadHistories: RendererEmitterInvokeFn<'download:history:list'> = bvids => {
+  return emitter.invoke('download:history:list', bvids)
+}
+
+/**
+ * 查询单个下载历史
+ */
+export const getDownloadHistory: RendererEmitterInvokeFn<'download:history:get'> = bvid => {
+  return emitter.invoke('download:history:get', bvid)
 }
 
 /**
@@ -147,6 +203,27 @@ export const subscribeProcessItemStartEvent: RendererHandlerFn<'process:item:sta
  */
 export const subscribeProcessItemEndEvent: RendererHandlerFn<'process:item:end'> = listener => {
   return ipc.on('process:item:end', (_, args) => listener(args))
+}
+
+/**
+ * 订阅下载任务开始事件
+ */
+export const subscribeDownloadItemStartEvent: RendererHandlerFn<'download:item:start'> = listener => {
+  return ipc.on('download:item:start', (_, args) => listener(args))
+}
+
+/**
+ * 订阅下载任务进度事件
+ */
+export const subscribeDownloadItemProgressEvent: RendererHandlerFn<'download:item:progress'> = listener => {
+  return ipc.on('download:item:progress', (_, args) => listener(args))
+}
+
+/**
+ * 订阅下载任务结束事件
+ */
+export const subscribeDownloadItemEndEvent: RendererHandlerFn<'download:item:end'> = listener => {
+  return ipc.on('download:item:end', (_, args) => listener(args))
 }
 
 /**

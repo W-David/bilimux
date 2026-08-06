@@ -1,6 +1,5 @@
 <template>
-  <div
-    class="h-full w-full flex flex-col items-center justify-center gap-2 rounded-md bg-zinc-950 p-6 backdrop-blur-md hover:shadow">
+  <div class="h-full w-full flex flex-col items-center justify-center gap-2 rounded-md">
     <div class="relative h-44 w-44 flex items-center justify-center overflow-hidden rounded-xl bg-transparent">
       <Transition
         name="fade"
@@ -90,8 +89,10 @@
       </div>
       <div
         v-else
-        class="color-pink">
-        点击上方图标开始登录
+        class="w-50 overflow-hidden text-align-center text-wrap text-xs color-gray font-400 line-height-relaxed font-italic">
+        <div>为避免触发 B 站风控</div>
+        <div>登录后会一次性获取所有收藏夹视频</div>
+        <div>后续可手动刷新</div>
       </div>
     </div>
   </div>
@@ -100,7 +101,9 @@
 <script setup lang="ts">
 import { $dt } from '@primeuix/themes'
 import { mittbus } from '@renderer/ipc'
+import { fetchCurrentUserInfo } from '@renderer/services/user'
 import { useAuthStore } from '@renderer/store/auth'
+import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
 import QRCode from 'qrcode'
 import { onUnmounted, ref } from 'vue'
@@ -237,8 +240,8 @@ const startPolling = () => {
             stopCountdown()
             logger.debug('扫码已确认')
             authStore.isAuthenticated = true
+            await persistUserInfoOnLogin()
             router.push({ name: 'download-task' })
-            // TODO 登录成功后，触发事件通知父组件或进行跳转
             break
           case QRCodeStatus.SCANNED: // 已扫码未确认
             logger.debug('扫码未确认')
@@ -259,6 +262,22 @@ const startPolling = () => {
       logger.error('检查扫码状态失败:', error)
     }
   }, 2000) // 每2秒轮询一次
+}
+
+/**
+ * 扫码登录成功后单独获取并持久化用户信息
+ */
+const persistUserInfoOnLogin = async (): Promise<void> => {
+  try {
+    const userInfo = await fetchCurrentUserInfo()
+    const preferenceStore = usePreferenceStore()
+    preferenceStore.preference['user-info'] = userInfo
+    // 新账号登录后清掉上一个账号的收藏夹缓存
+    preferenceStore.preference['favorites-data'] = null
+    preferenceStore.savePreference()
+  } catch (error) {
+    logger.error('登录后获取用户信息失败:', error)
+  }
 }
 
 // 停止轮询

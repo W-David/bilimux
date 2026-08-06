@@ -1,5 +1,6 @@
-import { getCookie } from '@renderer/api'
+import { getCookie, logout as logoutApi } from '@renderer/api'
 import { checkAuthStatus } from '@renderer/api/network'
+import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
 import { defineStore } from 'pinia'
 
@@ -33,6 +34,22 @@ export const useAuthStore = defineStore('auth', {
       } else {
         this.isAuthenticated = true
         logger.debug('用户已登录,使用当前Cookie')
+      }
+    },
+    async logout() {
+      try {
+        await logoutApi()
+      } catch (error) {
+        logger.error('清除主进程登录信息失败:', error)
+      } finally {
+        this.isAuthenticated = false
+        // 同步清空渲染进程内存里缓存的登录信息并持久化
+        const preferenceStore = usePreferenceStore()
+        preferenceStore.preference['user-cookie'] = ''
+        preferenceStore.preference['user-info'] = null
+        preferenceStore.preference['favorites-data'] = null
+        preferenceStore.savePreference()
+        logger.debug('已退出登录，本地登录态已清空')
       }
     }
   }

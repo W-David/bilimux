@@ -8,7 +8,7 @@
         <KeepAlive>
           <component
             :is="Component"
-            :key="route.name"></component>
+            :key="route.matched[2]?.path ?? route.path"></component>
         </KeepAlive>
       </Transition>
     </RouterView>

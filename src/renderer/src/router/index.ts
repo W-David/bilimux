@@ -2,12 +2,20 @@ import Layout from '@renderer/layout/index.vue'
 import Main from '@renderer/layout/Main.vue'
 import About from '@renderer/pages/About.vue'
 import Convert from '@renderer/pages/Convert.vue'
+import ConvertComplete from '@renderer/pages/convert/complete.vue'
+import ConvertConverting from '@renderer/pages/convert/converting.vue'
+import ConvertEntire from '@renderer/pages/convert/entire.vue'
+import ConvertIndex from '@renderer/pages/convert/index.vue'
+import ConvertUnconverted from '@renderer/pages/convert/unconverted.vue'
 import Auth from '@renderer/pages/download/auth.vue'
 import Download from '@renderer/pages/download/index.vue'
 import Task from '@renderer/pages/download/task.vue'
 import Prefer from '@renderer/pages/Prefer.vue'
 import { useAuthStore } from '@renderer/store/auth'
 import { createMemoryHistory, createRouter, RouteRecordRaw } from 'vue-router'
+
+// 转换管理页最后停留的分组，父路由重定向时使用，避免每次进入都被重置到“未完成”
+let lastConvertTabName = 'convert-manager-unconverted'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -24,8 +32,60 @@ const routes: RouteRecordRaw[] = [
             name: 'convert',
             component: Convert,
             meta: {
-              order: 1
+              order: 0
             }
+          },
+          {
+            path: 'convert-manager',
+            name: 'convert-manager',
+            component: ConvertIndex,
+            redirect: () => ({ name: lastConvertTabName }),
+            meta: {
+              order: 1,
+              activeMenu: 'convert-manager'
+            },
+            children: [
+              {
+                path: 'entire',
+                name: 'convert-manager-entire',
+                component: ConvertEntire,
+                meta: {
+                  switchTransition: true,
+                  order: 1,
+                  activeMenu: 'convert-manager'
+                }
+              },
+              {
+                path: 'complete',
+                name: 'convert-manager-complete',
+                component: ConvertComplete,
+                meta: {
+                  switchTransition: true,
+                  order: 2,
+                  activeMenu: 'convert-manager'
+                }
+              },
+              {
+                path: 'converting',
+                name: 'convert-manager-converting',
+                component: ConvertConverting,
+                meta: {
+                  switchTransition: true,
+                  order: 3,
+                  activeMenu: 'convert-manager'
+                }
+              },
+              {
+                path: 'unconverted',
+                name: 'convert-manager-unconverted',
+                component: ConvertUnconverted,
+                meta: {
+                  switchTransition: true,
+                  order: 4,
+                  activeMenu: 'convert-manager'
+                }
+              }
+            ]
           },
           {
             path: 'download',
@@ -94,13 +154,23 @@ router.beforeEach(to => {
 })
 
 router.afterEach((to, from) => {
+  // 记录最后一次停留的转换分组，供父路由重定向回到原分组
+  if (to.meta.switchTransition && typeof to.name === 'string') {
+    lastConvertTabName = to.name
+  }
+
   if (to.meta.order === undefined || from.meta.order === undefined) {
     return
   }
+
   const fromOrder = from.meta.order as number
   const toOrder = to.meta.order as number
-  const transition = toOrder >= fromOrder ? 'main-slide-up' : 'main-slide-down'
-  to.meta.transition = transition
+
+  if (from.meta.switchTransition && to.meta.switchTransition) {
+    to.meta.transition = toOrder >= fromOrder ? 'convert-slide-forward' : 'convert-slide-backward'
+  } else {
+    to.meta.transition = toOrder >= fromOrder ? 'main-slide-up' : 'main-slide-down'
+  }
 })
 
 export default router

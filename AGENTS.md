@@ -63,7 +63,7 @@ No test suite. CI (`.github/workflows/lint.yml`): `pnpm lint:fix` then `pnpm typ
 
 ### Main process wiring
 
-`Application` owns: `Context`, `ConfigManager` (electron-store), `AutoLauncher`, `IPCManager`, `HttpClient` (got), `ComposEngine` + `ProcessQueue`, `WindowManager`, `UpdateManager`. Do not invent parallel singletons — extend these.
+`Application` owns: `Context`, `ConfigManager` (electron-store), `AutoLauncher`, `IPCManager`, `HttpClient` (got), `ComposEngine` + `ProcessQueue`, `DownloadManager`, `DownloadHistoryStore` (node:sqlite), `WindowManager`, `UpdateManager`. Do not invent parallel singletons — extend these.
 
 `Launcher` owns `ExceptionHandler` and the single-instance lock (non-macOS).
 
@@ -72,6 +72,8 @@ MP4Box path: `getEngineBinPath()` in `src/main/utils/index.ts` — dev uses `ext
 ### IPC
 
 Typed contracts in `src/shared/ipc/events.d.ts` (`IpcMainHandleEvents`, `IpcMainListenEvents`, `IpcRendererEvents`). Main: `IPCManager` + handlers in `Application`. Renderer: `src/renderer/src/ipc/`. **Add/change channels in the shared events file first**, then wire both sides.
+
+Download flow: `DownloadManager` fetches `wbi/playurl` (Wbi signed via `src/main/utils/wbi.ts`), downloads DASH m4s or MP4 through `HttpClient.downloadFile`, and reuses `ComposEngine.mergeFiles` for m4s merging. Progress events: `download:item:start/progress/end`. Pause/resume is in-memory only (`download:pause`/`download:resume` IPC): partial files are kept, resume sends `Range` via `HttpClient.downloadFile`, and playurl is refreshed on retry so expired URLs restart from scratch. Download history is persisted in `userData/downloads.db` via `DownloadHistoryStore` (node:sqlite): start/complete/fail transitions write records, and renderer queries them through `download:history:list/get` IPC.
 
 ### Renderer
 

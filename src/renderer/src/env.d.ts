@@ -13,6 +13,7 @@ declare global {
 declare module 'vue-router' {
   interface RouteMeta {
     order?: number
+    switchTransition?: boolean
     transition?: string
     requireAuth?: boolean
     activeMenu?: string

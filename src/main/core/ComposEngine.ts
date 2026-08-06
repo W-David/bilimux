@@ -16,12 +16,17 @@ import Engine from './Engine'
 import logger from './Logger'
 import ProcessQueue from './ProcessQueue'
 
+export type ConvertTaskResult = {
+  duration: number
+  skipped: boolean
+}
+
 export class ComposEngine extends EventEmitter<ComposEventMap> {
   private configManager: ConfigManager
-  private processQueue: ProcessQueue<number>
+  private processQueue: ProcessQueue<ConvertTaskResult>
   private isRunning = false
 
-  constructor(processQueue: ProcessQueue<number>, configManager: ConfigManager) {
+  constructor(processQueue: ProcessQueue<ConvertTaskResult>, configManager: ConfigManager) {
     super()
     this.configManager = configManager
     this.processQueue = processQueue
@@ -116,8 +121,8 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
   private async syntheticTask(bvs: VideoTaskInfo[], config: ConfigOptions): Promise<void> {
     const { gpacBinPath, outputDir, forceTransform, forceComposition } = config
 
-    const taskFn = async (bv: VideoTaskInfo) => {
-      const { videoM4sPath, videoMp4Path, audioM4sPath, audioMp3Path, fileName } = bv.fileInfo
+    const taskFn = async (bv: VideoTaskInfo, outputFilePath: string) => {
+      const { videoM4sPath, videoMp4Path, audioM4sPath, audioMp3Path } = bv.fileInfo
 
       logger.info(`开始转换: (${bv.bvid}) - (${bv.fileInfo.fileName})`)
 
@@ -168,7 +173,6 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       }
 
       // 合成 (Composition)
-      const outputFilePath = path.join(outputDir, fileName)
       const isOutputExist = await isExist(outputFilePath)
       if (!isOutputExist || forceComposition) {
         await this.compose(gpacBinPath, {
@@ -185,7 +189,8 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       }
 
       const duration = new Date().getTime() - start
-      return duration
+      const skipped = isOutputExist && !forceComposition
+      return { duration, skipped }
     }
 
     return new Promise(resolve => {
@@ -199,18 +204,22 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       logger.info('启动队列任务:', `总任务数: [${bvs.length}]`)
 
       bvs.forEach(bv => {
+        const outputFilePath = path.join(outputDir, bv.fileInfo.fileName)
         this.processQueue
           .add(() => {
-            this.emit('process:item:start', { bv })
-            return taskFn(bv)
+            this.emit('process:item:start', { bv, outputPath: outputFilePath })
+            return taskFn(bv, outputFilePath)
           })
-          .then(duration => {
+          .then(({ duration, skipped }) => {
             count.success += 1
 
             this.emit('process:item:end', {
               bvid: bv.bvid,
               success: true,
-              message: `耗时: ${duration} ms`
+              message: `耗时: ${duration} ms${skipped ? '（已跳过合成）' : ''}`,
+              outputPath: outputFilePath,
+              durationMs: duration,
+              skipped
             })
           })
           .catch(error => {
@@ -219,7 +228,9 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
             this.emit('process:item:end', {
               bvid: bv.bvid,
               success: false,
-              message: error instanceof Error ? error.message : String(error)
+              message: error instanceof Error ? error.message : String(error),
+              outputPath: outputFilePath,
+              skipped: false
             })
           })
       })
@@ -516,6 +527,47 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       this.emit('process:item:progress', progressData)
     })
     return engine.start()
+  }
+
+  /**
+   * 合并下载的音视频文件（M4S）
+   * @param params 合并参数
+   */
+  public async mergeFiles(params: {
+    bvid: string
+    title: string
+    videoPath: string
+    audioPath: string
+    outputPath: string
+    tempDir: string
+    onProgress?: (type: 'preprocess' | 'importing' | 'writing', progress: number) => void
+  }): Promise<void> {
+    const { bvid, videoPath, audioPath, outputPath, tempDir, onProgress } = params
+    const gpacBinPath = this.configManager.getStore()['convert-config'].gpacBinPath
+
+    await createDirIfNotExist(path.dirname(outputPath))
+    await createDirIfNotExist(tempDir)
+
+    const tempVideoPath = path.join(tempDir, 'video.mp4')
+    const tempAudioPath = path.join(tempDir, 'audio.mp3')
+
+    onProgress?.('preprocess', 0)
+    await this.transformFile(videoPath, tempVideoPath)
+    onProgress?.('preprocess', 50)
+    await this.transformFile(audioPath, tempAudioPath)
+    onProgress?.('preprocess', 100)
+
+    const engine = new Engine(gpacBinPath, {
+      bvInfo: { bvid } as VideoTaskInfo,
+      videoFile: tempVideoPath,
+      audioFile: tempAudioPath,
+      outputFile: outputPath
+    })
+    engine.on('process:item:progress', data => {
+      const type = data.type === 'importing' || data.type === 'writing' ? data.type : 'preprocess'
+      onProgress?.(type, data.progress)
+    })
+    await engine.start()
   }
 
   /**

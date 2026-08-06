@@ -1,6 +1,6 @@
 import { emitter } from '@renderer/ipc'
 import { RendererEmitterInvokeFn } from '@shared/ipc/events'
-import { BiliResponseType } from '@shared/types'
+import { BiliResponseType, FavoriteFolder, FavoriteResource, UserInfo } from '@shared/types'
 import { OptionsOfJSONResponseBody } from 'got'
 import { Nullable } from 'tough-cookie'
 
@@ -39,13 +39,6 @@ export interface CheckLoginStatusResponseData {
   message: string
 }
 
-// Cookie 登录返回数据类型
-export interface CookieLoginResponseData {
-  isLogin: boolean
-  mid?: number
-  uname?: string
-}
-
 // 检查认证状态返回数据类型
 export interface CheckAuthStatusResponseData {
   refresh: boolean
@@ -75,13 +68,6 @@ export const checkQrCodeLoginStatus = (options?: OptionsOfJSONResponseBody) => {
 }
 
 /**
- * 尝试获取用户数据，检查用户登录状态（通过 Cookie）
- */
-export const checkLoginStatus = () => {
-  return httpGet('https://api.bilibili.com/x/web-interface/nav') as PromiseResponseType<CookieLoginResponseData>
-}
-
-/**
  * 检查用户认证状态以及是否需要刷新 (刷新 Cookie)
  */
 export const checkAuthStatus = (options?: OptionsOfJSONResponseBody) => {
@@ -96,4 +82,38 @@ export const checkAuthStatus = (options?: OptionsOfJSONResponseBody) => {
  */
 export const getVideoMetaData = (url: string) => {
   return httpGetVideoMetaData(url) as Promise<[Nullable<string[]>, Nullable<string>]>
+}
+
+/**
+ * 获取当前登录用户信息
+ */
+export const getCurrentUserInfo = () => {
+  return httpGet('https://api.bilibili.com/x/web-interface/nav') as PromiseResponseType<UserInfo>
+}
+
+/**
+ * 获取用户创建的收藏夹列表
+ */
+export const getFavoriteFolders = (upMid: number) => {
+  return httpGet('https://api.bilibili.com/x/v3/fav/folder/created/list-all', {
+    searchParams: { up_mid: upMid }
+  }) as PromiseResponseType<{ count: number; list: FavoriteFolder[] | null }>
+}
+
+/**
+ * 获取收藏夹详细信息（创建时间、简介等）
+ */
+export const getFavoriteFolderInfo = (mediaId: number) => {
+  return httpGet('https://api.bilibili.com/x/v3/fav/folder/info', {
+    searchParams: { media_id: mediaId }
+  }) as PromiseResponseType<FavoriteFolder>
+}
+
+/**
+ * 获取收藏夹内的视频列表
+ */
+export const getFavoriteResources = (mediaId: number, pn = 1, ps = 20) => {
+  return httpGet('https://api.bilibili.com/x/v3/fav/resource/list', {
+    searchParams: { media_id: mediaId, pn, ps, platform: 'web' }
+  }) as PromiseResponseType<{ info: FavoriteFolder; medias: FavoriteResource[]; has_more: boolean }>
 }
