@@ -1,5 +1,6 @@
 <template>
-  <div class="bg-card relative min-w-2xl w-full cursor-pointer overflow-hidden rounded-xl p-3">
+  <div
+    class="border border-black/5 bg-[#121212] shadow-sm shadow-black/50 hover:bg-[#202020] relative min-w-[42rem] w-full cursor-pointer overflow-hidden rounded-xl p-3">
     <!-- 内容区域 -->
     <div class="relative z-10 flex items-center justify-between gap-4">
       <!-- 状态徽章 -->

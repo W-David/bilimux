@@ -1,8 +1,8 @@
 <template>
   <div
     :class="[
-      'mb-2 cursor-pointer p-3 transition-al duration-200  shadow-black/50 shadow-sm hover:text-white rounded-xl',
-      active ? 'text-pink-300 bg-pink/10 shadow-black' : ''
+      'mb-2 cursor-pointer p-3 transition-al duration-200 shadow-black/50 shadow-sm hover:text-white rounded-xl',
+      active ? 'text-pink-300 bg-pink-400/10 shadow-black' : ''
     ]"
     @click="emit('select', folder)">
     <div class="flex items-center gap-3">
@@ -27,7 +27,7 @@
           </div>
           <div
             v-if="folder.ctime"
-            class="absolute bottom-1 left-1 rounded bg-black/60 px-1 py-0.5 text-[10px] text-light">
+            class="absolute bottom-1 left-1 rounded-sm bg-black/60 px-1 py-0.5 text-[10px] text-[#f6f6f6]">
             {{ formatDate(folder.ctime) }}
           </div>
         </div>

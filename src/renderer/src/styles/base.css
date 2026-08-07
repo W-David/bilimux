@@ -1,4 +1,21 @@
+@import 'tailwindcss';
 @import './transition.css';
+
+@plugin '@egoist/tailwindcss-icons';
+
+@theme {
+  --font-sans:
+    'Roboto',
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    sans-serif;
+  --font-mono:
+    'Fira Code',
+    ui-monospace,
+    SFMono-Regular,
+    monospace;
+}
 
 :root {
   --title-height: 32px;

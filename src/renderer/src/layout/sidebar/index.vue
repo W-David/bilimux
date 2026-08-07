@@ -1,6 +1,6 @@
 <template>
-  <div class="h-full bg-dark-500">
-    <div class="h-full flex flex-col justify-between flex-items-center pb-6 pt-14">
+  <div class="h-full bg-[#1f1f1f]">
+    <div class="h-full flex flex-col justify-between items-center pb-6 pt-14">
       <div class="flex flex-col items-center gap-3">
         <SidebarItem
           v-for="item in hItems"

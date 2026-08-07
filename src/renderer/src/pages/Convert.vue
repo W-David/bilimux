@@ -4,7 +4,7 @@
     <Transition name="slide-down">
       <div
         v-if="status !== ConvertStatus.Idle"
-        class="h-18 w-full flex-none bg-transparent px-4 shadow backdrop-blur-2px">
+        class="h-18 w-full flex-none bg-transparent px-4 shadow backdrop-blur-[2px]">
         <div class="h-full w-full flex items-center justify-between p-3">
           <div class="flex items-center gap-4">
             <!-- 状态图标 -->
@@ -28,7 +28,7 @@
 
             <!-- 状态文本 -->
             <div class="flex flex-col justify-center gap-0.5">
-              <span class="text-sm text-light font-bold">
+              <span class="text-sm text-[#f6f6f6] font-bold">
                 <span v-if="status === ConvertStatus.Success">任务已完成</span>
                 <span v-else-if="status === ConvertStatus.Error">任务执行出错</span>
                 <span v-else-if="status === ConvertStatus.Scanning">正在扫描文件</span>
@@ -43,7 +43,7 @@
               </span>
               <span
                 v-else-if="status === ConvertStatus.Success"
-                class="text-xs text-light">
+                class="text-xs text-[#f6f6f6]">
                 成功: {{ successMessage.success }} / 失败: {{ successMessage.failed }}
               </span>
               <span
@@ -71,17 +71,18 @@
               src="../assets/bilimux.svg"
               alt="Logo"
               class="h-20 w-20" />
-            <div class="from-pink to-sky bg-gradient-to-r bg-clip-text text-6xl text-transparent font-black font-sans">
+            <div
+              class="from-pink-400 to-sky-400 bg-linear-to-r bg-clip-text text-6xl text-transparent font-black font-sans">
               BiliMux
             </div>
           </div>
-          <div class="text-xl text-light-500 font-medium">高效、快速的 Bilibili 音视频合并工具</div>
+          <div class="text-xl text-[#f2f2f2] font-medium">高效、快速的 Bilibili 音视频合并工具</div>
         </div>
 
         <Button
           size="large"
-          rounded
-          class="border-none bg-pink px-8 py-4 text-xl font-bold shadow transition-all hover:shadow-2xl hover:-translate-y-1"
+          rounded-sm
+          class="border-none bg-pink-400 px-8 py-4 text-xl font-bold shadow transition-all hover:shadow-2xl hover:-translate-y-1"
           @click="start">
           <i class="i-mdi-play mr-2 text-2xl"></i>
           开始转换
@@ -106,13 +107,13 @@
         <div
           v-if="status === ConvertStatus.Scanning"
           class="h-full w-full flex">
-          <div class="i-mdi-file-document-box-search-outline m-auto animate-pulse font-size-20 color-pink"></div>
+          <div class="i-mdi-file-document-box-search-outline m-auto animate-pulse text-[5rem] text-pink-400"></div>
         </div>
 
         <div
           v-if="status === ConvertStatus.Error"
           class="h-full w-full flex">
-          <div class="i-mdi-file-document-remove-outline m-auto font-size-20 color-gray"></div>
+          <div class="i-mdi-file-document-remove-outline m-auto text-[5rem] text-gray-400"></div>
         </div>
       </div>
     </Transition>
@@ -121,7 +122,7 @@
     <Transition name="slide-up">
       <div
         v-if="status !== ConvertStatus.Idle"
-        class="h-18 w-full bg-transparent pl-4 shadow backdrop-blur-2px">
+        class="h-18 w-full bg-transparent pl-4 shadow backdrop-blur-[2px]">
         <div class="h-full w-full flex justify-end gap-4 p-3">
           <div class="flex gap-2">
             <Button
@@ -240,15 +241,15 @@ registerSubscribe(
     status.value = ConvertStatus.Processing
     // const statusList = ['success', 'fail', 'importing', 'preprocess', 'waiting', 'writing'] as ProgressStatus[]
     // statusList.forEach((status, id) => {
-    //   tasks.value.set(id.toString(), {
-    //     id: id.toString(),
-    //     fileName: status + '-----------File',
-    //     filePath: status + '-----------FilePath',
-    //     status,
-    //     progress: 0,
-    //     finished: status === 'success',
-    //     message: 'TEST ------------------------------------------------------- INFO'
-    //   })
+    // tasks.value.set(id.toString(), {
+    // id: id.toString(),
+    // fileName: status + '-----------File',
+    // filePath: status + '-----------FilePath',
+    // status,
+    // progress: 0,
+    // finished: status === 'success',
+    // message: 'TEST ------------------------------------------------------- INFO'
+    // })
     // })
     bvs.forEach(task => {
       tasks.value.set(task.bvid, {

@@ -11,7 +11,7 @@
       <!-- 下载进度背景 -->
       <div
         v-if="isProgressing"
-        class="absolute inset-y-0 left-0 bg-pink/25 transition-all duration-300"
+        class="absolute inset-y-0 left-0 bg-pink-400/25 transition-all duration-300"
         :style="{ width: `${progress}%` }"></div>
 
       <span class="relative z-10 flex items-center gap-1">

@@ -1,8 +1,7 @@
 <template>
   <div class="h-full w-full flex flex-col overflow-hidden">
     <!-- 顶部 Header -->
-    <div
-      class="flex flex-none items-center justify-between border-b border-b-1 border-[#1f1f1f] border-b-solid p-4 pt-8">
+    <div class="flex flex-none items-center justify-between border-b border-[#1f1f1f] border-solid p-4 pt-8">
       <div class="min-w-0 flex items-center gap-3">
         <Avatar
           v-if="userFace"
@@ -23,23 +22,27 @@
           <div class="flex items-center gap-2">
             <span
               class="truncate text-base font-black"
-              :class="nicknameStyle ? 'text-light' : 'from-pink to-sky bg-gradient-to-r bg-clip-text text-transparent'"
+              :class="
+                nicknameStyle
+                  ? 'text-[#f6f6f6]'
+                  : 'from-pink-400 to-sky-400 bg-linear-to-r bg-clip-text text-transparent'
+              "
               :style="nicknameStyle">
               {{ userName || 'Bili' }}
             </span>
             <span
               v-if="userLevel !== undefined"
-              class="shrink-0 rounded bg-pink/15 px-1.5 py-0.5 text-[10px] text-pink-400 font-bold">
+              class="shrink-0 rounded-sm bg-pink-400/15 px-1.5 py-0.5 text-[10px] text-pink-400 font-bold">
               LV{{ userLevel }}
             </span>
             <span
               v-if="isVip"
-              class="shrink-0 rounded bg-violet-400/15 px-1.5 py-0.5 text-[10px] text-violet-300 font-bold">
+              class="shrink-0 rounded-sm bg-violet-400/15 px-1.5 py-0.5 text-[10px] text-violet-300 font-bold">
               {{ vipLabel }}
             </span>
             <span
               v-if="isSeniorMember"
-              class="shrink-0 rounded bg-sky-400/15 px-1.5 py-0.5 text-[10px] text-sky-300 font-bold">
+              class="shrink-0 rounded-sm bg-sky-400/15 px-1.5 py-0.5 text-[10px] text-sky-300 font-bold">
               硬核会员
             </span>
           </div>

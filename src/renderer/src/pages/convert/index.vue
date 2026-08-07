@@ -1,7 +1,7 @@
 <template>
   <div class="h-full w-full flex flex-col overflow-hidden">
     <!-- 顶部：标题 + 状态切换 -->
-    <div class="flex items-center justify-between gap-4 border-b border-b-1 border-[#1f1f1f] border-b-solid p-4">
+    <div class="flex items-center justify-between gap-4 border-b border-[#1f1f1f] border-solid p-4">
       <div class="min-w-0 flex items-center gap-3">
         <img
           src="../../assets/bilimux.svg"
@@ -18,20 +18,20 @@
           size="small"
           variant="text"
           :disabled="convertStore.runStatus === 'scanning' || convertStore.runStatus === 'processing'"
-          class="bg-red/5 text-red"
+          class="bg-red-400/5 text-red"
           @click="showClearDialog = true"></Button>
         <Button
           label="输出目录"
           icon="i-mdi-folder-open"
           size="small"
           variant="text"
-          class="bg-gray/5 text-gray"
+          class="bg-gray-400/5 text-gray-400"
           @click="openOutputFolder"></Button>
       </div>
     </div>
 
     <!-- 操作栏 -->
-    <div class="flex items-center justify-between gap-4 border-b border-b-1 border-[#1f1f1f] border-b-solid p-4">
+    <div class="flex items-center justify-between gap-4 border-b border-[#1f1f1f] border-solid p-4">
       <!-- 状态切换按钮 -->
       <div class="flex items-center gap-3">
         <div
@@ -39,15 +39,15 @@
           :key="tab.name"
           type="button"
           :class="[
-            'relative h-8 w-24 flex cursor-pointer items-center justify-center gap-2  rounded-[16px]  text-sm  bg-card  transition-all duration-300 text-zinc hover:text-white',
+            'relative h-8 w-24 flex cursor-pointer items-center justify-center gap-2 rounded-[16px] text-sm border border-black/5 bg-[#121212] shadow-sm shadow-black/50 hover:bg-[#202020] transition-all duration-300 text-zinc-400 hover:text-white',
             route.name === tab.name ? tab.activeClass : tab.inactiveClass
           ]"
           @click="switchTab(tab.name)">
           <i :class="tab.icon"></i>
           <span>{{ tab.label }}</span>
           <span
-            class="absolute right-0 z-10 h-12px min-w-8 flex items-center justify-center border border-1 border-black/20 rounded-6px border-solid bg-dark px-3px text-8px text-white shadow-dark shadow-sm -top-2">
-            <span class="mx-3px">{{ convertStore.counts[tab.countKey] }}</span>
+            class="absolute right-0 z-10 h-[12px] min-w-8 flex items-center justify-center border border border-black/20 rounded-[6px] border-solid bg-[#222222] px-[3px] text-[8px] text-white shadow-[#222222] shadow-sm -top-2">
+            <span class="mx-[3px]">{{ convertStore.counts[tab.countKey] }}</span>
           </span>
         </div>
       </div>

@@ -30,7 +30,7 @@
                   <label class="font-normal">日志等级</label>
                   <div
                     v-tooltip.right="'查看日志文件'"
-                    class="i-mdi-open-in-new ml-2 cursor-pointer text-[18px] hover:color-pink"
+                    class="i-mdi-open-in-new ml-2 cursor-pointer text-[18px] hover:text-pink-400"
                     @click="openLog"></div>
                 </div>
                 <SelectButton
@@ -66,24 +66,26 @@
                     <span
                       class="truncate text-base font-black"
                       :class="
-                        nicknameStyle ? 'text-light' : 'from-pink to-sky bg-gradient-to-r bg-clip-text text-transparent'
+                        nicknameStyle
+                          ? 'text-[#f6f6f6]'
+                          : 'from-pink-400 to-sky-400 bg-linear-to-r bg-clip-text text-transparent'
                       "
                       :style="nicknameStyle">
                       {{ userName || 'Bili' }}
                     </span>
                     <span
                       v-if="userLevel !== undefined"
-                      class="shrink-0 rounded bg-pink/15 px-1.5 py-0.5 text-[10px] text-pink-400 font-bold">
+                      class="shrink-0 rounded-sm bg-pink-400/15 px-1.5 py-0.5 text-[10px] text-pink-400 font-bold">
                       LV{{ userLevel }}
                     </span>
                     <span
                       v-if="isVip"
-                      class="shrink-0 rounded bg-violet-400/15 px-1.5 py-0.5 text-[10px] text-violet-300 font-bold">
+                      class="shrink-0 rounded-sm bg-violet-400/15 px-1.5 py-0.5 text-[10px] text-violet-300 font-bold">
                       {{ vipLabel }}
                     </span>
                     <span
                       v-if="isSeniorMember"
-                      class="shrink-0 rounded bg-sky-400/15 px-1.5 py-0.5 text-[10px] text-sky-300 font-bold">
+                      class="shrink-0 rounded-sm bg-sky-400/15 px-1.5 py-0.5 text-[10px] text-sky-300 font-bold">
                       硬核会员
                     </span>
                   </div>
@@ -190,7 +192,7 @@
                   <div
                     v-tooltip.right="'检测Mp4box是否正常'"
                     class="i-mdi-lightning-bolt-circle cursor-pointer hover:shadow"
-                    :class="[isValidEngine ? 'color-green' : 'color-red']"
+                    :class="[isValidEngine ? 'text-green-400' : 'text-red-400']"
                     @click="checkMp4Box(true)"></div>
                 </div>
                 <InputGroup>

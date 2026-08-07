@@ -58,15 +58,11 @@
     </div>
 
     <!-- Status Text -->
-    <div
-      class="mt-4 w-full text-sm text-gray-200"
-      flex="~ items-center justify-center">
+    <div class="mt-4 w-full text-sm text-gray-200 flex items-center justify-center">
       <div v-if="status === 'loading'">正在加载二维码...</div>
       <div v-else-if="status === 'loaded'">
         <div class="mb-1">请使用 Bilibili 移动端扫码</div>
-        <div
-          class="font-size-3 color-gray-200"
-          flex="~ justify-center items-center">
+        <div class="text-xs text-gray-200 flex items-center justify-center">
           <div>即将于</div>
           <div class="w-10 text-center text-pink-500 font-mono">{{ countdown }}s</div>
           <div>后过期</div>
@@ -89,7 +85,7 @@
       </div>
       <div
         v-else
-        class="w-50 overflow-hidden text-align-center text-wrap text-xs color-gray font-400 line-height-relaxed font-italic">
+        class="w-50 overflow-hidden text-center text-wrap text-xs text-gray-400 font-normal leading-relaxed italic">
         <div>为避免触发 B 站风控</div>
         <div>登录后会一次性获取所有收藏夹视频</div>
         <div>后续可手动刷新</div>

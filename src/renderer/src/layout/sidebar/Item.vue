@@ -4,7 +4,7 @@
     :draggable="false"
     class="h-11 w-11 flex select-none items-center justify-center rounded-xl transition-all duration-300"
     :class="
-      isActive ? 'bg-pink/15 text-pink ring-1 ring-pink/20' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
+      isActive ? 'bg-pink-400/15 text-pink ring-1 ring-pink/20' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
     ">
     <span :class="icon"></span>
   </RouterLink>

@@ -1,5 +1,6 @@
 <template>
-  <div class="bg-card cursor-pointer rounded-xl p-3">
+  <div
+    class="border border-black/5 bg-[#121212] shadow-sm shadow-black/50 hover:bg-[#202020] cursor-pointer rounded-xl p-3">
     <!-- 展示区 -->
     <div class="flex items-center gap-3">
       <div class="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg bg-gray-900">
@@ -14,17 +15,17 @@
           class="h-full w-full flex items-center justify-center text-xl text-gray-600">
           <i class="i-mdi-television-play"></i>
         </div>
-        <span class="absolute bottom-1 right-1 rounded bg-black/60 px-1 py-0.5 text-[10px] text-light">
+        <span class="absolute bottom-1 right-1 rounded-sm bg-black/60 px-1 py-0.5 text-[10px] text-[#f6f6f6]">
           {{ formatDuration(video.duration) }}
         </span>
       </div>
 
       <div class="min-w-0 flex-1">
-        <div class="truncate text-sm text-light font-medium">{{ video.title }}</div>
+        <div class="truncate text-sm text-[#f6f6f6] font-medium">{{ video.title }}</div>
         <div class="mt-2 flex items-center justify-between gap-2">
           <div class="min-w-0 flex items-center gap-1 text-xs text-gray-400">
             <span
-              class="h-4 w-6 flex shrink-0 items-center justify-center rounded bg-pink/20 text-[9px] text-pink-400 font-bold leading-none">
+              class="h-4 w-6 flex shrink-0 items-center justify-center rounded-sm bg-pink-400/20 text-[9px] text-pink-400 font-bold leading-none">
               UP
             </span>
             <span class="truncate">{{ video.upper.name }}</span>

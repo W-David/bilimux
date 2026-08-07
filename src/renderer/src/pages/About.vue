@@ -76,9 +76,9 @@ onUnmounted(() => {
         <div class="group relative cursor-default">
           <!-- Glow effects -->
           <div
-            class="absolute rounded-full from-blue-500/20 to-purple-500/20 bg-gradient-to-r opacity-0 blur-3xl transition-opacity duration-700 -inset-8 group-hover:opacity-100"></div>
+            class="absolute rounded-full from-blue-500/20 to-purple-500/20 bg-linear-to-r opacity-0 blur-3xl transition-opacity duration-700 -inset-8 group-hover:opacity-100"></div>
           <div
-            class="absolute rounded-full from-blue-500/10 to-purple-500/10 bg-gradient-to-r opacity-100 blur-2xl -inset-4"></div>
+            class="absolute rounded-full from-blue-500/10 to-purple-500/10 bg-linear-to-r opacity-100 blur-2xl -inset-4"></div>
 
           <img
             src="../assets/bilimux.svg"
@@ -88,7 +88,7 @@ onUnmounted(() => {
 
         <div class="relative text-center space-y-2">
           <h1
-            class="from-pink to-sky bg-gradient-to-r bg-clip-text text-4xl text-transparent font-black tracking-tight drop-shadow-sm">
+            class="from-pink-400 to-sky-400 bg-linear-to-r bg-clip-text text-4xl text-transparent font-black tracking-tight drop-shadow-sm">
             BiliMux
           </h1>
           <p class="text-sm text-gray-400 font-medium tracking-wide opacity-90">B站缓存视频转换工具</p>
@@ -128,7 +128,7 @@ onUnmounted(() => {
       <div class="mt-12 flex flex-col items-center gap-2">
         <div class="flex items-center gap-1.5 text-xs text-gray-500 font-medium transition-colors hover:text-gray-400">
           <span>Designed & Developed by</span>
-          <span class="from-blue-400 to-purple-400 bg-gradient-to-r bg-clip-text text-transparent font-bold">
+          <span class="from-blue-400 to-purple-400 bg-linear-to-r bg-clip-text text-transparent font-bold">
             rushwang
           </span>
         </div>

@@ -1,10 +1,6 @@
 <template>
-  <div
-    class="h-full w-full overflow-hidden"
-    flex="~ col justify-center items-center">
-    <div
-      class="h-100 w-100"
-      flex="~ col items-center">
+  <div class="h-full w-full overflow-hidden flex flex-col items-center justify-center">
+    <div class="h-100 w-100 flex flex-col items-center">
       <Qrcode class="w-full flex-auto"></Qrcode>
     </div>
   </div>

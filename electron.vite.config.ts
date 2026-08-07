@@ -1,8 +1,8 @@
 import { PrimeVueResolver } from '@primevue/auto-import-resolver'
+import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'electron-vite'
 import path from 'path'
-import UnoCSS from 'unocss/vite'
 import Components from 'unplugin-vue-components/vite'
 import Inspector from 'unplugin-vue-inspector/vite'
 
@@ -42,9 +42,7 @@ export default defineConfig({
     },
     plugins: [
       vue(),
-      UnoCSS({
-        configFile: './uno.config.ts'
-      }),
+      tailwindcss(),
       Components({
         dirs: ['src/renderer/src/components', 'src/renderer/src/layout'],
         resolvers: [PrimeVueResolver()]
