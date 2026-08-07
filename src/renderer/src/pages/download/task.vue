@@ -5,19 +5,17 @@
       <div class="min-w-0 flex items-center gap-3">
         <Avatar
           v-if="userFace"
-          shape="circle"
-          size="large">
-          <img
+          size="lg">
+          <AvatarImage
             :src="safeCover(userFace)"
-            referrerpolicy="no-referrer"
-            class="h-full w-full rounded-full object-cover"
             alt="" />
+          <AvatarFallback>{{ (userName || 'Bili').slice(0, 1) }}</AvatarFallback>
         </Avatar>
         <Avatar
           v-else
-          :label="(userName || 'Bili').slice(0, 1)"
-          shape="circle"
-          size="large"></Avatar>
+          size="lg">
+          <AvatarFallback>{{ (userName || 'Bili').slice(0, 1) }}</AvatarFallback>
+        </Avatar>
         <div class="min-w-0">
           <div class="flex items-center gap-2">
             <span
@@ -55,12 +53,12 @@
       </div>
       <div class="flex flex-none items-center gap-2">
         <Button
-          label="退出登录"
-          icon="i-mdi-logout"
-          size="small"
-          severity="secondary"
-          variant="info"
-          @click="showLogoutDialog = true"></Button>
+          size="sm"
+          variant="outline"
+          @click="showLogoutDialog = true">
+          <LogOutIcon data-icon="inline-start" />
+          退出登录
+        </Button>
       </div>
     </div>
 
@@ -82,32 +80,30 @@
     </div>
 
     <!-- 退出登录确认弹窗 -->
-    <Dialog
-      v-model:visible="showLogoutDialog"
-      modal
-      header="退出登录"
-      :style="{ width: '420px', maxWidth: '90vw' }">
-      <p class="text-sm text-gray-300">确定要退出当前账号吗？退出后将清除本地保存的登录信息。</p>
-      <template #footer>
-        <Button
-          label="取消"
-          severity="secondary"
-          size="small"
-          variant="text"
-          :disabled="loggingOut"
-          @click="showLogoutDialog = false"></Button>
-        <Button
-          label="退出登录"
-          severity="danger"
-          size="small"
-          :loading="loggingOut"
-          @click="handleLogout"></Button>
-      </template>
-    </Dialog>
+    <AlertDialog v-model:open="showLogoutDialog">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>退出登录</AlertDialogTitle>
+          <AlertDialogDescription>确定要退出当前账号吗？退出后将清除本地保存的登录信息。</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel :disabled="loggingOut">取消</AlertDialogCancel>
+          <AlertDialogAction
+            :disabled="loggingOut"
+            @click="handleLogout">
+            <Spinner
+              v-if="loggingOut"
+              data-icon="inline-start" />
+            退出登录
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>
 
 <script setup lang="ts">
+import { LogOut as LogOutIcon } from '@lucide/vue'
 import { getDownloadHistories, getDownloadHistory, subscribeDownloadItemEndEvent } from '@renderer/api'
 import FavoritesRefreshProgress from '@renderer/components/FavoritesRefreshProgress.vue'
 import FolderList from '@renderer/components/FolderList.vue'

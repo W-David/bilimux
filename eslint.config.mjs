@@ -1,15 +1,13 @@
 import tseslint from '@electron-toolkit/eslint-config-ts'
-import unocss from '@unocss/eslint-config/flat'
 import eslintPluginPrettier from 'eslint-plugin-prettier/recommended'
 import eslintPluginVue from 'eslint-plugin-vue'
-import {defineConfig} from 'eslint/config'
+import { defineConfig } from 'eslint/config'
 import vueParser from 'vue-eslint-parser'
 import prettierConfig from './.prettierrc.mjs'
 
 export default defineConfig(
   { ignores: ['**/node_modules', '**/dist', '**/out', '.github'] },
   tseslint.configs.recommended,
-  unocss,
   eslintPluginVue.configs['flat/recommended'],
   {
     files: ['**/*.vue'],
@@ -49,10 +47,7 @@ export default defineConfig(
     files: ['**/*.{ts,mts,tsx,vue}'],
     rules: {
       ...eslintPluginPrettier.rules,
-      'prettier/prettier': [
-        'error',
-        prettierConfig
-      ]
+      'prettier/prettier': ['error', prettierConfig]
     }
   }
 )

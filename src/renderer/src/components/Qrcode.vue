@@ -9,7 +9,7 @@
         <div
           v-if="status === 'loading'"
           class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-zinc-900/90 backdrop-blur-sm">
-          <div class="i-mdi-loading animate-spin text-3xl text-pink-500"></div>
+          <Loader2Icon class="size-8 animate-spin text-pink-500" />
         </div>
 
         <!-- Loaded QR Code Image -->
@@ -26,7 +26,7 @@
         <div
           v-else-if="status === 'scanned'"
           class="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-xl bg-zinc-900/90 p-4 text-center backdrop-blur-md">
-          <div class="i-mdi-cellphone-check animate-pulse text-5xl text-green-500"></div>
+          <SmartphoneIcon class="size-10 animate-pulse text-green-500" />
         </div>
 
         <!-- Expired State -->
@@ -34,15 +34,14 @@
           v-else-if="status === 'expired'"
           class="absolute inset-0 z-20 flex flex-col cursor-pointer items-center justify-center rounded-xl bg-black/80 text-white backdrop-blur-sm transition-all hover:bg-black/90"
           @click="initQRCode">
-          <div
-            class="i-mdi-refresh text-4xl text-gray-400 transition-transform duration-500 group-hover:rotate-180"></div>
+          <RefreshCwIcon class="size-8 text-gray-400 transition-transform duration-500 group-hover:rotate-180" />
         </div>
 
         <!-- Success State -->
         <div
           v-else-if="status === 'success'"
           class="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-xl bg-zinc-900/95">
-          <div class="i-mdi-check-circle animate-bounce text-5xl text-green-500"></div>
+          <CircleCheckIcon class="size-10 animate-bounce text-green-500" />
         </div>
 
         <!-- Initial State -->
@@ -50,8 +49,8 @@
           v-else
           class="group absolute inset-0 z-10 flex flex-col cursor-pointer items-center justify-center border-2 border-zinc-700 rounded-xl border-dashed bg-zinc-800/50 transition-colors duration-300 hover:border-pink-500/50 hover:bg-zinc-800"
           @click="initQRCode">
-          <div
-            class="i-mdi-qrcode-scan mb-3 transform text-5xl text-gray-600 transition-colors duration-300 group-hover:scale-110 group-hover:text-pink-500"></div>
+          <QrCodeIcon
+            class="mb-3 size-10 text-gray-600 transition-colors duration-300 group-hover:scale-110 group-hover:text-pink-500" />
           <span class="text-xs text-gray-500 font-medium transition-colors group-hover:text-gray-300">获取二维码</span>
         </div>
       </Transition>
@@ -95,7 +94,13 @@
 </template>
 
 <script setup lang="ts">
-import { $dt } from '@primeuix/themes'
+import {
+  CircleCheck as CircleCheckIcon,
+  Loader2 as Loader2Icon,
+  QrCode as QrCodeIcon,
+  RefreshCw as RefreshCwIcon,
+  Smartphone as SmartphoneIcon
+} from '@lucide/vue'
 import { mittbus } from '@renderer/ipc'
 import { fetchCurrentUserInfo } from '@renderer/services/user'
 import { useAuthStore } from '@renderer/store/auth'
@@ -150,7 +155,7 @@ const initQRCode = async () => {
         margin: 1,
         width: 200,
         color: {
-          dark: $dt('pink.600').value as string,
+          dark: '#ec4899',
           light: '#ffffff'
         }
       })

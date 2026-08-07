@@ -6,11 +6,12 @@
       class="flex flex-1 flex-col items-center justify-center gap-4">
       <div class="text-sm text-red-400">{{ errorMessage }}</div>
       <Button
-        label="重试"
-        severity="danger"
-        size="small"
-        variant="text"
-        @click="emit('retry')"></Button>
+        size="sm"
+        variant="destructive"
+        @click="emit('retry')">
+        <RefreshCwIcon data-icon="inline-start" />
+        重试
+      </Button>
     </div>
 
     <!-- 未选择收藏夹 -->
@@ -44,6 +45,7 @@
 </template>
 
 <script setup lang="ts">
+import { RefreshCw as RefreshCwIcon } from '@lucide/vue'
 import type { DownloadHistoryRecord, FavoriteFolder, FavoriteResource } from '@shared/types'
 import VideoItem from './VideoItem.vue'
 

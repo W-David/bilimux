@@ -1,9 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn-vue/tailwind.css';
 @import './transition.css';
-
-@plugin '@egoist/tailwindcss-icons';
 
 @custom-variant dark (&:is(.dark *));
 

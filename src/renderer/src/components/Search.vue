@@ -8,12 +8,13 @@
     <div
       class="cursor-pointer flex items-center justify-center h-12 w-12 m-2 rounded-xl bg-pink-400/15 text-pink-400 transition-all duration-300 hover:ring-1 hover:ring-pink-400 hover:-translate-y-px"
       @click="emit('search', searchText)">
-      <div class="i-mdi-search"></div>
+      <SearchIcon class="size-5" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { Search as SearchIcon } from '@lucide/vue'
 import { ref } from 'vue'
 
 const searchText = ref('')

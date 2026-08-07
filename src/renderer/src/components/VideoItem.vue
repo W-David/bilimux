@@ -13,7 +13,7 @@
         <div
           v-else
           class="h-full w-full flex items-center justify-center text-xl text-gray-600">
-          <i class="i-mdi-television-play"></i>
+          <TvIcon class="size-6" />
         </div>
         <span class="absolute bottom-1 right-1 rounded-sm bg-black/60 px-1 py-0.5 text-[10px] text-[#f6f6f6]">
           {{ formatDuration(video.duration) }}
@@ -48,6 +48,7 @@
 </template>
 
 <script setup lang="ts">
+import { Tv as TvIcon } from '@lucide/vue'
 import DownloadStatus from '@renderer/components/DownloadStatus.vue'
 import { formatDuration, safeCover } from '@renderer/utils/media'
 import type { DownloadHistoryRecord, FavoriteResource } from '@shared/types'

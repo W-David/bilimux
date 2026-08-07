@@ -3,9 +3,9 @@
     <div
       v-if="items.length === 0"
       class="h-full flex flex-col items-center justify-center gap-3 text-gray-400">
-      <i
-        :class="emptyIcon"
-        class="text-4xl"></i>
+      <component
+        :is="emptyIcon"
+        class="size-10" />
       <span class="text-sm">{{ emptyText }}</span>
     </div>
 
@@ -21,17 +21,19 @@
 </template>
 
 <script setup lang="ts">
+import { Inbox as InboxIcon } from '@lucide/vue'
+import type { Component } from 'vue'
 import ConvertTaskItem, { type ConvertTask } from './ConvertTaskItem.vue'
 
 withDefaults(
   defineProps<{
     items: ConvertTask[]
     emptyText?: string
-    emptyIcon?: string
+    emptyIcon?: Component
   }>(),
   {
     emptyText: '暂无任务',
-    emptyIcon: 'i-mdi-inbox-outline'
+    emptyIcon: InboxIcon
   }
 )
 </script>

@@ -16,14 +16,10 @@
                 'bg-blue-500/10 text-blue-500': status === ConvertStatus.Scanning,
                 'bg-orange-500/10 text-orange-500': status === ConvertStatus.Processing
               }">
-              <div
+              <component
+                :is="statusIcon"
                 class="text-xl"
-                :class="{
-                  'i-mdi-check-circle': status === ConvertStatus.Success,
-                  'i-mdi-search': status === ConvertStatus.Scanning,
-                  'i-mdi-close-circle': status === ConvertStatus.Error,
-                  'i-mdi-loading animate-spin': status === ConvertStatus.Processing
-                }"></div>
+                :class="{ 'animate-spin': status === ConvertStatus.Processing }" />
             </div>
 
             <!-- 状态文本 -->
@@ -80,11 +76,10 @@
         </div>
 
         <Button
-          size="large"
-          rounded-sm
+          size="lg"
           class="border-none bg-pink-400 px-8 py-4 text-xl font-bold shadow transition-all hover:shadow-2xl hover:-translate-y-1"
           @click="start">
-          <i class="i-mdi-play mr-2 text-2xl"></i>
+          <PlayIcon class="mr-2 size-6" />
           开始转换
         </Button>
       </div>
@@ -107,13 +102,13 @@
         <div
           v-if="status === ConvertStatus.Scanning"
           class="h-full w-full flex">
-          <div class="i-mdi-file-document-box-search-outline m-auto animate-pulse text-[5rem] text-pink-400"></div>
+          <FileSearchIcon class="m-auto size-20 animate-pulse text-pink-400" />
         </div>
 
         <div
           v-if="status === ConvertStatus.Error"
           class="h-full w-full flex">
-          <div class="i-mdi-file-document-remove-outline m-auto text-[5rem] text-gray-400"></div>
+          <FileXIcon class="m-auto size-20 text-gray-400" />
         </div>
       </div>
     </Transition>
@@ -127,40 +122,36 @@
           <div class="flex gap-2">
             <Button
               v-if="status === ConvertStatus.Success"
-              severity="help"
-              size="small"
-              variant="text"
+              size="sm"
+              variant="ghost"
               @click="reset">
-              <i class="i-mdi-step-backward mr-1"></i>
+              <StepBackIcon class="mr-1 size-4" />
               返回
             </Button>
 
             <Button
               v-if="status === ConvertStatus.Success"
-              severity="success"
-              size="small"
-              variant="text"
+              size="sm"
+              variant="ghost"
               @click="openOutputFolder">
-              <i class="i-mdi-folder-open mr-1"></i>
+              <FolderOpenIcon class="mr-1 size-4" />
               打开输出目录
             </Button>
             <Button
               v-if="status === ConvertStatus.Error"
-              severity="danger"
-              size="small"
-              variant="text"
+              size="sm"
+              variant="ghost"
               @click="reset">
-              <i class="i-mdi-refresh mr-1"></i>
+              <RefreshCwIcon class="mr-1 size-4" />
               重试
             </Button>
 
             <Button
               v-if="status === ConvertStatus.Error"
-              severity="help"
-              size="small"
-              variant="text"
+              size="sm"
+              variant="ghost"
               @click="openSetting">
-              <i class="i-mdi-cog mr-1"></i>
+              <SettingsIcon class="mr-1 size-4" />
               打开设置
             </Button>
           </div>
@@ -185,6 +176,19 @@ import {
 import ConvertTaskItem, { type ConvertTask } from '@renderer/components/ConvertTaskItem.vue'
 import { mittbus } from '@renderer/ipc'
 import { usePreferenceStore } from '@renderer/store/preference'
+import {
+  CheckCircle as CheckCircleIcon,
+  CircleX as CircleXIcon,
+  FileSearch as FileSearchIcon,
+  FileX as FileXIcon,
+  FolderOpen as FolderOpenIcon,
+  Loader2 as Loader2Icon,
+  Play as PlayIcon,
+  RefreshCw as RefreshCwIcon,
+  Search as SearchIcon,
+  Settings as SettingsIcon,
+  StepBack as StepBackIcon
+} from '@lucide/vue'
 import logger from 'electron-log/renderer'
 import { storeToRefs } from 'pinia'
 import { computed, onUnmounted, reactive, ref } from 'vue'
@@ -204,6 +208,21 @@ enum ConvertStatus {
 }
 
 const status = ref<ConvertStatus>(ConvertStatus.Idle)
+
+const statusIcon = computed(() => {
+  switch (status.value) {
+    case ConvertStatus.Success:
+      return CheckCircleIcon
+    case ConvertStatus.Scanning:
+      return SearchIcon
+    case ConvertStatus.Error:
+      return CircleXIcon
+    case ConvertStatus.Processing:
+      return Loader2Icon
+    default:
+      return null
+  }
+})
 
 const successMessage = reactive({
   success: 0,

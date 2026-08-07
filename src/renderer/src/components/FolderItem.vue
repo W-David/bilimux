@@ -23,7 +23,7 @@
           <div
             v-else
             class="h-full w-full flex items-center justify-center text-xl text-gray-600">
-            <i class="i-mdi-television-play"></i>
+            <TvIcon class="size-6" />
           </div>
           <div
             v-if="folder.ctime"
@@ -35,7 +35,12 @@
       <div class="min-w-0 flex-1">
         <div class="truncate text-sm font-medium">{{ folder.title }}</div>
         <div class="mt-2 flex items-center gap-1.5 text-xs text-gray-400">
-          <i :class="isPrivateFolder(folder) ? 'i-mdi-lock-outline' : 'i-mdi-earth'"></i>
+          <LockIcon
+            v-if="isPrivateFolder(folder)"
+            class="size-4" />
+          <GlobeIcon
+            v-else
+            class="size-4" />
           <span>
             {{ isPrivateFolder(folder) ? '私密' : '公开' }}
           </span>
@@ -47,6 +52,7 @@
 </template>
 
 <script setup lang="ts">
+import { Globe as GlobeIcon, Lock as LockIcon, Tv as TvIcon } from '@lucide/vue'
 import type { FavoriteFolderData } from '@renderer/services/favorites'
 import { formatDate, isPrivateFolder, safeCover } from '@renderer/utils/media'
 

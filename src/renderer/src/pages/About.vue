@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import {
+  BadgeCheck as BadgeCheckIcon,
+  Bug as BugIcon,
+  Info as InfoIcon,
+  Loader2 as Loader2Icon,
+  RefreshCw as RefreshCwIcon
+} from '@lucide/vue'
 import { checkForUpdate, getAppVersion } from '@renderer/api'
 import logger from 'electron-log/renderer'
 import { computed, onUnmounted, ref } from 'vue'
@@ -35,28 +42,29 @@ const versionList = computed(() => [
   {
     label: `v${appVersion.value}`,
     value: isChecking.value ? '检查中...' : '检查更新',
-    icon: isChecking.value ? 'i-mdi-loading animate-spin' : 'i-mdi-update',
+    icon: isChecking.value ? Loader2Icon : RefreshCwIcon,
+    spin: isChecking.value,
     color: 'text-blue-400',
     action: handleCheckUpdate
   },
   {
     label: 'About',
     value: '关于我们',
-    icon: 'i-mdi-about',
+    icon: InfoIcon,
     color: 'text-sky-400',
     link: 'https://github.com/W-David/bilimux' // Assuming a link or keep empty if not known
   },
   {
     label: 'License',
     value: '开源许可',
-    icon: 'i-mdi-license',
+    icon: BadgeCheckIcon,
     color: 'text-emerald-400',
     link: 'https://github.com/W-David/bilimux/blob/main/LICENSE'
   },
   {
     label: 'Bug Report',
     value: '问题反馈',
-    icon: 'i-mdi-bug',
+    icon: BugIcon,
     color: 'text-rose-400',
     link: 'https://github.com/W-David/bilimux/issues'
   }
@@ -108,7 +116,10 @@ onUnmounted(() => {
           <!-- Icon -->
           <div
             class="flex shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-110">
-            <div :class="[item.icon, item.color, 'text-3xl']"></div>
+            <component
+              :is="item.icon"
+              class="size-8"
+              :class="[item.color, { 'animate-spin': item.spin }]" />
           </div>
 
           <!-- Content -->

@@ -4,12 +4,10 @@
     "src/renderer/src/**/*",
     "src/renderer/src/**/*.vue",
     "src/preload/**/*",
-    "src/shared/**/*",
-    "uno.config.ts",
+    "src/shared/**/*"
   ],
   "compilerOptions": {
     "composite": true,
-    "types": ["primevue"],
     "paths": {
       "@renderer/*": [
         "./src/renderer/src/*"

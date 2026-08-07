@@ -8,9 +8,9 @@
         <div
           class="flex select-none items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors"
           :class="badgeClass">
-          <div
-            class="text-base"
-            :class="iconClass"></div>
+          <component
+            :is="statusIcon"
+            class="size-4" />
           <span>{{ statusLabel }}</span>
         </div>
       </div>
@@ -24,31 +24,45 @@
 
       <!-- 操作按钮 -->
       <div class="h-8 w-8 flex shrink-0 items-center justify-center">
-        <div
+        <CirclePlayIcon
           v-if="task.status === 'success'"
-          class="i-mdi-play-circle cursor-pointer text-2xl text-green-400 transition-transform duration-200 hover:scale-110 hover:text-green-300"
-          @click="openTaskFile"></div>
-        <div
-          v-else-if="task.status === 'fail'"
-          v-tooltip.left="task.message"
-          class="i-mdi-alert-circle cursor-help text-2xl text-red-400"></div>
-        <div
-          v-else-if="task.status === 'skipped'"
-          v-tooltip.left="task.message"
-          class="i-mdi-skip-next cursor-help text-2xl text-amber-400"></div>
-        <div
-          v-else-if="task.status === 'interrupted'"
-          v-tooltip.left="task.message"
-          class="i-mdi-pause-circle cursor-help text-2xl text-gray-400"></div>
-        <div
-          v-else-if="task.status === 'missing'"
-          v-tooltip.left="task.message"
-          class="i-mdi-file-question cursor-help text-2xl text-orange-400"></div>
-        <ProgressSpinner
+          class="size-6 cursor-pointer text-green-400 transition-transform duration-200 hover:scale-110 hover:text-green-300"
+          @click="openTaskFile" />
+        <TooltipProvider v-else-if="task.status === 'fail'">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <CircleAlertIcon class="size-6 cursor-help text-red-400" />
+            </TooltipTrigger>
+            <TooltipContent side="left">{{ task.message }}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider v-else-if="task.status === 'skipped'">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <SkipForwardIcon class="size-6 cursor-help text-amber-400" />
+            </TooltipTrigger>
+            <TooltipContent side="left">{{ task.message }}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider v-else-if="task.status === 'interrupted'">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <CirclePauseIcon class="size-6 cursor-help text-gray-400" />
+            </TooltipTrigger>
+            <TooltipContent side="left">{{ task.message }}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <TooltipProvider v-else-if="task.status === 'missing'">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <FileQuestionIcon class="size-6 cursor-help text-orange-400" />
+            </TooltipTrigger>
+            <TooltipContent side="left">{{ task.message }}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <Spinner
           v-else
-          :stroke-width="6"
-          class="h-5 w-5 shrink-0! [&_.p-progressspinner-value]:hidden! [&_.p-progressspinner-circle-range]:stroke-emerald-300! [&_.p-progressspinner-circle-track]:stroke-emerald-100/15!"
-          :value="task.progress" />
+          class="size-5 shrink-0" />
       </div>
     </div>
   </div>
@@ -71,6 +85,18 @@ export interface ConvertTask {
 </script>
 
 <script setup lang="ts">
+import {
+  CircleAlert as CircleAlertIcon,
+  CircleCheck as CircleCheckIcon,
+  CirclePause as CirclePauseIcon,
+  CirclePlay as CirclePlayIcon,
+  FileOutput as FileOutputIcon,
+  FileQuestion as FileQuestionIcon,
+  Hourglass as HourglassIcon,
+  Import as ImportIcon,
+  PencilLine as PencilLineIcon,
+  SkipForward as SkipForwardIcon
+} from '@lucide/vue'
 import { openPath } from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
 import { computed } from 'vue'
@@ -107,17 +133,30 @@ const badgeClass = computed(() => ({
     props.task.status === 'preprocess' || props.task.status === 'importing' || props.task.status === 'writing'
 }))
 
-const iconClass = computed(() => ({
-  'i-mdi-import': props.task.status === 'importing',
-  'i-mdi-export': props.task.status === 'writing',
-  'i-mdi-progress-pencil': props.task.status === 'preprocess',
-  'i-mdi-check-circle': props.task.status === 'success',
-  'i-mdi-alert-circle': props.task.status === 'fail',
-  'i-mdi-skip-next': props.task.status === 'skipped',
-  'i-mdi-pause-circle': props.task.status === 'interrupted',
-  'i-mdi-file-question': props.task.status === 'missing',
-  'i-mdi-timer-sand': props.task.status === 'waiting'
-}))
+const statusIcon = computed(() => {
+  switch (props.task.status) {
+    case 'importing':
+      return ImportIcon
+    case 'writing':
+      return FileOutputIcon
+    case 'preprocess':
+      return PencilLineIcon
+    case 'success':
+      return CircleCheckIcon
+    case 'fail':
+      return CircleAlertIcon
+    case 'skipped':
+      return SkipForwardIcon
+    case 'interrupted':
+      return CirclePauseIcon
+    case 'missing':
+      return FileQuestionIcon
+    case 'waiting':
+      return HourglassIcon
+    default:
+      return HourglassIcon
+  }
+})
 
 /**
  * 使用系统默认程序打开视频文件

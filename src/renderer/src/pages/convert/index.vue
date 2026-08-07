@@ -13,20 +13,22 @@
       </div>
       <div class="flex flex-none items-center gap-2">
         <Button
-          label="清空历史"
-          icon="i-mdi-trash-can-outline"
-          size="small"
-          variant="text"
+          size="sm"
+          variant="ghost"
           :disabled="convertStore.runStatus === 'scanning' || convertStore.runStatus === 'processing'"
-          class="bg-red-400/5 text-red"
-          @click="showClearDialog = true"></Button>
+          class="bg-red-400/5 text-red-400"
+          @click="showClearDialog = true">
+          <Trash2Icon data-icon="inline-start" />
+          清空历史
+        </Button>
         <Button
-          label="输出目录"
-          icon="i-mdi-folder-open"
-          size="small"
-          variant="text"
+          size="sm"
+          variant="ghost"
           class="bg-gray-400/5 text-gray-400"
-          @click="openOutputFolder"></Button>
+          @click="openOutputFolder">
+          <FolderOpenIcon data-icon="inline-start" />
+          输出目录
+        </Button>
       </div>
     </div>
 
@@ -43,7 +45,9 @@
             route.name === tab.name ? tab.activeClass : tab.inactiveClass
           ]"
           @click="switchTab(tab.name)">
-          <i :class="tab.icon"></i>
+          <component
+            :is="tab.icon"
+            class="size-4" />
           <span>{{ tab.label }}</span>
           <span
             class="absolute right-0 z-10 h-[12px] min-w-8 flex items-center justify-center border border border-black/20 rounded-[6px] border-solid bg-[#222222] px-[3px] text-[8px] text-white shadow-[#222222] shadow-sm -top-2">
@@ -54,11 +58,12 @@
       <div class="flex items-center justify-end gap-2">
         <div class="flex flex-none items-center gap-2">
           <Button
-            label="开始转换"
-            icon="i-mdi-play"
-            size="small"
+            size="sm"
             :disabled="convertStore.runStatus === 'scanning' || convertStore.runStatus === 'processing'"
-            @click="convertStore.start()"></Button>
+            @click="convertStore.start()">
+            <PlayIcon data-icon="inline-start" />
+            开始转换
+          </Button>
         </div>
       </div>
     </div>
@@ -80,30 +85,30 @@
     </div>
 
     <!-- 清空历史确认弹窗 -->
-    <Dialog
-      v-model:visible="showClearDialog"
-      modal
-      header="清空转换历史"
-      :style="{ width: '420px', maxWidth: '90vw' }">
-      <p class="text-sm text-gray-300">确定要清空全部转换历史吗？此操作不可恢复。</p>
-      <template #footer>
-        <Button
-          label="取消"
-          severity="secondary"
-          size="small"
-          variant="text"
-          @click="showClearDialog = false"></Button>
-        <Button
-          label="清空"
-          severity="danger"
-          size="small"
-          @click="handleClearHistory"></Button>
-      </template>
-    </Dialog>
+    <AlertDialog v-model:open="showClearDialog">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>清空转换历史</AlertDialogTitle>
+          <AlertDialogDescription>确定要清空全部转换历史吗？此操作不可恢复。</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogAction @click="handleClearHistory">清空</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>
 
 <script setup lang="ts">
+import {
+  CircleCheck as CircleCheckIcon,
+  CircleX as CircleXIcon,
+  FolderOpen as FolderOpenIcon,
+  List as ListIcon,
+  Play as PlayIcon,
+  Trash2 as Trash2Icon
+} from '@lucide/vue'
 import { openPath } from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
 import { useConvertStore } from '@renderer/store/convert'
@@ -122,7 +127,7 @@ const tabs = [
   {
     name: 'convert-manager-entire',
     label: '全部任务',
-    icon: 'i-mdi-view-list-outline',
+    icon: ListIcon,
     countKey: 'entire',
     activeClass: 'bg-violet-500 !text-white',
     inactiveClass: ''
@@ -130,7 +135,7 @@ const tabs = [
   {
     name: 'convert-manager-complete',
     label: '已完成',
-    icon: 'i-mdi-check-circle-outline',
+    icon: CircleCheckIcon,
     countKey: 'completed',
     activeClass: 'bg-emerald-600 !text-white',
     inactiveClass: ''
@@ -138,7 +143,7 @@ const tabs = [
   {
     name: 'convert-manager-unconverted',
     label: '未完成',
-    icon: 'i-mdi-close-circle-outline',
+    icon: CircleXIcon,
     countKey: 'unconverted',
     activeClass: 'bg-rose-400 !text-white',
     inactiveClass: ''

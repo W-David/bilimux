@@ -1,4 +1,3 @@
-import { PrimeVueResolver } from '@primevue/auto-import-resolver'
 import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'electron-vite'
@@ -44,8 +43,7 @@ export default defineConfig({
       vue(),
       tailwindcss(),
       Components({
-        dirs: ['src/renderer/src/components', 'src/renderer/src/layout'],
-        resolvers: [PrimeVueResolver()]
+        dirs: ['src/components', 'src/layout']
       }),
       Inspector({
         enabled: false

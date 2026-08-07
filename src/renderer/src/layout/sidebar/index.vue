@@ -22,6 +22,13 @@
 </template>
 
 <script setup lang="ts">
+import {
+  Download as DownloadIcon,
+  Info as InfoIcon,
+  List as ListIcon,
+  RotateCw as RotateCwIcon,
+  Settings as SettingsIcon
+} from '@lucide/vue'
 import logger from 'electron-log/renderer'
 import { onUnmounted, ref } from 'vue'
 import SidebarItem from './Item.vue'
@@ -29,17 +36,17 @@ import SidebarItem from './Item.vue'
 const hItems = ref([
   {
     label: '转换',
-    icon: 'i-mdi-sync-circle text-2xl',
+    icon: RotateCwIcon,
     to: { name: 'convert' }
   },
   {
     label: '转换管理',
-    icon: 'i-mdi-format-list-bulleted text-2xl',
+    icon: ListIcon,
     to: { name: 'convert-manager', activeMenu: 'convert-manager' }
   },
   {
     label: '下载',
-    icon: 'i-mdi-download text-2xl',
+    icon: DownloadIcon,
     to: { name: 'download-task', activeMenu: 'download' }
   }
 ])
@@ -47,12 +54,12 @@ const hItems = ref([
 const fItems = ref([
   {
     label: '关于',
-    icon: 'i-mdi-information text-2xl',
+    icon: InfoIcon,
     to: { name: 'about' }
   },
   {
     label: '设置',
-    icon: 'i-mdi-cog text-2xl',
+    icon: SettingsIcon,
     to: { name: 'prefer' }
   }
 ])

@@ -1,28 +1,45 @@
 <template>
   <div class="flex items-center gap-1">
     <!-- 状态胶囊按钮 -->
-    <div
-      v-tooltip.top="status === 'fail' ? message : undefined"
-      class="relative h-7 min-w-20 flex cursor-pointer select-none items-center justify-center overflow-hidden border rounded-full px-2 text-xs transition-colors"
-      :class="rootClass"
-      role="button"
-      tabindex="0"
-      @click="handleClick">
-      <!-- 下载进度背景 -->
-      <div
-        v-if="isProgressing"
-        class="absolute inset-y-0 left-0 bg-pink-400/25 transition-all duration-300"
-        :style="{ width: `${progress}%` }"></div>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <div
+            class="relative h-7 min-w-20 flex cursor-pointer select-none items-center justify-center overflow-hidden border rounded-full px-2 text-xs transition-colors"
+            :class="rootClass"
+            role="button"
+            tabindex="0"
+            @click="handleClick">
+            <!-- 下载进度背景 -->
+            <div
+              v-if="isProgressing"
+              class="absolute inset-y-0 left-0 bg-pink-400/25 transition-all duration-300"
+              :style="{ width: `${progress}%` }"></div>
 
-      <span class="relative z-10 flex items-center gap-1">
-        <i :class="iconClass"></i>
-        <span>{{ label }}</span>
-      </span>
-    </div>
+            <span class="relative z-10 flex items-center gap-1">
+              <component
+                :is="statusIcon"
+                class="size-4"
+                :class="{ 'animate-spin': isMerging }" />
+              <span>{{ label }}</span>
+            </span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent v-if="status === 'fail'">{{ message }}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   </div>
 </template>
 
 <script setup lang="ts">
+import {
+  CircleAlert as CircleAlertIcon,
+  CirclePlay as CirclePlayIcon,
+  Download as DownloadIcon,
+  Pause as PauseIcon,
+  Play as PlayIcon,
+  Settings as SettingsIcon
+} from '@lucide/vue'
 import { openPath, pauseDownloadVideo, resumeDownloadVideo, startDownloadVideo } from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
 import { useDownloadStore } from '@renderer/store/download'
@@ -45,6 +62,7 @@ const outputPath = computed(() => item.value.outputPath)
 const isProgressing = computed(() =>
   ['waiting', 'downloading', 'preprocess', 'importing', 'writing'].includes(status.value)
 )
+const isMerging = computed(() => ['preprocess', 'importing', 'writing'].includes(status.value))
 
 const rootClass = computed(() => {
   switch (status.value) {
@@ -61,26 +79,26 @@ const rootClass = computed(() => {
   }
 })
 
-const iconClass = computed(() => {
+const statusIcon = computed(() => {
   switch (status.value) {
     case 'success':
-      return 'i-mdi-play-circle'
+      return CirclePlayIcon
     case 'fail':
-      return 'i-mdi-alert-circle'
+      return CircleAlertIcon
     case 'paused':
-      return 'i-mdi-play'
+      return PlayIcon
     case 'downloading':
-      return 'i-mdi-pause'
+      return PauseIcon
     case 'waiting':
-      return 'i-mdi-pause'
+      return PauseIcon
     case 'preprocess':
-      return 'i-mdi-cog animate-spin'
+      return SettingsIcon
     case 'importing':
-      return 'i-mdi-cog animate-spin'
+      return SettingsIcon
     case 'writing':
-      return 'i-mdi-cog animate-spin'
+      return SettingsIcon
     default:
-      return 'i-mdi-download'
+      return DownloadIcon
   }
 })
 
