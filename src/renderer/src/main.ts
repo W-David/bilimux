@@ -43,14 +43,6 @@ app.directive('tooltip', Tooltip)
 app.use(ConfirmationService)
 app.use(PrimeVue, {
   ripple: false,
-  pt: {
-    toast: {
-      transition: {
-        enterActiveClass: 'p-toast-custom-enter-active',
-        leaveActiveClass: 'p-toast-custom-leave-active'
-      }
-    }
-  },
   theme: {
     preset: bilimuxPreset,
     options: {

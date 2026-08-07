@@ -1,4 +1,4 @@
-import type { ToastMessageOptions } from 'primevue'
+import type { ToastMessageOptions } from 'primevue/toast'
 
 type MittEventMap = {
   'toast:add': ToastMessageOptions

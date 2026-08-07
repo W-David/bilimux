@@ -1,5 +1,5 @@
 <template>
-  <div class="rounded-xl bg-gray-800/40 p-3 shadow-black/40 shadow-sm ring-1 ring-white/5">
+  <div class="bg-card cursor-pointer rounded-xl p-3">
     <!-- 展示区 -->
     <div class="flex items-center gap-3">
       <div class="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg bg-gray-900">
@@ -48,7 +48,7 @@
 
 <script setup lang="ts">
 import DownloadStatus from '@renderer/components/DownloadStatus.vue'
-import { safeCover, formatDuration } from '@renderer/utils/media'
+import { formatDuration, safeCover } from '@renderer/utils/media'
 import type { DownloadHistoryRecord, FavoriteResource } from '@shared/types'
 
 defineProps<{

@@ -61,6 +61,8 @@
       </div>
     </div>
 
+    <FavoritesRefreshProgress class="flex-none" />
+
     <div class="min-h-0 flex flex-1 overflow-hidden">
       <FolderList
         :folders="folders"
@@ -104,12 +106,13 @@
 
 <script setup lang="ts">
 import { getDownloadHistories, getDownloadHistory, subscribeDownloadItemEndEvent } from '@renderer/api'
+import FavoritesRefreshProgress from '@renderer/components/FavoritesRefreshProgress.vue'
 import FolderList from '@renderer/components/FolderList.vue'
 import VideoList from '@renderer/components/VideoList.vue'
 import { mittbus } from '@renderer/ipc'
-import { fetchAllFavorites, type FavoriteFolderData } from '@renderer/services/favorites'
-import { fetchCurrentUserInfo } from '@renderer/services/user'
+import { type FavoriteFolderData } from '@renderer/services/favorites'
 import { useAuthStore } from '@renderer/store/auth'
+import { useFavoritesStore } from '@renderer/store/favorites'
 import { usePreferenceStore } from '@renderer/store/preference'
 import { safeCover } from '@renderer/utils/media'
 import type { DownloadHistoryRecord } from '@shared/types'
@@ -119,6 +122,7 @@ import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
 const preferenceStore = usePreferenceStore()
+const favoritesStore = useFavoritesStore()
 const router = useRouter()
 
 const folders = computed(() => preferenceStore.preference['favorites-data']?.folders ?? [])
@@ -144,22 +148,11 @@ const historyMap = ref<Map<string, DownloadHistoryRecord>>(new Map())
  * 一次性获取当前用户的所有收藏夹及每个收藏夹内的全部视频
  */
 const loadData = async (): Promise<void> => {
-  if (refreshing.value) return
+  if (refreshing.value || favoritesStore.running) return
   refreshing.value = true
   errorMessage.value = ''
   try {
-    // 用户信息由登录时单独获取并持久化；老会话缺失时补一次
-    let currentUser = preferenceStore.preference['user-info']
-    if (!currentUser?.mid) {
-      currentUser = await fetchCurrentUserInfo()
-      preferenceStore.preference['user-info'] = currentUser
-      preferenceStore.savePreference()
-    }
-
-    const data = await fetchAllFavorites(currentUser.mid)
-    // 收藏数据写入全局 store 并持久化
-    preferenceStore.preference['favorites-data'] = data
-    preferenceStore.savePreference()
+    await favoritesStore.refreshAllFavorites()
 
     // 刷新后按 id 保留之前选中的收藏夹
     if (currentFolder.value) {

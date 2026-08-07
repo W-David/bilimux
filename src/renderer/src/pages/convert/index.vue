@@ -17,6 +17,7 @@
           icon="i-mdi-trash-can-outline"
           size="small"
           variant="text"
+          :disabled="convertStore.runStatus === 'scanning' || convertStore.runStatus === 'processing'"
           class="bg-red/5 text-red"
           @click="showClearDialog = true"></Button>
         <Button
@@ -37,8 +38,10 @@
           v-for="tab in tabs"
           :key="tab.name"
           type="button"
-          class="relative h-8 w-24 flex cursor-pointer items-center justify-center gap-2 border border-1 border-dark rounded-[16px] border-solid bg-dark text-sm shadow-black/20 shadow-sm transition-all duration-300"
-          :class="route.name === tab.name ? tab.activeClass : tab.inactiveClass"
+          :class="[
+            'relative h-8 w-24 flex cursor-pointer items-center justify-center gap-2  rounded-[16px]  text-sm  bg-card  transition-all duration-300 text-zinc hover:text-white',
+            route.name === tab.name ? tab.activeClass : tab.inactiveClass
+          ]"
           @click="switchTab(tab.name)">
           <i :class="tab.icon"></i>
           <span>{{ tab.label }}</span>
@@ -61,7 +64,7 @@
     </div>
 
     <!-- 分组视图（KeepAlive 缓存） -->
-    <div class="flex-1">
+    <div class="min-h-0 flex-1">
       <RouterView v-slot="{ Component, route: currentRoute }">
         <Transition
           :name="route.meta.transition || 'fade'"
@@ -121,7 +124,7 @@ const tabs = [
     label: '全部任务',
     icon: 'i-mdi-view-list-outline',
     countKey: 'entire',
-    activeClass: 'bg-violet-500 text-white',
+    activeClass: 'bg-violet-500 !text-white',
     inactiveClass: ''
   },
   {
@@ -129,15 +132,7 @@ const tabs = [
     label: '已完成',
     icon: 'i-mdi-check-circle-outline',
     countKey: 'completed',
-    activeClass: 'bg-emerald-600 text-white',
-    inactiveClass: ''
-  },
-  {
-    name: 'convert-manager-converting',
-    label: '进行中',
-    icon: 'i-mdi-progress-clock',
-    countKey: 'converting',
-    activeClass: 'bg-sky-400 text-white',
+    activeClass: 'bg-emerald-600 !text-white',
     inactiveClass: ''
   },
   {
@@ -145,7 +140,7 @@ const tabs = [
     label: '未完成',
     icon: 'i-mdi-close-circle-outline',
     countKey: 'unconverted',
-    activeClass: 'bg-rose-400 text-white',
+    activeClass: 'bg-rose-400 !text-white',
     inactiveClass: ''
   }
 ] as const

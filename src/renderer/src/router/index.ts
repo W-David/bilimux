@@ -3,7 +3,6 @@ import Main from '@renderer/layout/Main.vue'
 import About from '@renderer/pages/About.vue'
 import Convert from '@renderer/pages/Convert.vue'
 import ConvertComplete from '@renderer/pages/convert/complete.vue'
-import ConvertConverting from '@renderer/pages/convert/converting.vue'
 import ConvertEntire from '@renderer/pages/convert/entire.vue'
 import ConvertIndex from '@renderer/pages/convert/index.vue'
 import ConvertUnconverted from '@renderer/pages/convert/unconverted.vue'
@@ -66,22 +65,12 @@ const routes: RouteRecordRaw[] = [
                 }
               },
               {
-                path: 'converting',
-                name: 'convert-manager-converting',
-                component: ConvertConverting,
-                meta: {
-                  switchTransition: true,
-                  order: 3,
-                  activeMenu: 'convert-manager'
-                }
-              },
-              {
                 path: 'unconverted',
                 name: 'convert-manager-unconverted',
                 component: ConvertUnconverted,
                 meta: {
                   switchTransition: true,
-                  order: 4,
+                  order: 3,
                   activeMenu: 'convert-manager'
                 }
               }

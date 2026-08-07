@@ -1,7 +1,9 @@
 <template>
   <div
-    class="mb-2 cursor-pointer rounded-lg px-3 py-2.5 shadow-black/30 shadow-sm transition-colors"
-    :class="active ? 'bg-pink/5 text-pink-300 ring-1 ring-pink/10' : 'text-gray-200 hover:bg-gray-800/60'"
+    :class="[
+      'mb-2 cursor-pointer p-3 transition-al duration-200  shadow-black/50 shadow-sm hover:text-white rounded-xl',
+      active ? 'text-pink-300 bg-pink/10 shadow-black' : ''
+    ]"
     @click="emit('select', folder)">
     <div class="flex items-center gap-3">
       <div class="relative h-20 w-28 shrink-0 pt-4">
@@ -33,8 +35,8 @@
       <div class="min-w-0 flex-1">
         <div class="truncate text-sm font-medium">{{ folder.title }}</div>
         <div class="mt-2 flex items-center gap-1.5 text-xs text-gray-400">
-          <i :class="isPrivateFolder(folder) ? 'i-mdi-lock-outline text-pink-400' : 'i-mdi-earth text-violet-400'"></i>
-          <span :class="isPrivateFolder(folder) ? 'text-pink-400' : 'text-violet-400'">
+          <i :class="isPrivateFolder(folder) ? 'i-mdi-lock-outline' : 'i-mdi-earth'"></i>
+          <span>
             {{ isPrivateFolder(folder) ? '私密' : '公开' }}
           </span>
           <span>· {{ folder.media_count }} 个视频</span>

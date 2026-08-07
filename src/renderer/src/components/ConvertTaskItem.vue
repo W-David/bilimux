@@ -1,11 +1,5 @@
 <template>
-  <div
-    class="relative max-w-5xl min-w-2xl overflow-hidden rounded-xl bg-gray-800/40 p-3 shadow-sm ring-1 ring-white/5 backdrop-blur transition-all duration-300 hover:bg-gray-800/60 hover:shadow-lg hover:ring-white/10">
-    <!-- 背景进度条 -->
-    <div
-      class="absolute bottom-0 left-0 top-0 bg-green-500/5 transition-all duration-300 ease-out"
-      :style="{ width: `${task.progress}%` }"></div>
-
+  <div class="bg-card relative min-w-2xl w-full cursor-pointer overflow-hidden rounded-xl p-3">
     <!-- 内容区域 -->
     <div class="relative z-10 flex items-center justify-between gap-4">
       <!-- 状态徽章 -->
@@ -51,10 +45,9 @@
           class="i-mdi-file-question cursor-help text-2xl text-orange-400"></div>
         <ProgressSpinner
           v-else
-          class="h-5 w-5"
-          stroke-width="6"
-          fill="transparent"
-          animation-duration="1s" />
+          :stroke-width="6"
+          class="h-5 w-5 shrink-0! [&_.p-progressspinner-value]:hidden! [&_.p-progressspinner-circle-range]:stroke-emerald-300! [&_.p-progressspinner-circle-track]:stroke-emerald-100/15!"
+          :value="task.progress" />
       </div>
     </div>
   </div>

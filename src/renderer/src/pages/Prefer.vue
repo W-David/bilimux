@@ -129,6 +129,8 @@
                   @click="refreshFavoritesCache" />
               </div>
 
+              <FavoritesRefreshProgress />
+
               <div class="flex items-center justify-between">
                 <label class="font-normal">清空收藏夹缓存</label>
                 <Button
@@ -261,10 +263,11 @@ import {
   openLogFile,
   subscribeFetchPreferenceEvent
 } from '@renderer/api'
+import FavoritesRefreshProgress from '@renderer/components/FavoritesRefreshProgress.vue'
 import { mittbus } from '@renderer/ipc'
-import { fetchAllFavorites } from '@renderer/services/favorites'
 import { fetchCurrentUserInfo } from '@renderer/services/user'
 import { useAuthStore } from '@renderer/store/auth'
+import { useFavoritesStore } from '@renderer/store/favorites'
 import { usePreferenceStore } from '@renderer/store/preference'
 import { safeCover } from '@renderer/utils/media'
 import logger from 'electron-log/renderer'
@@ -276,6 +279,7 @@ const store = usePreferenceStore()
 const { preference } = storeToRefs(store)
 const { fetchPreference, savePreference } = store
 const authStore = useAuthStore()
+const favoritesStore = useFavoritesStore()
 const router = useRouter()
 const TABS = ref([
   { id: 'NORMAL_TAB', name: '常规设置' },
@@ -428,9 +432,7 @@ const refreshFavoritesCache = async (): Promise<void> => {
 
   refreshingFavorites.value = true
   try {
-    const data = await fetchAllFavorites(userInfo.mid)
-    preference.value['favorites-data'] = data
-    savePreference()
+    await favoritesStore.refreshAllFavorites()
     mittbus.emit('toast:add', {
       severity: 'success',
       summary: '成功',

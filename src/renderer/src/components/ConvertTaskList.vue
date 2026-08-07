@@ -11,7 +11,7 @@
 
     <div
       v-else
-      class="flex flex-col items-center gap-2 py-4">
+      class="flex flex-col items-center gap-3 p-4">
       <ConvertTaskItem
         v-for="item in items"
         :key="item.id"

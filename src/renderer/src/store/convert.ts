@@ -28,9 +28,9 @@ const HISTORY_STATUS_MAP: Record<ConvertHistoryRecord['status'], ConvertTask['st
 }
 
 const UNCONVERTED_HISTORY_STATUS = new Set(['failed', 'skipped', 'interrupted', 'missing'])
-const PROGRESSING_STATUS = new Set(['preprocess', 'importing', 'writing'])
-
 let listenersRegistered = false
+// 历史加载版本号：清空历史时递增，阻止清空前的异步加载结果把旧数据写回内存
+let historyVersion = 0
 
 /**
  * 转换任务全局 store：实时任务 + 转换历史合并，并提供分组视图数据
@@ -68,11 +68,6 @@ export const useConvertStore = defineStore('convert', () => {
     return [...live, ...historyTasks]
   })
 
-  /** 进行中：实时预处理/导入/写入 */
-  const convertingList = computed<ConvertTask[]>(() =>
-    Array.from(tasks.value.values()).filter(task => PROGRESSING_STATUS.has(task.status))
-  )
-
   /** 已完成：实时成功 + 历史完成（文件存在） */
   const completedList = computed<ConvertTask[]>(() => {
     const live = Array.from(tasks.value.values()).filter(task => task.status === 'success')
@@ -91,7 +86,6 @@ export const useConvertStore = defineStore('convert', () => {
 
   const counts = computed(() => ({
     unconverted: unconvertedList.value.length,
-    converting: convertingList.value.length,
     completed: completedList.value.length,
     entire: entireList.value.length
   }))
@@ -122,8 +116,11 @@ export const useConvertStore = defineStore('convert', () => {
 
   /** 从主进程加载转换历史 */
   const loadHistory = async (): Promise<void> => {
+    const version = historyVersion
     try {
-      history.value = await getConvertHistories()
+      const records = await getConvertHistories()
+      if (version !== historyVersion) return
+      history.value = records
     } catch (error) {
       logger.warn('加载转换历史失败:', error)
     }
@@ -131,9 +128,12 @@ export const useConvertStore = defineStore('convert', () => {
 
   /** 清空转换历史 */
   const clearHistory = async (): Promise<void> => {
+    // 先清空本地状态，保证 UI 立即生效；再删除数据库
+    historyVersion += 1
+    history.value = []
+    tasks.value = new Map()
     try {
       await clearConvertHistories()
-      history.value = []
     } catch (error) {
       logger.error('清空转换历史失败:', error)
       throw error
@@ -201,6 +201,8 @@ export const useConvertStore = defineStore('convert', () => {
       runStatus.value = 'success'
       successCount.value = count.success
       failCount.value = count.fail
+      // 转换结束后清除 live 任务残留，列表只保留历史记录
+      tasks.value = new Map()
       void loadHistory()
     })
 
@@ -218,7 +220,6 @@ export const useConvertStore = defineStore('convert', () => {
     successCount,
     failCount,
     unconvertedList,
-    convertingList,
     completedList,
     entireList,
     counts,
