@@ -34,6 +34,8 @@ const bilimuxPreset = definePreset(Aura, {
 const pinia = createPinia()
 const app = createApp(App)
 
+document.documentElement.classList.add('dark')
+
 app.use(pinia)
 app.use(router)
 app.use(ToastService)
