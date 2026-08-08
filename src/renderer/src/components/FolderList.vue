@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="w-72 flex shrink-0 flex-col"
-    style="border-right: 1px solid #1f1f1f">
+  <div class="w-72 flex shrink-0 flex-col border-r border-[#1f1f1f] border-solid">
     <div class="flex-1 overflow-y-auto p-3">
       <div
         v-if="folders.length === 0 && !errorMessage"

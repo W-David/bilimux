@@ -107,7 +107,7 @@ import { useAuthStore } from '@renderer/store/auth'
 import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
 import QRCode from 'qrcode'
-import { onUnmounted, ref } from 'vue'
+import { onActivated, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { checkQrCodeLoginStatus, getQrCode } from '../api/network'
 
@@ -180,6 +180,7 @@ const initQRCode = async () => {
 const resetState = () => {
   stopPolling()
   stopCountdown()
+  status.value = 'initial'
   qrCodeUrl.value = ''
   qrCodeKey.value = ''
   countdown.value = 180
@@ -295,6 +296,13 @@ const stopCountdown = () => {
 }
 
 logger.info('Qrcode created')
+
+// KeepAlive 复用缓存实例时，若已退出登录则重置为初始画面
+onActivated(() => {
+  if (!authStore.isAuthenticated) {
+    resetState()
+  }
+})
 
 onUnmounted(() => {
   resetState()

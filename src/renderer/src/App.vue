@@ -1,6 +1,7 @@
 <template>
   <RouterView />
   <Toaster
+    theme="dark"
     position="top-right"
     rich-colors
     :close-button="false" />

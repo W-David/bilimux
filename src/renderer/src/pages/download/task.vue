@@ -65,18 +65,18 @@
     <!-- 获取收藏夹中：骨架屏 -->
     <div
       v-if="favoritesStore.running"
-      class="min-h-0 flex flex-1 gap-3 overflow-hidden p-4">
-      <div class="flex w-72 shrink-0 flex-col gap-3">
+      class="min-h-0 flex flex-1 overflow-hidden">
+      <div class="flex w-72 shrink-0 flex-col gap-3 border-r border-[#1f1f1f] border-solid p-4">
         <Skeleton
           v-for="i in 6"
           :key="`folder-skeleton-${i}`"
-          class="h-16 w-full" />
+          class="h-25 w-full" />
       </div>
-      <div class="flex flex-1 flex-col gap-3">
+      <div class="flex flex-1 flex-col gap-3 p-4">
         <Skeleton
-          v-for="i in 4"
+          v-for="i in 6"
           :key="`video-skeleton-${i}`"
-          class="h-24 w-full" />
+          class="h-20 w-full" />
       </div>
     </div>
 

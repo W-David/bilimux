@@ -5,7 +5,7 @@
       <Tooltip>
         <TooltipTrigger as-child>
           <div
-            class="relative h-7 min-w-20 flex cursor-pointer select-none items-center justify-center overflow-hidden border rounded-full px-2 text-xs transition-colors"
+            class="relative h-7 min-w-20 flex cursor-pointer select-none items-center justify-center overflow-hidden rounded-full px-2 text-xs transition-colors shadow-sm shadow-black/10 hover:shadow-lg"
             :class="rootClass"
             role="button"
             tabindex="0"
@@ -67,15 +67,15 @@ const isMerging = computed(() => ['preprocess', 'importing', 'writing'].includes
 const rootClass = computed(() => {
   switch (status.value) {
     case 'success':
-      return 'border-green-400 text-green-400 bg-green-400/5 hover:bg-green-400/25'
+      return 'text-green-400 bg-green-400/5 hover:bg-green-400/25'
     case 'fail':
-      return 'border-red-400 text-red-400 bg-red-400/5 hover:bg-red-400/15'
+      return 'text-red-400 bg-red-400/5 hover:bg-red-400/15'
     case 'paused':
-      return 'border-slate-400 text-slate-300 bg-slate-400/5 hover:bg-slate-400/15'
+      return 'text-slate-300 bg-slate-400/5 hover:bg-slate-400/15'
     case 'idle':
-      return 'border-pink-400 text-pink-400 bg-pink-400/5 hover:bg-pink-400/15'
+      return 'text-pink-400 bg-pink-400/5 hover:bg-pink-400/15'
     default:
-      return 'border-pink-400 text-pink-400'
+      return 'text-pink-400'
   }
 })
 

@@ -1,6 +1,5 @@
 <template>
-  <div
-    class="border border-black/5 bg-[#121212] shadow-sm shadow-black/50 hover:bg-[#202020] cursor-pointer rounded-xl p-3">
+  <div class="border border-black/5 bg-[#121212] shadow-sm shadow-black/20 cursor-pointer rounded-2xl pt-3.5 pb-3 px-3">
     <!-- 展示区 -->
     <div class="flex items-center gap-3">
       <div class="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg bg-gray-900">
@@ -21,8 +20,8 @@
       </div>
 
       <div class="min-w-0 flex-1">
-        <div class="truncate text-sm text-[#f6f6f6] font-medium">{{ video.title }}</div>
-        <div class="mt-2 flex items-center justify-between gap-2">
+        <div class="mb-4 truncate text-sm text-[#f6f6f6] font-medium">{{ video.title }}</div>
+        <div class="flex items-center justify-between gap-2">
           <div class="min-w-0 flex items-center gap-1 text-xs text-gray-400">
             <span
               class="h-4 w-6 flex shrink-0 items-center justify-center rounded-sm bg-pink-400/20 text-[9px] text-pink-400 font-bold leading-none">
