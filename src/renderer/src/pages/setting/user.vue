@@ -79,34 +79,6 @@
     </div>
 
     <div class="flex items-center justify-between">
-      <label class="font-normal">刷新收藏夹缓存</label>
-      <Button
-        size="sm"
-        variant="outline"
-        :disabled="refreshingFavorites"
-        @click="refreshFavoritesCache">
-        <Spinner
-          v-if="refreshingFavorites"
-          data-icon="inline-start" />
-        <RefreshCwIcon
-          v-else
-          data-icon="inline-start" />
-        刷新
-      </Button>
-    </div>
-
-    <div class="flex items-center justify-between">
-      <label class="font-normal">清空收藏夹缓存</label>
-      <Button
-        size="sm"
-        variant="outline"
-        @click="clearFavoritesCache">
-        <Trash2Icon data-icon="inline-start" />
-        清空
-      </Button>
-    </div>
-
-    <div class="flex items-center justify-between">
       <label class="font-normal">退出登录</label>
       <Button
         size="sm"
@@ -126,11 +98,10 @@
 </template>
 
 <script setup lang="ts">
-import { LogOut as LogOutIcon, RefreshCw as RefreshCwIcon, Trash2 as Trash2Icon } from '@lucide/vue'
+import { LogOut as LogOutIcon, RefreshCw as RefreshCwIcon } from '@lucide/vue'
 import { mittbus } from '@renderer/ipc'
 import { fetchCurrentUserInfo } from '@renderer/services/user'
 import { useAuthStore } from '@renderer/store/auth'
-import { useFavoritesStore } from '@renderer/store/favorites'
 import { usePreferenceStore } from '@renderer/store/preference'
 import { safeCover } from '@renderer/utils/media'
 import logger from 'electron-log/renderer'
@@ -142,10 +113,8 @@ const store = usePreferenceStore()
 const { preference } = storeToRefs(store)
 const { savePreference } = store
 const authStore = useAuthStore()
-const favoritesStore = useFavoritesStore()
 const router = useRouter()
 
-const refreshingFavorites = ref(false)
 const refreshingUserInfo = ref(false)
 const loggingOut = ref(false)
 
@@ -163,34 +132,6 @@ const nicknameStyle = computed(() =>
 
 const goToLogin = (): void => {
   router.push({ name: 'download-auth' })
-}
-
-const refreshFavoritesCache = async (): Promise<void> => {
-  const userInfo = preference.value['user-info']
-  if (!userInfo?.mid) {
-    mittbus.emit('toast:add', {
-      severity: 'error',
-      message: '用户信息缺失，请先扫码登录'
-    })
-    return
-  }
-
-  refreshingFavorites.value = true
-  try {
-    await favoritesStore.refreshAllFavorites()
-    mittbus.emit('toast:add', {
-      severity: 'success',
-      message: '收藏夹缓存已刷新'
-    })
-  } catch (error) {
-    logger.error('刷新用户收藏夹缓存失败:', error)
-    mittbus.emit('toast:add', {
-      severity: 'error',
-      message: error instanceof Error ? error.message : String(error)
-    })
-  } finally {
-    refreshingFavorites.value = false
-  }
 }
 
 const refreshUserInfo = async (): Promise<void> => {
@@ -231,15 +172,6 @@ const handleLogout = async (): Promise<void> => {
   } finally {
     loggingOut.value = false
   }
-}
-
-const clearFavoritesCache = (): void => {
-  preference.value['favorites-data'] = null
-  savePreference()
-  mittbus.emit('toast:add', {
-    severity: 'success',
-    message: '收藏夹缓存已清空'
-  })
 }
 </script>
 

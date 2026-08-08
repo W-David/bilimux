@@ -267,11 +267,17 @@ registerSubscribe(
   })
 )
 
+const onDownloadHistoryCleared = (): void => {
+  historyMap.value = new Map()
+}
+mittbus.on('download:history:cleared', onDownloadHistoryCleared)
+
 onMounted(() => {
   loadData()
 })
 
 onUnmounted(() => {
+  mittbus.off('download:history:cleared', onDownloadHistoryCleared)
   unregisterSubscribes()
 })
 </script>

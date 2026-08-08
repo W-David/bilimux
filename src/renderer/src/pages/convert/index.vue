@@ -8,7 +8,7 @@
           alt="BiliMux"
           class="h-10 w-10" />
         <div class="flex items-center">
-          <div class="text-base font-black">视频转换</div>
+          <div class="text-base font-black">客户端缓存视频转 MP4</div>
         </div>
       </div>
       <div class="flex flex-none items-center gap-2">

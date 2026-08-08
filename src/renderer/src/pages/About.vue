@@ -132,7 +132,7 @@ onUnmounted(() => {
             class="from-pink-400 to-sky-400 bg-linear-to-r bg-clip-text text-4xl text-transparent font-black tracking-tight drop-shadow-sm">
             BiliMux
           </h1>
-          <p class="text-sm text-gray-400 font-medium tracking-wide opacity-90">B站缓存视频转换工具</p>
+          <p class="text-sm text-gray-400 font-medium tracking-wide opacity-90">Bilibili 缓存视频一站式工具箱</p>
         </div>
       </div>
 

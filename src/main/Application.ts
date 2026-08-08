@@ -217,6 +217,9 @@ export default class Application {
     this.ipcManager.mainIpc.handle('download:history:get', (_, bvid: string) => {
       return this.downloadHistoryStore.getByBvid(bvid)
     })
+    this.ipcManager.mainIpc.handle('download:history:clear', () => {
+      this.downloadHistoryStore.clear()
+    })
     this.ipcManager.mainIpc.handle('get-cookie', async (_, key: string) => {
       const cookie = await this.httpClient.getCookieKey(key)
       return cookie

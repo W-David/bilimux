@@ -113,6 +113,13 @@ export default class DownloadHistoryStore {
   }
 
   /**
+   * 清空全部下载历史
+   */
+  public clear(): void {
+    this.db.exec('DELETE FROM download_history')
+  }
+
+  /**
    * 对账：已完成但文件丢失的降级为 missing，文件找回的恢复为 completed
    */
   public reconcile(): void {

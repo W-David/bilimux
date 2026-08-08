@@ -86,6 +86,13 @@ export const getDownloadHistory: RendererEmitterInvokeFn<'download:history:get'>
 }
 
 /**
+ * 清空下载历史
+ */
+export const clearDownloadHistories: RendererEmitterInvokeFn<'download:history:clear'> = () => {
+  return emitter.invoke('download:history:clear')
+}
+
+/**
  * 检查更新
  */
 export const checkForUpdate: RendererEmitterInvokeFn<'check-for-update'> = () => {

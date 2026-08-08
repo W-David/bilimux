@@ -8,4 +8,5 @@ export type ToastMessageOptions = {
 
 type MittEventMap = {
   'toast:add': ToastMessageOptions
+  'download:history:cleared': undefined
 }

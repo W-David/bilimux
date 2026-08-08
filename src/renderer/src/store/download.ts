@@ -1,4 +1,5 @@
 import {
+  clearDownloadHistories,
   subscribeDownloadItemEndEvent,
   subscribeDownloadItemProgressEvent,
   subscribeDownloadItemStartEvent
@@ -70,5 +71,17 @@ export const useDownloadStore = defineStore('download', () => {
     })
   }
 
-  return { getItem }
+  /** 清空下载历史：删除数据库记录并重置内存中的下载状态 */
+  const clearHistory = async (): Promise<void> => {
+    await clearDownloadHistories()
+    for (const key of Object.keys(items)) {
+      const item = items[key]
+      item.status = 'idle'
+      item.progress = 0
+      item.message = ''
+      item.outputPath = ''
+    }
+  }
+
+  return { getItem, clearHistory }
 })
