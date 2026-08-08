@@ -19,6 +19,7 @@ export const useAuthStore = defineStore('auth', {
       const biliJct = await getCookie('bili_jct')
       if (!biliJct) {
         logger.error('bili_jct cookie not found')
+        this.clearCachedUserData()
         return
       }
       const res = await checkAuthStatus({
@@ -30,11 +31,19 @@ export const useAuthStore = defineStore('auth', {
       // refresh 为 true 时，需要刷新 cookie
       if (refresh) {
         this.isAuthenticated = false
+        this.clearCachedUserData()
         logger.debug('需要刷新Cookie')
       } else {
         this.isAuthenticated = true
         logger.debug('用户已登录,使用当前Cookie')
       }
+    },
+    clearCachedUserData() {
+      const preferenceStore = usePreferenceStore()
+      preferenceStore.preference['user-info'] = null
+      preferenceStore.preference['favorites-data'] = null
+      preferenceStore.savePreference()
+      logger.debug('已清理本地缓存的用户信息与收藏夹数据')
     },
     async logout() {
       try {

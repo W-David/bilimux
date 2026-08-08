@@ -35,6 +35,7 @@ type IpcMainHandleEvents = {
   'download:history:list': (bvids: string[]) => DownloadHistoryRecord[]
   'download:history:get': (bvid: string) => DownloadHistoryRecord | null
   'download:history:clear': () => void
+  'persist-cookie': () => void
   'http-get-video-metadata': (url: string) => [string[] | null, string | null]
   'http-get': (url: string, options?: OptionsOfJSONResponseBody) => BiliResponseType
   'http-post': (url: string, options?: OptionsOfJSONResponseBody) => BiliResponseType

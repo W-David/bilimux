@@ -101,6 +101,7 @@ import {
   RefreshCw as RefreshCwIcon,
   Smartphone as SmartphoneIcon
 } from '@lucide/vue'
+import { persistCookie } from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
 import { fetchCurrentUserInfo } from '@renderer/services/user'
 import { useAuthStore } from '@renderer/store/auth'
@@ -239,6 +240,12 @@ const startPolling = () => {
             stopCountdown()
             logger.debug('扫码已确认')
             authStore.isAuthenticated = true
+            try {
+              // 登录成功后主动持久化 cookie jar，避免重启后登录态丢失
+              await persistCookie()
+            } catch (error) {
+              logger.error('持久化登录 Cookie 失败:', error)
+            }
             await persistUserInfoOnLogin()
             router.push({ name: 'download-task' })
             break

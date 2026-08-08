@@ -93,6 +93,13 @@ export const clearDownloadHistories: RendererEmitterInvokeFn<'download:history:c
 }
 
 /**
+ * 主动持久化当前登录 Cookie
+ */
+export const persistCookie: RendererEmitterInvokeFn<'persist-cookie'> = () => {
+  return emitter.invoke('persist-cookie')
+}
+
+/**
  * 检查更新
  */
 export const checkForUpdate: RendererEmitterInvokeFn<'check-for-update'> = () => {

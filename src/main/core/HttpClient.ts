@@ -77,8 +77,11 @@ export default class HttpClient {
             logger.debug(`[Response     Url]: ${response.url}`)
             logger.debug(`[Response Headers]: ${JSON.stringify(response.headers, null, 2)}`)
             logger.debug(`[Response    Body]: ${JSON.stringify(response.body, null, 2)}`)
-            if (response.statusCode === 200 && response.headers['set-cookie']) {
-              logger.debug(`[Update Cookie] ${response.headers['set-cookie'].join(', ')}`)
+            if (response.statusCode >= 200 && response.statusCode < 300) {
+              // 只要响应成功就把当前 cookie jar 持久化，避免登录 Cookie 丢失
+              if (response.headers['set-cookie']) {
+                logger.debug(`[Update Cookie] ${response.headers['set-cookie'].join(', ')}`)
+              }
               this.saveCookieJar()
             }
             if (response.request.options.responseType === 'json' && (response.body as BiliResponseType).code !== 0) {
@@ -119,13 +122,14 @@ export default class HttpClient {
     return new CookieJar()
   }
 
-  private saveCookieJar() {
+  public saveCookieJar() {
     const cookie = this.cookieJar.serializeSync()
     this.configManager.store.set('user-cookie', JSON.stringify(cookie))
   }
 
   async getCookieKey(key: string) {
-    const cookies = await this.cookieJar.getCookies(DOMAIN)
+    // 从整个 jar 中按 key 查找，避免 host-only cookie 因域名不匹配而查不到
+    const cookies = await this.cookieJar.store.getAllCookies()
     const cookieObj = cookies.find(cookie => cookie.key === key)
     return cookieObj
   }
