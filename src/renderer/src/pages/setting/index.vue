@@ -12,7 +12,7 @@
         :key="tab.name"
         type="button"
         :class="[
-          'relative flex h-9 cursor-pointer items-center justify-center gap-2 rounded-[16px] border border-black/5 bg-[#121212] px-5 text-sm shadow-sm shadow-black/50 transition-all duration-300 text-zinc-400 hover:bg-[#202020] hover:text-white',
+          'relative flex h-9 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-black/5 bg-[#121212] px-5 text-sm shadow-sm shadow-black/50 transition-all duration-300 text-zinc-400 hover:bg-[#202020] hover:text-white',
           route.name === tab.name ? 'border-pink-500/30 bg-pink-500/20 text-pink-400' : ''
         ]"
         @click="switchTab(tab.name)">

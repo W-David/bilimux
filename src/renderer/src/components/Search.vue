@@ -3,7 +3,7 @@
     <input
       v-model="searchText"
       type="text"
-      class="flex-1 w-full h-16 px-2 mx-2 rounded-xl bg-transparent text-[#f6f6f6] text-[1.25rem] outline-none"
+      class="flex-1 w-full h-16 px-2 mx-2 rounded-xl bg-transparent text-[#f6f6f6] text-xl outline-none"
       @keyup.enter="emit('search', searchText)" />
     <div
       class="cursor-pointer flex items-center justify-center h-12 w-12 m-2 rounded-xl bg-pink-400/15 text-pink-400 transition-all duration-300 hover:ring-1 hover:ring-pink-400 hover:-translate-y-px"

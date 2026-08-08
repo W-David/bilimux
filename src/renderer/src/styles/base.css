@@ -10,6 +10,7 @@
 @theme {
   --font-sans: 'Roboto', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, monospace;
+  --font-heading: var(--font-sans);
 }
 
 :root {
@@ -120,7 +121,6 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --font-heading: var(--font-sans);
 }
 
 @layer base {
@@ -229,4 +229,8 @@ body {
 
 ::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+/* vue-sonner 自带 .toaster 样式，这里仅声明以避免 Tailwind 插件报未知类 */
+.toaster {
 }

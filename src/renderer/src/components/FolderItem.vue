@@ -9,9 +9,9 @@
       <div class="relative h-20 w-28 shrink-0 pt-4">
         <!-- 叠卡装饰：放在封面容器前面，靠 DOM 顺序压在封面后面；不要用负 z-index，会被页面背景盖住 -->
         <div
-          class="absolute left-0 right-0 top-1 m-auto h-4 w-[80%] rounded-[6px] bg-[#3a3d43] shadow-black/40 shadow-sm"></div>
+          class="absolute left-0 right-0 top-1 m-auto h-4 w-[80%] rounded-sm bg-[#3a3d43] shadow-black/40 shadow-sm"></div>
         <div
-          class="absolute left-0 right-0 top-2.5 m-auto h-4 w-[90%] rounded-[6px] bg-[#45494f] shadow-black/40 shadow-sm"></div>
+          class="absolute left-0 right-0 top-2.5 m-auto h-4 w-[90%] rounded-sm bg-[#45494f] shadow-black/40 shadow-sm"></div>
         <!-- 封面元素 -->
         <div class="relative h-full w-full overflow-hidden rounded-lg bg-gray-900 shadow-black/50 shadow-lg">
           <img

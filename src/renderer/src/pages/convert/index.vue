@@ -14,16 +14,14 @@
       <div class="flex flex-none items-center gap-2">
         <Button
           size="sm"
-          variant="ghost"
           :disabled="convertStore.runStatus === 'scanning' || convertStore.runStatus === 'processing'"
-          class="bg-red-400/5 text-red-400"
+          class="bg-red-400/10 text-red-400"
           @click="showClearDialog = true">
           <Trash2Icon data-icon="inline-start" />
           清空历史
         </Button>
         <Button
           size="sm"
-          variant="ghost"
           class="bg-gray-400/5 text-gray-400"
           @click="openOutputFolder">
           <FolderOpenIcon data-icon="inline-start" />
@@ -41,7 +39,7 @@
           :key="tab.name"
           type="button"
           :class="[
-            'relative h-8 w-24 flex cursor-pointer items-center justify-center gap-2 rounded-[16px] text-sm border border-black/5 bg-[#121212] shadow-sm shadow-black/50 hover:bg-[#202020] transition-all duration-300 text-zinc-400 hover:text-white',
+            'relative h-8 w-24 flex cursor-pointer items-center justify-center gap-2 rounded-2xl text-sm border border-black/5 bg-[#121212] shadow-sm shadow-black/50 hover:bg-[#202020] transition-all duration-300 text-zinc-400 hover:text-white',
             route.name === tab.name ? tab.activeClass : tab.inactiveClass
           ]"
           @click="switchTab(tab.name)">
@@ -50,8 +48,8 @@
             class="size-4" />
           <span>{{ tab.label }}</span>
           <span
-            class="absolute right-0 z-10 h-[12px] min-w-8 flex items-center justify-center border border border-black/20 rounded-[6px] border-solid bg-[#222222] px-[3px] text-[8px] text-white shadow-[#222222] shadow-sm -top-2">
-            <span class="mx-[3px]">{{ convertStore.counts[tab.countKey] }}</span>
+            class="absolute right-0 z-10 h-3 min-w-8 flex items-center justify-center border border border-black/20 rounded-sm border-solid bg-[#222222] px-0.75 text-[8px] text-white shadow-[#222222] shadow-sm -top-2">
+            <span class="mx-0.75">{{ convertStore.counts[tab.countKey] }}</span>
           </span>
         </div>
       </div>
