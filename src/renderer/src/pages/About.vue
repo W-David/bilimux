@@ -7,6 +7,7 @@ import {
   RefreshCw as RefreshCwIcon
 } from '@lucide/vue'
 import { checkForUpdate, getAppVersion } from '@renderer/api'
+import { mittbus } from '@renderer/ipc'
 import logger from 'electron-log/renderer'
 import { computed, onUnmounted, ref } from 'vue'
 
@@ -21,15 +22,47 @@ const fetchAppVersion = () => {
 
 const handleCheckUpdate = async () => {
   if (isChecking.value) return
+
+  // 开发模式下 electron-updater 会直接跳过检查，主动提示用户
+  if (import.meta.env.DEV) {
+    mittbus.emit('toast:add', {
+      severity: 'warn',
+      message: '开发模式暂不支持检查更新',
+      data: {
+        description: 'electron-updater 在未打包环境下会跳过检查，请使用打包后的应用测试'
+      }
+    })
+    return
+  }
+
   isChecking.value = true
   try {
     const result = await checkForUpdate()
-    if (result && result.updateInfo) {
+    if (result?.updateInfo) {
+      mittbus.emit('toast:add', {
+        severity: 'success',
+        message: `发现新版本 v${result.updateInfo.version}`,
+        data: {
+          description: '新版本已就绪，可以下载更新'
+        }
+      })
       logger.info('Update available:', result.updateInfo)
     } else {
+      mittbus.emit('toast:add', {
+        severity: 'info',
+        message: '当前已是最新版本'
+      })
       logger.info('No update available')
     }
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    mittbus.emit('toast:add', {
+      severity: 'error',
+      message: '检查更新失败',
+      data: {
+        description: message
+      }
+    })
     logger.error('Check update failed:', error)
   } finally {
     isChecking.value = false
