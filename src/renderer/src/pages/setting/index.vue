@@ -27,7 +27,7 @@
     <div class="min-h-0 flex-1 overflow-y-auto px-6">
       <RouterView v-slot="{ Component, route: currentRoute }">
         <Transition
-          :name="route.meta.innerTransition || 'fade'"
+          :name="route.meta.transition || 'fade'"
           mode="out-in"
           appear>
           <KeepAlive>

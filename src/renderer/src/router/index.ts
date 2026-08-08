@@ -213,16 +213,12 @@ router.afterEach((to, from) => {
     // 只有同一个分组（设置页 ↔ 设置页 / 转换管理 ↔ 转换管理）才使用左右滑动
     if (to.meta.activeMenu && to.meta.activeMenu === from.meta.activeMenu) {
       const slidePrefix = to.meta.activeMenu === 'prefer' ? 'prefer-slide' : 'convert-slide'
-      const slideName = toOrder >= fromOrder ? `${slidePrefix}-forward` : `${slidePrefix}-backward`
-      to.meta.transition = slideName
-      to.meta.innerTransition = slideName
+      to.meta.transition = toOrder >= fromOrder ? `${slidePrefix}-forward` : `${slidePrefix}-backward`
     } else {
       to.meta.transition = toOrder >= fromOrder ? 'main-slide-up' : 'main-slide-down'
-      to.meta.innerTransition = 'fade'
     }
   } else {
     to.meta.transition = toOrder >= fromOrder ? 'main-slide-up' : 'main-slide-down'
-    to.meta.innerTransition = 'fade'
   }
 })
 

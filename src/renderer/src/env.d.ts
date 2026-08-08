@@ -16,7 +16,6 @@ declare module 'vue-router' {
     transition?: string
     requireAuth?: boolean
     activeMenu?: string
-    innerTransition?: string
   }
 }
 
