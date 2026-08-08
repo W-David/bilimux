@@ -162,9 +162,7 @@ const play = async (): Promise<void> => {
   if (errMessage) {
     mittbus.emit('toast:add', {
       severity: 'error',
-      summary: '错误',
-      detail: errMessage,
-      life: 3000
+      message: errMessage
     })
   }
 }

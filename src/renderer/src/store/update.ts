@@ -37,12 +37,8 @@ export const useUpdateStore = defineStore('update', () => {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       mittbus.emit('toast:add', {
-        group: 'br',
         severity: 'error',
-        summary: '错误',
-        detail: message,
-        life: 3000,
-        closable: false
+        message
       })
       logger.error('检查更新失败:', message)
     }
@@ -55,12 +51,8 @@ export const useUpdateStore = defineStore('update', () => {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       mittbus.emit('toast:add', {
-        group: 'br',
         severity: 'error',
-        summary: '错误',
-        detail: message,
-        life: 3000,
-        closable: false
+        message
       })
       logger.error('下载更新失败:', message)
       downloading.value = false
@@ -73,12 +65,8 @@ export const useUpdateStore = defineStore('update', () => {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       mittbus.emit('toast:add', {
-        group: 'br',
         severity: 'error',
-        summary: '错误',
-        detail: message,
-        life: 3000,
-        closable: false
+        message
       })
       logger.error('重启安装失败:', message)
     }

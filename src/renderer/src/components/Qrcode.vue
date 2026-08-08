@@ -168,10 +168,7 @@ const initQRCode = async () => {
       logger.error(message)
       mittbus.emit('toast:add', {
         severity: 'error',
-        closable: false,
-        life: 3000,
-        summary: 'error',
-        detail: message
+        message
       })
     }
   } catch (error) {

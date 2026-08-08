@@ -72,7 +72,7 @@
               BiliMux
             </div>
           </div>
-          <div class="text-xl text-[#f2f2f2] font-medium">高效、快速的 Bilibili 音视频合并工具</div>
+          <div class="text-xl text-[#f2f2f2] font-medium">高效、快速的 Bilibili 视频合并工具</div>
         </div>
 
         <Button
@@ -163,6 +163,19 @@
 
 <script setup lang="ts">
 import {
+  CheckCircle as CheckCircleIcon,
+  CircleX as CircleXIcon,
+  FileSearch as FileSearchIcon,
+  FileX as FileXIcon,
+  FolderOpen as FolderOpenIcon,
+  Loader2 as Loader2Icon,
+  Play as PlayIcon,
+  RefreshCw as RefreshCwIcon,
+  Search as SearchIcon,
+  Settings as SettingsIcon,
+  StepBack as StepBackIcon
+} from '@lucide/vue'
+import {
   openPath,
   startProcess,
   subscribeProcessBrokeEvent,
@@ -176,19 +189,6 @@ import {
 import ConvertTaskItem, { type ConvertTask } from '@renderer/components/ConvertTaskItem.vue'
 import { mittbus } from '@renderer/ipc'
 import { usePreferenceStore } from '@renderer/store/preference'
-import {
-  CheckCircle as CheckCircleIcon,
-  CircleX as CircleXIcon,
-  FileSearch as FileSearchIcon,
-  FileX as FileXIcon,
-  FolderOpen as FolderOpenIcon,
-  Loader2 as Loader2Icon,
-  Play as PlayIcon,
-  RefreshCw as RefreshCwIcon,
-  Search as SearchIcon,
-  Settings as SettingsIcon,
-  StepBack as StepBackIcon
-} from '@lucide/vue'
 import logger from 'electron-log/renderer'
 import { storeToRefs } from 'pinia'
 import { computed, onUnmounted, reactive, ref } from 'vue'
@@ -368,9 +368,7 @@ const openOutputFolder = async (): Promise<void> => {
   if (errMessage) {
     mittbus.emit('toast:add', {
       severity: 'error',
-      summary: '错误',
-      detail: errMessage,
-      life: 3000
+      message: errMessage
     })
   }
 }

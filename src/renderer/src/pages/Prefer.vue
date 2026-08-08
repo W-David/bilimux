@@ -30,11 +30,11 @@
                 <label class="font-normal">日志等级</label>
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger as-child>
+                    <TooltipTrigger>
                       <span
-                        class="ml-2 cursor-pointer align-middle text-[18px] hover:text-pink-400"
+                        class="ml-2 inline-block cursor-pointer hover:text-pink-400"
                         @click="openLog">
-                        <ExternalLinkIcon class="size-[18px]" />
+                        <ExternalLinkIcon class="size-3" />
                       </span>
                     </TooltipTrigger>
                     <TooltipContent side="right">查看日志文件</TooltipContent>
@@ -357,18 +357,13 @@ const subscribe = subscribeFetchPreferenceEvent(async () => {
     await fetchPreference()
     mittbus.emit('toast:add', {
       severity: 'success',
-      summary: '成功',
-      detail: '已更新配置',
-      life: 1000,
-      closable: false
+      message: '已更新配置'
     })
   } catch (error) {
     logger.error(error)
     mittbus.emit('toast:add', {
       severity: 'error',
-      summary: '错误',
-      detail: error instanceof Error ? error.message : String(error),
-      life: 5000
+      message: error instanceof Error ? error.message : String(error)
     })
   }
 })
@@ -414,8 +409,7 @@ const openGpacPath = async (): Promise<void> => {
   return openFolder(binPath).catch(err => {
     mittbus.emit('toast:add', {
       severity: 'error',
-      summary: '错误',
-      detail: err
+      message: err
     })
   })
 }
@@ -426,10 +420,7 @@ const checkMp4Box = async (toastShow?: boolean): Promise<void> => {
   if (toastShow) {
     mittbus.emit('toast:add', {
       severity: isValid ? 'success' : 'error',
-      summary: isValid ? '成功' : '出错了',
-      detail: isValid ? '已成功安装Mp4box' : '请确认您已安装Mp4Box',
-      closable: false,
-      life: 2000
+      message: isValid ? '已成功安装Mp4box' : '请确认您已安装Mp4Box'
     })
   }
 }
@@ -440,10 +431,7 @@ const openLog = async (): Promise<void> => {
     logger.error(err)
     mittbus.emit('toast:add', {
       severity: 'error',
-      summary: '错误',
-      detail: err,
-      closable: false,
-      life: 2000
+      message: err
     })
   }
 }
@@ -467,10 +455,7 @@ const refreshFavoritesCache = async (): Promise<void> => {
   if (!userInfo?.mid) {
     mittbus.emit('toast:add', {
       severity: 'error',
-      summary: '错误',
-      detail: '用户信息缺失，请先扫码登录',
-      closable: false,
-      life: 3000
+      message: '用户信息缺失，请先扫码登录'
     })
     return
   }
@@ -480,19 +465,13 @@ const refreshFavoritesCache = async (): Promise<void> => {
     await favoritesStore.refreshAllFavorites()
     mittbus.emit('toast:add', {
       severity: 'success',
-      summary: '成功',
-      detail: '收藏夹缓存已刷新',
-      closable: false,
-      life: 2000
+      message: '收藏夹缓存已刷新'
     })
   } catch (error) {
     logger.error('刷新用户收藏夹缓存失败:', error)
     mittbus.emit('toast:add', {
       severity: 'error',
-      summary: '刷新失败',
-      detail: error instanceof Error ? error.message : String(error),
-      closable: false,
-      life: 3000
+      message: error instanceof Error ? error.message : String(error)
     })
   } finally {
     refreshingFavorites.value = false
@@ -510,19 +489,13 @@ const refreshUserInfo = async (): Promise<void> => {
     savePreference()
     mittbus.emit('toast:add', {
       severity: 'success',
-      summary: '成功',
-      detail: '用户数据已刷新',
-      closable: false,
-      life: 2000
+      message: '用户数据已刷新'
     })
   } catch (error) {
     logger.error('刷新用户数据失败:', error)
     mittbus.emit('toast:add', {
       severity: 'error',
-      summary: '刷新失败',
-      detail: error instanceof Error ? error.message : String(error),
-      closable: false,
-      life: 3000
+      message: error instanceof Error ? error.message : String(error)
     })
   } finally {
     refreshingUserInfo.value = false
@@ -538,19 +511,13 @@ const handleLogout = async (): Promise<void> => {
     await authStore.logout()
     mittbus.emit('toast:add', {
       severity: 'success',
-      summary: '已退出登录',
-      detail: '本地登录信息已清空',
-      closable: false,
-      life: 2000
+      message: '本地登录信息已清空'
     })
   } catch (error) {
     logger.error('退出登录失败:', error)
     mittbus.emit('toast:add', {
       severity: 'error',
-      summary: '退出登录失败',
-      detail: error instanceof Error ? error.message : String(error),
-      closable: false,
-      life: 3000
+      message: error instanceof Error ? error.message : String(error)
     })
   } finally {
     loggingOut.value = false
@@ -562,10 +529,7 @@ const clearFavoritesCache = (): void => {
   savePreference()
   mittbus.emit('toast:add', {
     severity: 'success',
-    summary: '成功',
-    detail: '收藏夹缓存已清空',
-    closable: false,
-    life: 2000
+    message: '收藏夹缓存已清空'
   })
 }
 

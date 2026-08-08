@@ -210,16 +210,14 @@ const handleLogout = async (): Promise<void> => {
     showLogoutDialog.value = false
     mittbus.emit('toast:add', {
       severity: 'success',
-      summary: '已退出登录',
-      detail: '本地登录信息已清空'
+      message: '本地登录信息已清空'
     })
     router.push({ name: 'download-auth' })
   } catch (error) {
     logger.error('退出登录失败:', error)
     mittbus.emit('toast:add', {
       severity: 'error',
-      summary: '退出登录失败',
-      detail: error instanceof Error ? error.message : String(error)
+      message: error instanceof Error ? error.message : String(error)
     })
   } finally {
     loggingOut.value = false

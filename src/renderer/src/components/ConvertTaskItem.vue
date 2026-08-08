@@ -165,9 +165,7 @@ const openTaskFile = async (): Promise<void> => {
   if (!props.task.filePath) {
     mittbus.emit('toast:add', {
       severity: 'warn',
-      summary: '提示',
-      detail: '文件路径不存在',
-      life: 3000
+      message: '文件路径不存在'
     })
     return
   }
@@ -176,9 +174,7 @@ const openTaskFile = async (): Promise<void> => {
   if (errMessage) {
     mittbus.emit('toast:add', {
       severity: 'error',
-      summary: '错误',
-      detail: errMessage,
-      life: 3000
+      message: errMessage
     })
   }
 }

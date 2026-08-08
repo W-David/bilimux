@@ -1,15 +1,11 @@
+import type { ExternalToast } from 'vue-sonner'
+
 export type ToastMessageOptions = {
-  severity?: 'info' | 'success' | 'warn' | 'error'
-  summary?: string
-  detail?: string
-  closable?: boolean
-  life?: number
-  group?: string
+  severity: 'info' | 'success' | 'warn' | 'error'
+  message: string
+  data?: ExternalToast
 }
 
 type MittEventMap = {
   'toast:add': ToastMessageOptions
-  'toast:remove': ToastMessageOptions
-  'toast:removeGroup': string
-  'toast:removeAllGroups': void
 }

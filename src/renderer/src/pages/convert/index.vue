@@ -163,9 +163,7 @@ const openOutputFolder = async (): Promise<void> => {
   if (errMessage) {
     mittbus.emit('toast:add', {
       severity: 'error',
-      summary: '错误',
-      detail: errMessage,
-      life: 3000
+      message: errMessage
     })
   }
 }
@@ -176,18 +174,12 @@ const handleClearHistory = async (): Promise<void> => {
     await convertStore.clearHistory()
     mittbus.emit('toast:add', {
       severity: 'success',
-      summary: '成功',
-      detail: '转换历史已清空',
-      closable: false,
-      life: 2000
+      message: '转换历史已清空'
     })
   } catch (error) {
     mittbus.emit('toast:add', {
       severity: 'error',
-      summary: '清空失败',
-      detail: error instanceof Error ? error.message : String(error),
-      closable: false,
-      life: 3000
+      message: error instanceof Error ? error.message : String(error)
     })
   }
 }
