@@ -15,7 +15,7 @@ import SettingIndex from '@renderer/pages/setting/index.vue'
 import SettingNormal from '@renderer/pages/setting/normal.vue'
 import SettingUser from '@renderer/pages/setting/user.vue'
 import { useAuthStore } from '@renderer/store/auth'
-import { createMemoryHistory, createRouter, RouteRecordRaw } from 'vue-router'
+import { createMemoryHistory, createRouter, type RouteRecordNormalized, type RouteRecordRaw } from 'vue-router'
 
 // 转换管理页最后停留的分组，父路由重定向时使用，避免每次进入都被重置到“未完成”
 let lastConvertTabName = 'convert-manager-unconverted'
@@ -35,10 +35,7 @@ const routes: RouteRecordRaw[] = [
           {
             path: 'convert',
             name: 'convert',
-            component: Convert,
-            meta: {
-              order: 0
-            }
+            component: Convert
           },
           {
             path: 'convert-manager',
@@ -46,7 +43,6 @@ const routes: RouteRecordRaw[] = [
             component: ConvertIndex,
             redirect: () => ({ name: lastConvertTabName }),
             meta: {
-              order: 1,
               activeMenu: 'convert-manager'
             },
             children: [
@@ -56,7 +52,6 @@ const routes: RouteRecordRaw[] = [
                 component: ConvertEntire,
                 meta: {
                   switchTransition: true,
-                  order: 1,
                   activeMenu: 'convert-manager'
                 }
               },
@@ -66,7 +61,6 @@ const routes: RouteRecordRaw[] = [
                 component: ConvertComplete,
                 meta: {
                   switchTransition: true,
-                  order: 2,
                   activeMenu: 'convert-manager'
                 }
               },
@@ -76,7 +70,6 @@ const routes: RouteRecordRaw[] = [
                 component: ConvertUnconverted,
                 meta: {
                   switchTransition: true,
-                  order: 3,
                   activeMenu: 'convert-manager'
                 }
               }
@@ -105,16 +98,13 @@ const routes: RouteRecordRaw[] = [
               }
             ],
             meta: {
-              order: 2
+              activeMenu: 'download'
             }
           },
           {
             path: 'about',
             name: 'about',
-            component: About,
-            meta: {
-              order: 3
-            }
+            component: About
           },
           {
             path: 'prefer',
@@ -122,7 +112,6 @@ const routes: RouteRecordRaw[] = [
             component: SettingIndex,
             redirect: () => ({ name: lastSettingTabName }),
             meta: {
-              order: 4,
               activeMenu: 'prefer'
             },
             children: [
@@ -132,7 +121,6 @@ const routes: RouteRecordRaw[] = [
                 component: SettingNormal,
                 meta: {
                   switchTransition: true,
-                  order: 0,
                   activeMenu: 'prefer'
                 }
               },
@@ -142,7 +130,6 @@ const routes: RouteRecordRaw[] = [
                 component: SettingUser,
                 meta: {
                   switchTransition: true,
-                  order: 1,
                   activeMenu: 'prefer'
                 }
               },
@@ -152,7 +139,6 @@ const routes: RouteRecordRaw[] = [
                 component: SettingConvert,
                 meta: {
                   switchTransition: true,
-                  order: 2,
                   activeMenu: 'prefer'
                 }
               },
@@ -162,7 +148,6 @@ const routes: RouteRecordRaw[] = [
                 component: SettingDownload,
                 meta: {
                   switchTransition: true,
-                  order: 3,
                   activeMenu: 'prefer'
                 }
               }
@@ -183,6 +168,25 @@ const router = createRouter({
   routes
 })
 
+/**
+ * 按 router 定义顺序查找子记录在父级 children 中的下标，
+ * 用于决定页面/分组切换的动画方向，不再依赖 meta.order。
+ */
+function findChildIndex(parent: RouteRecordNormalized | undefined, target: RouteRecordNormalized | undefined): number {
+  if (!parent || !target) {
+    return 0
+  }
+  const index = parent.children.findIndex(child => {
+    if (child.name && target.name && child.name === target.name) {
+      return true
+    }
+    // children 里是原始配置记录（相对路径），target 是标准化记录（完整路径）
+    const childPath = child.path.startsWith('/') ? child.path : `${parent.path}/${child.path}`.replace(/\/+/g, '/')
+    return childPath === target.path
+  })
+  return index === -1 ? 0 : index
+}
+
 router.beforeEach(to => {
   const authStore = useAuthStore()
   const isAuthenticated = authStore.isAuthenticated
@@ -202,23 +206,27 @@ router.afterEach((to, from) => {
     }
   }
 
-  if (to.meta.order === undefined || from.meta.order === undefined) {
+  // 首次进入或不完整的路由不做过渡
+  if (to.matched.length < 3 || from.matched.length < 3) {
     return
   }
 
-  const fromOrder = from.meta.order as number
-  const toOrder = to.meta.order as number
+  // 菜单级顺序：Main.children 里页面记录的下标
+  const toPageIndex = findChildIndex(to.matched[1], to.matched[2])
+  const fromPageIndex = findChildIndex(from.matched[1], from.matched[2])
 
   if (from.meta.switchTransition && to.meta.switchTransition) {
     // 只有同一个分组（设置页 ↔ 设置页 / 转换管理 ↔ 转换管理）才使用左右滑动
     if (to.meta.activeMenu && to.meta.activeMenu === from.meta.activeMenu) {
-      const slidePrefix = to.meta.activeMenu === 'prefer' ? 'prefer-slide' : 'convert-slide'
-      to.meta.transition = toOrder >= fromOrder ? `${slidePrefix}-forward` : `${slidePrefix}-backward`
+      // 分组内顺序：分组容器 children 里子页记录的下标
+      const toGroupIndex = findChildIndex(to.matched[2], to.matched[3])
+      const fromGroupIndex = findChildIndex(from.matched[2], from.matched[3])
+      to.meta.transition = toGroupIndex >= fromGroupIndex ? 'slide-left' : 'slide-right'
     } else {
-      to.meta.transition = toOrder >= fromOrder ? 'main-slide-up' : 'main-slide-down'
+      to.meta.transition = toPageIndex >= fromPageIndex ? 'slide-up' : 'slide-down'
     }
   } else {
-    to.meta.transition = toOrder >= fromOrder ? 'main-slide-up' : 'main-slide-down'
+    to.meta.transition = toPageIndex >= fromPageIndex ? 'slide-up' : 'slide-down'
   }
 })
 
