@@ -9,12 +9,18 @@ import ConvertUnconverted from '@renderer/pages/convert/unconverted.vue'
 import Auth from '@renderer/pages/download/auth.vue'
 import Download from '@renderer/pages/download/index.vue'
 import Task from '@renderer/pages/download/task.vue'
-import Prefer from '@renderer/pages/Prefer.vue'
+import SettingConvert from '@renderer/pages/setting/convert.vue'
+import SettingDownload from '@renderer/pages/setting/download.vue'
+import SettingIndex from '@renderer/pages/setting/index.vue'
+import SettingNormal from '@renderer/pages/setting/normal.vue'
+import SettingUser from '@renderer/pages/setting/user.vue'
 import { useAuthStore } from '@renderer/store/auth'
 import { createMemoryHistory, createRouter, RouteRecordRaw } from 'vue-router'
 
 // 转换管理页最后停留的分组，父路由重定向时使用，避免每次进入都被重置到“未完成”
 let lastConvertTabName = 'convert-manager-unconverted'
+// 设置页最后停留的分组，父路由重定向时使用
+let lastSettingTabName = 'prefer-normal'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -113,10 +119,54 @@ const routes: RouteRecordRaw[] = [
           {
             path: 'prefer',
             name: 'prefer',
-            component: Prefer,
+            component: SettingIndex,
+            redirect: () => ({ name: lastSettingTabName }),
             meta: {
-              order: 4
-            }
+              order: 4,
+              activeMenu: 'prefer'
+            },
+            children: [
+              {
+                path: 'normal',
+                name: 'prefer-normal',
+                component: SettingNormal,
+                meta: {
+                  switchTransition: true,
+                  order: 0,
+                  activeMenu: 'prefer'
+                }
+              },
+              {
+                path: 'user',
+                name: 'prefer-user',
+                component: SettingUser,
+                meta: {
+                  switchTransition: true,
+                  order: 1,
+                  activeMenu: 'prefer'
+                }
+              },
+              {
+                path: 'convert',
+                name: 'prefer-convert',
+                component: SettingConvert,
+                meta: {
+                  switchTransition: true,
+                  order: 2,
+                  activeMenu: 'prefer'
+                }
+              },
+              {
+                path: 'download',
+                name: 'prefer-download',
+                component: SettingDownload,
+                meta: {
+                  switchTransition: true,
+                  order: 3,
+                  activeMenu: 'prefer'
+                }
+              }
+            ]
           }
         ]
       }
@@ -143,9 +193,13 @@ router.beforeEach(to => {
 })
 
 router.afterEach((to, from) => {
-  // 记录最后一次停留的转换分组，供父路由重定向回到原分组
+  // 记录最后一次停留的转换/设置分组，供父路由重定向回到原分组
   if (to.meta.switchTransition && typeof to.name === 'string') {
-    lastConvertTabName = to.name
+    if (to.meta.activeMenu === 'prefer') {
+      lastSettingTabName = to.name
+    } else {
+      lastConvertTabName = to.name
+    }
   }
 
   if (to.meta.order === undefined || from.meta.order === undefined) {
@@ -156,7 +210,8 @@ router.afterEach((to, from) => {
   const toOrder = to.meta.order as number
 
   if (from.meta.switchTransition && to.meta.switchTransition) {
-    to.meta.transition = toOrder >= fromOrder ? 'convert-slide-forward' : 'convert-slide-backward'
+    const slidePrefix = to.meta.activeMenu === 'prefer' ? 'prefer-slide' : 'convert-slide'
+    to.meta.transition = toOrder >= fromOrder ? `${slidePrefix}-forward` : `${slidePrefix}-backward`
   } else {
     to.meta.transition = toOrder >= fromOrder ? 'main-slide-up' : 'main-slide-down'
   }

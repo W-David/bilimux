@@ -125,6 +125,39 @@
   transform: translateX(100%);
 }
 
+/* 设置页左右滑动过渡 */
+.prefer-slide-forward-enter-active,
+.prefer-slide-forward-leave-active,
+.prefer-slide-backward-enter-active,
+.prefer-slide-backward-leave-active {
+  transition:
+    opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
+}
+
+/* 前进（向右切换）：旧页面往左退出，新页面从右侧进入 */
+.prefer-slide-forward-enter-from {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.prefer-slide-forward-leave-to {
+  opacity: 0;
+  transform: translateX(-100%);
+}
+
+/* 后退（向左切换）：旧页面往右退出，新页面从左侧进入 */
+.prefer-slide-backward-enter-from {
+  opacity: 0;
+  transform: translateX(-100%);
+}
+
+.prefer-slide-backward-leave-to {
+  opacity: 0;
+  transform: translateX(100%);
+}
+
 /* 主界面滑动过渡动画 */
 .main-slide-down-enter-active,
 .main-slide-up-enter-active {

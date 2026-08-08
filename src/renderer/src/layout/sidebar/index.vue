@@ -60,7 +60,7 @@ const fItems = ref([
   {
     label: '设置',
     icon: SettingsIcon,
-    to: { name: 'prefer' }
+    to: { name: 'prefer', activeMenu: 'prefer' }
   }
 ])
 
