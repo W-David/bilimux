@@ -27,7 +27,7 @@ const HISTORY_STATUS_MAP: Record<ConvertHistoryRecord['status'], ConvertTask['st
   processing: 'waiting'
 }
 
-const UNCONVERTED_HISTORY_STATUS = new Set(['failed', 'skipped', 'interrupted', 'missing'])
+const UNCONVERTED_HISTORY_STATUS = new Set(['failed', 'interrupted', 'missing'])
 let listenersRegistered = false
 // 历史加载版本号：清空历史时递增，阻止清空前的异步加载结果把旧数据写回内存
 let historyVersion = 0
@@ -50,12 +50,17 @@ export const useConvertStore = defineStore('convert', () => {
     const fileName = record.outputPath ? record.outputPath.split(/[\\/]/).pop() || record.title : record.title
     return {
       id: `history:${record.id}`,
+      bvid: record.bvid,
+      title: record.title || fileName,
       fileName,
       filePath: record.outputPath || '',
       status: HISTORY_STATUS_MAP[record.status],
-      progress: record.status === 'completed' ? 100 : 0,
+      progress: record.status === 'completed' || record.status === 'skipped' ? 100 : 0,
       finished: record.status !== 'processing',
-      message: record.errorMessage || (record.status === 'skipped' ? '产物已存在，跳过合成' : '')
+      message: record.errorMessage || (record.status === 'skipped' ? '产物已存在，跳过合成' : ''),
+      durationMs: record.durationMs,
+      fileSize: record.fileSize,
+      fileExists: record.fileExists
     }
   }
 
@@ -72,7 +77,9 @@ export const useConvertStore = defineStore('convert', () => {
   const completedList = computed<ConvertTask[]>(() => {
     const live = Array.from(tasks.value.values()).filter(task => task.status === 'success')
     const historyTasks = history.value
-      .filter(record => !liveBvids.value.has(record.bvid) && record.status === 'completed')
+      .filter(
+        record => !liveBvids.value.has(record.bvid) && (record.status === 'completed' || record.status === 'skipped')
+      )
       .map(toTask)
     return [...live, ...historyTasks]
   })
@@ -154,6 +161,8 @@ export const useConvertStore = defineStore('convert', () => {
       bvs.forEach(bv => {
         next.set(bv.bvid, {
           id: bv.bvid,
+          bvid: bv.bvid,
+          title: bv.title || bv.fileInfo.fileName,
           fileName: bv.fileInfo.fileName,
           filePath: bv.fileInfo.filePath,
           status: 'waiting',
@@ -169,6 +178,8 @@ export const useConvertStore = defineStore('convert', () => {
       if (!tasks.value.has(bv.bvid)) {
         tasks.value.set(bv.bvid, {
           id: bv.bvid,
+          bvid: bv.bvid,
+          title: bv.title || bv.fileInfo.fileName,
           fileName: bv.fileInfo.fileName,
           filePath: bv.fileInfo.filePath,
           status: 'waiting',
@@ -187,13 +198,16 @@ export const useConvertStore = defineStore('convert', () => {
       }
     })
 
-    subscribeProcessItemEndEvent(({ bvid, success, message }) => {
+    subscribeProcessItemEndEvent(({ bvid, success, message, skipped, durationMs, fileSize }) => {
       const task = tasks.value.get(bvid)
       if (task) {
         task.finished = success
-        task.status = success ? 'success' : 'fail'
+        task.status = success ? (skipped ? 'skipped' : 'success') : 'fail'
         task.progress = success ? 100 : 0
         task.message = message
+        task.durationMs = durationMs ?? null
+        task.fileSize = fileSize ?? null
+        task.fileExists = success ? (fileSize ?? 0) > 0 : false
       }
     })
 

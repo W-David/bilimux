@@ -138,6 +138,11 @@
   }
 }
 
+/* 收藏夹获取 toast：隐藏 vue-sonner 自带的左侧 loading 图标，只保留环形进度 */
+[data-sonner-toast].favorites-fetch-toast [data-icon] {
+  display: none;
+}
+
 :root {
   --title-height: 32px;
   --sidebar-width: 82px;

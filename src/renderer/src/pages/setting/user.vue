@@ -95,8 +95,6 @@
       </Button>
     </div>
 
-    <FavoritesRefreshProgress />
-
     <div class="flex items-center justify-between">
       <label class="font-normal">清空收藏夹缓存</label>
       <Button
@@ -129,7 +127,6 @@
 
 <script setup lang="ts">
 import { LogOut as LogOutIcon, RefreshCw as RefreshCwIcon, Trash2 as Trash2Icon } from '@lucide/vue'
-import FavoritesRefreshProgress from '@renderer/components/FavoritesRefreshProgress.vue'
 import { mittbus } from '@renderer/ipc'
 import { fetchCurrentUserInfo } from '@renderer/services/user'
 import { useAuthStore } from '@renderer/store/auth'

@@ -19,6 +19,7 @@ import ProcessQueue from './ProcessQueue'
 export type ConvertTaskResult = {
   duration: number
   skipped: boolean
+  fileSize: number
 }
 
 export class ComposEngine extends EventEmitter<ComposEventMap> {
@@ -190,7 +191,8 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
 
       const duration = new Date().getTime() - start
       const skipped = isOutputExist && !forceComposition
-      return { duration, skipped }
+      const stat = await fs.stat(outputFilePath).catch(() => null)
+      return { duration, skipped, fileSize: stat?.size ?? 0 }
     }
 
     return new Promise(resolve => {
@@ -210,7 +212,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
             this.emit('process:item:start', { bv, outputPath: outputFilePath })
             return taskFn(bv, outputFilePath)
           })
-          .then(({ duration, skipped }) => {
+          .then(({ duration, skipped, fileSize }) => {
             count.success += 1
 
             this.emit('process:item:end', {
@@ -219,7 +221,8 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
               message: `耗时: ${duration} ms${skipped ? '（已跳过合成）' : ''}`,
               outputPath: outputFilePath,
               durationMs: duration,
-              skipped
+              skipped,
+              fileSize
             })
           })
           .catch(error => {
@@ -428,7 +431,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
 
       videoTaskInfo.fileInfo.dirPath = dirPath
       videoTaskInfo.fileInfo.fileName =
-        `${this.filterFileName(videoTaskInfo.title)}-[${videoTaskInfo.uname}]` + MP4_SUFFIX
+        `[${videoTaskInfo.bvid}]-[${videoTaskInfo.uname}]-${this.filterFileName(videoTaskInfo.title)}` + MP4_SUFFIX
       videoTaskInfo.fileInfo.filePath = path.join(
         this.configManager.getStore()['convert-config'].outputDir,
         videoTaskInfo.fileInfo.fileName

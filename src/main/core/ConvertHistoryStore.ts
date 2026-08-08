@@ -40,7 +40,7 @@ export default class ConvertHistoryStore {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS convert_history (
         run_id TEXT NOT NULL,
-        bvid TEXT NOT NULL,
+        bvid TEXT NOT NULL PRIMARY KEY,
         type TEXT NOT NULL DEFAULT '',
         title TEXT NOT NULL DEFAULT '',
         uname TEXT NOT NULL DEFAULT '',
@@ -53,8 +53,7 @@ export default class ConvertHistoryStore {
         duration_ms INTEGER,
         started_at INTEGER,
         completed_at INTEGER,
-        updated_at INTEGER NOT NULL,
-        PRIMARY KEY (run_id, bvid)
+        updated_at INTEGER NOT NULL
       )
     `)
     logger.info(this.constructor.name, `sqlite history ready: ${dbPath}`)
@@ -71,7 +70,8 @@ export default class ConvertHistoryStore {
         `INSERT INTO convert_history
            (run_id, bvid, type, title, uname, group_title, source_dir, output_path, file_size, status, error_message, duration_ms, started_at, completed_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 'processing', '', NULL, ?, NULL, ?)
-         ON CONFLICT(run_id, bvid) DO UPDATE SET
+         ON CONFLICT(bvid) DO UPDATE SET
+           run_id = excluded.run_id,
            type = excluded.type,
            title = excluded.title,
            uname = excluded.uname,
@@ -119,6 +119,7 @@ export default class ConvertHistoryStore {
     this.db
       .prepare(
         `UPDATE convert_history SET
+           run_id = ?,
            output_path = ?,
            file_size = ?,
            status = ?,
@@ -126,9 +127,9 @@ export default class ConvertHistoryStore {
            duration_ms = ?,
            completed_at = ?,
            updated_at = ?
-         WHERE run_id = ? AND bvid = ?`
+         WHERE bvid = ?`
       )
-      .run(outputPath, fileSize, status, args.message, args.durationMs ?? null, now, now, runId, bvid)
+      .run(runId, outputPath, fileSize, status, args.message, args.durationMs ?? null, now, now, bvid)
   }
 
   /**

@@ -1,9 +1,11 @@
+import FavoritesProgressToast from '@renderer/components/FavoritesProgressToast.vue'
 import { fetchAllFavorites, type FavoritesFetchProgress } from '@renderer/services/favorites'
 import { fetchCurrentUserInfo } from '@renderer/services/user'
 import { usePreferenceStore } from '@renderer/store/preference'
 import type { FavoritesData } from '@shared/types'
 import { defineStore } from 'pinia'
 import { computed, reactive } from 'vue'
+import { toast } from 'vue-sonner'
 
 const idleProgress = (): FavoritesFetchProgress => ({
   running: false,
@@ -22,7 +24,6 @@ const idleProgress = (): FavoritesFetchProgress => ({
 export const useFavoritesStore = defineStore('favorites', () => {
   const progress = reactive<FavoritesFetchProgress>(idleProgress())
   const running = computed(() => progress.running)
-
   /**
    * 刷新收藏夹缓存：读取用户 mid（缺失时兜底获取并持久化用户信息），
    * 拉取全部收藏夹数据并写入 preference store 持久化
@@ -44,7 +45,7 @@ export const useFavoritesStore = defineStore('favorites', () => {
     progress.phase = 'list'
     progress.percent = 0
     try {
-      const data = await fetchAllFavorites(userInfo.mid, p => {
+      const dataPromise = fetchAllFavorites(userInfo.mid, p => {
         progress.running = p.running
         progress.phase = p.phase
         progress.percent = p.percent
@@ -53,6 +54,22 @@ export const useFavoritesStore = defineStore('favorites', () => {
         progress.currentFolderTitle = p.currentFolderTitle
         progress.currentVideoPage = p.currentVideoPage
       })
+      toast.promise(dataPromise, {
+        loading: FavoritesProgressToast,
+        class: 'favorites-fetch-toast',
+        success: data => {
+          const videoCount = data.folders.reduce((sum, folder) => sum + folder.videos.length, 0)
+          return {
+            message: `已获取 ${data.folders.length} 个收藏夹`,
+            description: `共 ${videoCount} 个视频，缓存已更新`
+          }
+        },
+        error: error => ({
+          message: '获取收藏夹失败',
+          description: error instanceof Error ? error.message : String(error)
+        })
+      })
+      const data = await dataPromise
       preferenceStore.preference['favorites-data'] = data
       preferenceStore.savePreference()
       return data

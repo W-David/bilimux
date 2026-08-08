@@ -146,6 +146,7 @@ const handleClick = (): void => {
   startDownloadVideo({
     bvid: props.video.bvid,
     title: props.video.title,
+    uname: props.video.upper.name,
     folderName: props.folderName,
     coverUrl: props.video.cover
   })

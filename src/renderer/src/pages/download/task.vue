@@ -62,9 +62,27 @@
       </div>
     </div>
 
-    <FavoritesRefreshProgress class="flex-none" />
+    <!-- 获取收藏夹中：骨架屏 -->
+    <div
+      v-if="favoritesStore.running"
+      class="min-h-0 flex flex-1 gap-3 overflow-hidden p-4">
+      <div class="flex w-72 shrink-0 flex-col gap-3">
+        <Skeleton
+          v-for="i in 6"
+          :key="`folder-skeleton-${i}`"
+          class="h-16 w-full" />
+      </div>
+      <div class="flex flex-1 flex-col gap-3">
+        <Skeleton
+          v-for="i in 4"
+          :key="`video-skeleton-${i}`"
+          class="h-24 w-full" />
+      </div>
+    </div>
 
-    <div class="min-h-0 flex flex-1 overflow-hidden">
+    <div
+      v-else
+      class="min-h-0 flex flex-1 overflow-hidden">
       <FolderList
         :folders="folders"
         :error-message="errorMessage"
@@ -105,7 +123,6 @@
 <script setup lang="ts">
 import { LogOut as LogOutIcon } from '@lucide/vue'
 import { getDownloadHistories, getDownloadHistory, subscribeDownloadItemEndEvent } from '@renderer/api'
-import FavoritesRefreshProgress from '@renderer/components/FavoritesRefreshProgress.vue'
 import FolderList from '@renderer/components/FolderList.vue'
 import VideoList from '@renderer/components/VideoList.vue'
 import { mittbus } from '@renderer/ipc'

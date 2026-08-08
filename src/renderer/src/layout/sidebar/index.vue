@@ -22,27 +22,16 @@
 </template>
 
 <script setup lang="ts">
-import {
-  Download as DownloadIcon,
-  Info as InfoIcon,
-  List as ListIcon,
-  RotateCw as RotateCwIcon,
-  Settings as SettingsIcon
-} from '@lucide/vue'
+import { Download as DownloadIcon, Info as InfoIcon, List as ListIcon, Settings as SettingsIcon } from '@lucide/vue'
 import logger from 'electron-log/renderer'
 import { onUnmounted, ref } from 'vue'
 import SidebarItem from './Item.vue'
 
 const hItems = ref([
   {
-    label: '转换',
-    icon: RotateCwIcon,
-    to: { name: 'convert' }
-  },
-  {
     label: '转换管理',
     icon: ListIcon,
-    to: { name: 'convert-manager', activeMenu: 'convert-manager' }
+    to: { name: 'convert', activeMenu: 'convert' }
   },
   {
     label: '下载',

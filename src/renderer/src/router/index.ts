@@ -1,7 +1,6 @@
 import Layout from '@renderer/layout/index.vue'
 import Main from '@renderer/layout/Main.vue'
 import About from '@renderer/pages/About.vue'
-import Convert from '@renderer/pages/Convert.vue'
 import ConvertComplete from '@renderer/pages/convert/complete.vue'
 import ConvertEntire from '@renderer/pages/convert/entire.vue'
 import ConvertIndex from '@renderer/pages/convert/index.vue'
@@ -18,7 +17,7 @@ import { useAuthStore } from '@renderer/store/auth'
 import { createMemoryHistory, createRouter, type RouteRecordNormalized, type RouteRecordRaw } from 'vue-router'
 
 // 转换管理页最后停留的分组，父路由重定向时使用，避免每次进入都被重置到“未完成”
-let lastConvertTabName = 'convert-manager-unconverted'
+let lastConvertTabName = 'convert-unconverted'
 // 设置页最后停留的分组，父路由重定向时使用
 let lastSettingTabName = 'prefer-normal'
 
@@ -35,42 +34,37 @@ const routes: RouteRecordRaw[] = [
           {
             path: 'convert',
             name: 'convert',
-            component: Convert
-          },
-          {
-            path: 'convert-manager',
-            name: 'convert-manager',
             component: ConvertIndex,
             redirect: () => ({ name: lastConvertTabName }),
             meta: {
-              activeMenu: 'convert-manager'
+              activeMenu: 'convert'
             },
             children: [
               {
                 path: 'entire',
-                name: 'convert-manager-entire',
+                name: 'convert-entire',
                 component: ConvertEntire,
                 meta: {
                   switchTransition: true,
-                  activeMenu: 'convert-manager'
+                  activeMenu: 'convert'
                 }
               },
               {
                 path: 'complete',
-                name: 'convert-manager-complete',
+                name: 'convert-complete',
                 component: ConvertComplete,
                 meta: {
                   switchTransition: true,
-                  activeMenu: 'convert-manager'
+                  activeMenu: 'convert'
                 }
               },
               {
                 path: 'unconverted',
-                name: 'convert-manager-unconverted',
+                name: 'convert-unconverted',
                 component: ConvertUnconverted,
                 meta: {
                   switchTransition: true,
-                  activeMenu: 'convert-manager'
+                  activeMenu: 'convert'
                 }
               }
             ]
@@ -188,8 +182,7 @@ function findChildIndex(parent: RouteRecordNormalized | undefined, target: Route
 }
 
 router.beforeEach(to => {
-  const authStore = useAuthStore()
-  const isAuthenticated = authStore.isAuthenticated
+  const isAuthenticated = useAuthStore().isAuthenticated
   if (to.meta.requireAuth && !isAuthenticated) {
     return { name: 'download-auth' }
   }

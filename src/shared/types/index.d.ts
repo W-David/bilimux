@@ -159,6 +159,7 @@ type UserInfo = {
 type DownloadVideoTask = {
   bvid: string
   title: string
+  uname: string
   folderName: string
   coverUrl?: string
 }
@@ -256,6 +257,8 @@ type ProcessItemEndArgs = {
   durationMs?: number
   /** 产物已存在且未强制覆盖时跳过合成 */
   skipped?: boolean
+  /** 合成产物文件大小（字节） */
+  fileSize?: number
 }
 
 type ProcessBrokeArgs = {

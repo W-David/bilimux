@@ -14,14 +14,6 @@
       <div class="flex flex-none items-center gap-2">
         <Button
           size="sm"
-          :disabled="convertStore.runStatus === 'scanning' || convertStore.runStatus === 'processing'"
-          class="bg-red-400/10 text-red-400"
-          @click="showClearDialog = true">
-          <Trash2Icon data-icon="inline-start" />
-          清空历史
-        </Button>
-        <Button
-          size="sm"
           class="bg-gray-400/5 text-gray-400"
           @click="openOutputFolder">
           <FolderOpenIcon data-icon="inline-start" />
@@ -48,20 +40,29 @@
             class="size-4" />
           <span>{{ tab.label }}</span>
           <span
-            class="absolute right-0 z-10 h-3 min-w-8 flex items-center justify-center border border border-black/20 rounded-sm border-solid bg-[#222222] px-0.75 text-[8px] text-white shadow-[#222222] shadow-sm -top-2">
+            class="absolute right-0 z-10 h-3 min-w-8 flex items-center justify-center border border-black/20 rounded-sm border-solid bg-[#222222] px-0.75 text-[8px] text-white shadow-[#222222] shadow-sm -top-2">
             <span class="mx-0.75">{{ convertStore.counts[tab.countKey] }}</span>
           </span>
         </div>
       </div>
       <div class="flex items-center justify-end gap-2">
         <div class="flex flex-none items-center gap-2">
-          <Button
-            size="sm"
-            :disabled="convertStore.runStatus === 'scanning' || convertStore.runStatus === 'processing'"
+          <div
+            role="button"
+            tabindex="0"
+            class="flex h-8 cursor-pointer select-none items-center justify-center gap-2 rounded-2xl bg-gray-400/15 px-3 text-base font-bold text-gray-400 ring-1 ring-gray-400/20 transition-all duration-300 hover:bg-pink-400/25 hover:text-pink-300 active:scale-95 hover:ring-pink-400/20"
+            :class="
+              convertStore.runStatus === 'scanning' || convertStore.runStatus === 'processing'
+                ? 'pointer-events-none opacity-50'
+                : ''
+            "
             @click="convertStore.start()">
-            <PlayIcon data-icon="inline-start" />
-            开始转换
-          </Button>
+            <component
+              :is="runButtonState.icon"
+              class="size-5"
+              :class="{ 'animate-spin': runButtonState.spinning }" />
+            <span>{{ runButtonState.label }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -81,20 +82,6 @@
         </Transition>
       </RouterView>
     </div>
-
-    <!-- 清空历史确认弹窗 -->
-    <AlertDialog v-model:open="showClearDialog">
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>清空转换历史</AlertDialogTitle>
-          <AlertDialogDescription>确定要清空全部转换历史吗？此操作不可恢复。</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>取消</AlertDialogCancel>
-          <AlertDialogAction @click="handleClearHistory">清空</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   </div>
 </template>
 
@@ -104,14 +91,15 @@ import {
   CircleX as CircleXIcon,
   FolderOpen as FolderOpenIcon,
   List as ListIcon,
+  Loader2 as Loader2Icon,
   Play as PlayIcon,
-  Trash2 as Trash2Icon
+  Search as SearchIcon
 } from '@lucide/vue'
 import { openPath } from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
 import { useConvertStore } from '@renderer/store/convert'
 import { usePreferenceStore } from '@renderer/store/preference'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const convertStore = useConvertStore()
@@ -119,11 +107,21 @@ const preferenceStore = usePreferenceStore()
 const route = useRoute()
 const router = useRouter()
 
-const showClearDialog = ref(false)
+/** 运行按钮状态回显 */
+const runButtonState = computed(() => {
+  switch (convertStore.runStatus) {
+    case 'scanning':
+      return { icon: SearchIcon, label: '扫描中', spinning: false }
+    case 'processing':
+      return { icon: Loader2Icon, label: '运行中', spinning: true }
+    default:
+      return { icon: PlayIcon, label: 'Run', spinning: false }
+  }
+})
 
 const tabs = [
   {
-    name: 'convert-manager-entire',
+    name: 'convert-entire',
     label: '全部任务',
     icon: ListIcon,
     countKey: 'entire',
@@ -131,7 +129,7 @@ const tabs = [
     inactiveClass: ''
   },
   {
-    name: 'convert-manager-complete',
+    name: 'convert-complete',
     label: '已完成',
     icon: CircleCheckIcon,
     countKey: 'completed',
@@ -139,7 +137,7 @@ const tabs = [
     inactiveClass: ''
   },
   {
-    name: 'convert-manager-unconverted',
+    name: 'convert-unconverted',
     label: '未完成',
     icon: CircleXIcon,
     countKey: 'unconverted',
@@ -162,22 +160,6 @@ const openOutputFolder = async (): Promise<void> => {
     mittbus.emit('toast:add', {
       severity: 'error',
       message: errMessage
-    })
-  }
-}
-
-const handleClearHistory = async (): Promise<void> => {
-  showClearDialog.value = false
-  try {
-    await convertStore.clearHistory()
-    mittbus.emit('toast:add', {
-      severity: 'success',
-      message: '转换历史已清空'
-    })
-  } catch (error) {
-    mittbus.emit('toast:add', {
-      severity: 'error',
-      message: error instanceof Error ? error.message : String(error)
     })
   }
 }

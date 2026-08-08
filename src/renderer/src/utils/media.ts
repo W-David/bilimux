@@ -36,3 +36,38 @@ export const formatDuration = (seconds: number): string => {
   const pad = (value: number): string => String(value).padStart(2, '0')
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
 }
+
+/**
+ * 格式化转换耗时（毫秒）
+ */
+export const formatDurationMs = (ms?: number | null): string => {
+  if (ms == null || ms < 0) return ''
+  const totalSeconds = ms / 1000
+  if (totalSeconds < 60) {
+    return `${totalSeconds.toFixed(1)}s`
+  }
+  const minutes = Math.floor(totalSeconds / 60)
+  if (minutes < 60) {
+    const seconds = Math.round(totalSeconds % 60)
+    return `${minutes}m ${seconds}s`
+  }
+  const hours = Math.floor(minutes / 60)
+  const restMinutes = minutes % 60
+  return `${hours}h ${restMinutes}m`
+}
+
+/**
+ * 格式化文件大小
+ */
+export const formatFileSize = (bytes?: number | null): string => {
+  if (bytes == null || bytes <= 0) return ''
+  const units = ['B', 'KB', 'MB', 'GB']
+  let value = bytes
+  let unitIndex = 0
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024
+    unitIndex += 1
+  }
+  const digits = value >= 100 || unitIndex === 0 ? 0 : 1
+  return `${value.toFixed(digits)} ${units[unitIndex]}`
+}

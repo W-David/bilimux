@@ -142,7 +142,7 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
   private createRuntime(task: DownloadVideoTask): TaskRuntime {
     const outputDir = this.configManager.getStore()['download-config'].outputDir
     // 直接按文件名生成在 output/download 目录下
-    const finalPath = path.join(outputDir, `${this.sanitizeFileName(task.title)}-[${task.bvid}].mp4`)
+    const finalPath = path.join(outputDir, `[${task.bvid}]-[${task.uname}]-${this.sanitizeFileName(task.title)}.mp4`)
     const folderDir = path.dirname(finalPath)
 
     return {
