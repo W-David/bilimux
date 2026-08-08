@@ -66,7 +66,7 @@
       <Button
         size="sm"
         variant="outline"
-        :disabled="refreshingUserInfo"
+        :disabled="refreshingUserInfo || favoritesStore.running"
         @click="refreshUserInfo">
         <Spinner
           v-if="refreshingUserInfo"
@@ -83,7 +83,7 @@
       <Button
         size="sm"
         variant="destructive"
-        :disabled="!currentUserInfo || loggingOut"
+        :disabled="!currentUserInfo || loggingOut || favoritesStore.running"
         @click="handleLogout">
         <Spinner
           v-if="loggingOut"
@@ -102,6 +102,7 @@ import { LogOut as LogOutIcon, RefreshCw as RefreshCwIcon } from '@lucide/vue'
 import { mittbus } from '@renderer/ipc'
 import { fetchCurrentUserInfo } from '@renderer/services/user'
 import { useAuthStore } from '@renderer/store/auth'
+import { useFavoritesStore } from '@renderer/store/favorites'
 import { usePreferenceStore } from '@renderer/store/preference'
 import { safeCover } from '@renderer/utils/media'
 import logger from 'electron-log/renderer'
@@ -113,6 +114,7 @@ const store = usePreferenceStore()
 const { preference } = storeToRefs(store)
 const { savePreference } = store
 const authStore = useAuthStore()
+const favoritesStore = useFavoritesStore()
 const router = useRouter()
 
 const refreshingUserInfo = ref(false)

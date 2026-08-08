@@ -55,6 +55,7 @@
         <Button
           size="sm"
           variant="outline"
+          :disabled="favoritesStore.running"
           @click="showLogoutDialog = true">
           <LogOutIcon data-icon="inline-start" />
           退出登录
@@ -105,9 +106,9 @@
           <AlertDialogDescription>确定要退出当前账号吗？退出后将清除本地保存的登录信息。</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel :disabled="loggingOut">取消</AlertDialogCancel>
+          <AlertDialogCancel :disabled="loggingOut || favoritesStore.running">取消</AlertDialogCancel>
           <AlertDialogAction
-            :disabled="loggingOut"
+            :disabled="loggingOut || favoritesStore.running"
             @click="handleLogout">
             <Spinner
               v-if="loggingOut"

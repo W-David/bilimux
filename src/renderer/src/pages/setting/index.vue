@@ -45,7 +45,8 @@
         <Button
           size="sm"
           variant="ghost"
-          @click="clear">
+          :disabled="favoritesStore.running"
+          @click="showResetDialog = true">
           重置
         </Button>
         <Button
@@ -56,6 +57,25 @@
         </Button>
       </div>
     </div>
+
+    <!-- 重置确认弹窗 -->
+    <AlertDialog v-model:open="showResetDialog">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>重置所有设置</AlertDialogTitle>
+          <AlertDialogDescription>
+            <div class="flex flex-col gap-1">
+              <span>将重置：所有设置、登录信息、收藏夹缓存。</span>
+              <span>不会删除：已下载的视频文件、下载历史、转换历史。</span>
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogAction @click="clear">重置</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>
 
@@ -69,15 +89,19 @@ import {
 } from '@lucide/vue'
 import { clearNativeStore, subscribeFetchPreferenceEvent } from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
+import { useFavoritesStore } from '@renderer/store/favorites'
 import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
-import { onUnmounted } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const store = usePreferenceStore()
 const { fetchPreference, savePreference } = store
+const favoritesStore = useFavoritesStore()
 const route = useRoute()
 const router = useRouter()
+
+const showResetDialog = ref(false)
 
 const tabs = [
   { name: 'prefer-normal', label: '常规设置', icon: SettingsIcon },
@@ -114,6 +138,7 @@ const save = async (): Promise<void> => {
 }
 
 const clear = (): void => {
+  showResetDialog.value = false
   clearNativeStore()
 }
 
