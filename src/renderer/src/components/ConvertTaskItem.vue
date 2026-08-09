@@ -1,6 +1,6 @@
 <template>
   <div
-    class="border border-black/5 bg-[#121212] shadow-sm shadow-black/50 hover:bg-[#202020] relative min-w-2xl w-full cursor-pointer overflow-hidden rounded-xl p-2">
+    class="border border-black/5 bg-[#121212] shadow-sm shadow-black/50 min-w-2xl w-full overflow-hidden rounded-xl p-2">
     <!-- Line1 -->
     <div class="flex items-center justify-between gap-4">
       <!-- bvid -->

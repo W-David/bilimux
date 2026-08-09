@@ -1,5 +1,6 @@
 import { getCookie, logout as logoutApi } from '@renderer/api'
 import { checkAuthStatus } from '@renderer/api/network'
+import { mittbus } from '@renderer/ipc'
 import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
 import { defineStore } from 'pinia'
@@ -21,6 +22,10 @@ export const useAuthStore = defineStore('auth', {
       if (!biliJct) {
         logger.error('bili_jct cookie not found')
         this.clearCachedUserData()
+        mittbus.emit('toast:add', {
+          severity: 'warn',
+          message: '登录状态已失效，请重新扫码登录'
+        })
         return
       }
       const res = await checkAuthStatus({
@@ -33,6 +38,10 @@ export const useAuthStore = defineStore('auth', {
       if (refresh) {
         this.isAuthenticated = false
         this.clearCachedUserData()
+        mittbus.emit('toast:add', {
+          severity: 'warn',
+          message: '登录状态已过期，请重新扫码登录'
+        })
         logger.debug('需要刷新Cookie')
       } else {
         this.isAuthenticated = true

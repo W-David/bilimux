@@ -171,7 +171,6 @@ const refreshUserInfo = async (): Promise<void> => {
   } catch (error) {
     logger.error('刷新用户数据失败:', error)
     preference.value['user-info'] = null
-    preference.value['favorites-data'] = null
     savePreference()
     mittbus.emit('toast:add', {
       severity: 'error',
