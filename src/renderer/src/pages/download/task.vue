@@ -111,7 +111,7 @@ import { usePreferenceStore } from '@renderer/store/preference'
 import { safeCover } from '@renderer/utils/media'
 import type { DownloadHistoryRecord } from '@shared/types'
 import logger from 'electron-log/renderer'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
 const preferenceStore = usePreferenceStore()
 const favoritesStore = useFavoritesStore()
@@ -132,6 +132,8 @@ const nicknameStyle = computed(() =>
 const errorMessage = ref('')
 const refreshing = ref(false)
 const historyMap = ref<Map<string, DownloadHistoryRecord>>(new Map())
+// 收藏夹数据版本号：丢弃过期的下载历史查询结果，避免旧数据覆盖新数据
+let historyLoadVersion = 0
 
 /**
  * 一次性获取当前用户的所有收藏夹及每个收藏夹内的全部视频
@@ -142,13 +144,6 @@ const loadData = async (): Promise<void> => {
   errorMessage.value = ''
   try {
     await favoritesStore.refreshAllFavorites()
-
-    // 刷新后按 id 保留之前选中的收藏夹
-    if (currentFolder.value) {
-      const selectedId = currentFolder.value.id
-      currentFolder.value = folders.value.find(folder => folder.id === selectedId) ?? null
-    }
-    await loadHistories()
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     errorMessage.value = message
@@ -162,15 +157,30 @@ const loadData = async (): Promise<void> => {
  * 查询所有视频的下载历史，用于回显下载状态
  */
 const loadHistories = async (): Promise<void> => {
+  const version = ++historyLoadVersion
   const bvids = folders.value.flatMap(folder => folder.videos.map(video => video.bvid))
-  if (bvids.length === 0) return
+  if (bvids.length === 0) {
+    historyMap.value = new Map()
+    return
+  }
   try {
     const records = await getDownloadHistories(bvids)
+    if (version !== historyLoadVersion) return
     historyMap.value = new Map(records.map(record => [record.bvid, record]))
   } catch (error) {
     logger.warn('查询下载历史失败:', error)
   }
 }
+
+// 收藏夹数据变化（登录获取完成、手动刷新、清空缓存）时重新加载下载历史，
+// 避免挂载时只加载一次导致 historyMap 与新数据不匹配
+watch(
+  () => preferenceStore.preference['favorites-data'],
+  () => {
+    void loadHistories()
+  },
+  { immediate: true }
+)
 
 /**
  * 打开收藏夹（数据已一次性获取，直接切换展示）
@@ -227,10 +237,6 @@ const onDownloadHistoryCleared = (): void => {
   historyMap.value = new Map()
 }
 mittbus.on('download:history:cleared', onDownloadHistoryCleared)
-
-onMounted(() => {
-  loadData()
-})
 
 onUnmounted(() => {
   mittbus.off('download:history:cleared', onDownloadHistoryCleared)

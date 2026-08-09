@@ -105,6 +105,7 @@ import { persistCookie } from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
 import { fetchCurrentUserInfo } from '@renderer/services/user'
 import { useAuthStore } from '@renderer/store/auth'
+import { useFavoritesStore } from '@renderer/store/favorites'
 import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
 import QRCode from 'qrcode'
@@ -126,6 +127,7 @@ enum QRCodeStatus {
 // 状态定义
 const status = ref<LoginStatus>('initial')
 const authStore = useAuthStore()
+const favoritesStore = useFavoritesStore()
 const router = useRouter()
 const qrCodeUrl = ref('')
 const qrCodeKey = ref('')
@@ -249,6 +251,10 @@ const startPolling = () => {
               logger.error('持久化登录 Cookie 失败:', error)
             }
             await persistUserInfoOnLogin()
+            // 登录成功后只在这里触发一次收藏夹获取，下载页不再挂载即自动获取
+            favoritesStore.refreshAllFavorites().catch(error => {
+              logger.error('登录后获取收藏夹失败:', error)
+            })
             router.push({ name: 'download-task' })
             break
           case QRCodeStatus.SCANNED: // 已扫码未确认
