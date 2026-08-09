@@ -239,10 +239,12 @@ const startPolling = () => {
             stopPolling()
             stopCountdown()
             logger.debug('扫码已确认')
+            logger.info('扫码登录成功，开始持久化登录 Cookie')
             authStore.isAuthenticated = true
             try {
               // 登录成功后主动持久化 cookie jar，避免重启后登录态丢失
               await persistCookie()
+              logger.info('登录 Cookie 已主动持久化')
             } catch (error) {
               logger.error('持久化登录 Cookie 失败:', error)
             }

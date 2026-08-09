@@ -22,7 +22,6 @@ export const usePreferenceStore = defineStore('preference', () => {
     'auto-hide-window': false,
     'bind-close-to-hide': false,
     'log-level': 'verbose',
-    'user-cookie': '',
     'user-info': null,
     'favorites-data': null
   })
@@ -34,7 +33,10 @@ export const usePreferenceStore = defineStore('preference', () => {
 
   async function fetchPreference(): Promise<UserPreference> {
     const config = await loadConfigFromNativeStore()
-    const assignPreference = Object.assign(preference, config)
+    // user-cookie 由主进程 HttpClient 独占管理，渲染层不需要持有，
+    // 剥掉后再赋值，避免 savePreference 回传时覆盖主进程的登录 Cookie
+    const { 'user-cookie': _userCookie, ...safeConfig } = config
+    const assignPreference = Object.assign(preference, safeConfig)
     return assignPreference
   }
 

@@ -143,7 +143,9 @@ export default class Application {
 
   handleIpcEvents(): void {
     this.ipcManager.mainIpc.on('save-preference', (_, config) => {
-      this.configManager.store.set(config)
+      // user-cookie 由主进程 HttpClient 独占管理，忽略渲染层回传的值，避免覆盖登录 Cookie
+      const { 'user-cookie': _userCookie, ...preference } = config
+      this.configManager.store.set(preference)
       this.windowManager.sendCommandToAll('fetch-preference')
       logger.debug('preference saved')
     })
@@ -221,6 +223,7 @@ export default class Application {
       this.downloadHistoryStore.clear()
     })
     this.ipcManager.mainIpc.handle('persist-cookie', () => {
+      logger.info('[Cookie] 收到 persist-cookie IPC')
       this.httpClient.saveCookieJar()
     })
     this.ipcManager.mainIpc.handle('get-cookie', async (_, key: string) => {

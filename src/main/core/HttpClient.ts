@@ -6,9 +6,9 @@ import fs from 'node:fs'
 import { pipeline } from 'node:stream/promises'
 import { CookieJar } from 'tough-cookie'
 import UserAgent from 'user-agents'
+import { resetWbiKeys } from '../utils/wbi'
 import ConfigManager from './ConfigManager'
 import logger from './Logger'
-import { resetWbiKeys } from '../utils/wbi'
 
 export interface HtmlResponseType {
   statusCode: number
@@ -44,6 +44,13 @@ export default class HttpClient {
   userAgent: UserAgent
   configManager: ConfigManager
   client: Got
+
+  private cookieKeys(cookies: Array<{ key?: string } | undefined>): string {
+    return cookies
+      .filter((cookie): cookie is { key: string } => Boolean(cookie?.key))
+      .map(cookie => cookie.key)
+      .join(', ')
+  }
 
   constructor(configManager: ConfigManager) {
     this.userAgent = new UserAgent({ deviceCategory: 'desktop' })
@@ -117,20 +124,33 @@ export default class HttpClient {
   private loadCookieJar() {
     const cookieStr = this.configManager.store.get('user-cookie')
     if (cookieStr) {
-      return CookieJar.deserializeSync(JSON.parse(cookieStr))
+      const jar = CookieJar.deserializeSync(JSON.parse(cookieStr))
+      const cookies = jar.serializeSync()?.cookies ?? []
+      logger.info(`[Cookie] 启动时从 user-cookie 恢复 jar: ${cookies.length} 个 (${this.cookieKeys(cookies)})`)
+      return jar
     }
+    logger.info('[Cookie] 启动时 user-cookie 为空，使用空 jar')
     return new CookieJar()
   }
 
   public saveCookieJar() {
     const cookie = this.cookieJar.serializeSync()
+    if (!cookie) {
+      logger.warn('[Cookie] saveCookieJar: cookieJar 序列化失败，跳过写入')
+      return
+    }
+    const cookies = cookie.cookies ?? []
+    logger.info(`[Cookie] saveCookieJar 写入 user-cookie: ${cookies.length} 个 (${this.cookieKeys(cookies)})`)
+    logger.debug('saveCookieJar Runed, [CookieJar]: ', cookie)
     this.configManager.store.set('user-cookie', JSON.stringify(cookie))
   }
 
   async getCookieKey(key: string) {
     // 从整个 jar 中按 key 查找，避免 host-only cookie 因域名不匹配而查不到
     const cookies = await this.cookieJar.store.getAllCookies()
+    logger.info(`[Cookie] getCookieKey('${key}') 当前 jar 共 ${cookies.length} 个: ${this.cookieKeys(cookies)}`)
     const cookieObj = cookies.find(cookie => cookie.key === key)
+    logger.info(`[Cookie] getCookieKey('${key}') ${cookieObj ? '找到' : '未找到'}`)
     return cookieObj
   }
 
