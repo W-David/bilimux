@@ -189,6 +189,9 @@ export default class Application {
     this.ipcManager.mainIpc.handle('open-log-file', async () => {
       return shell.openPath(logger.transports.file.getFile().path)
     })
+    this.ipcManager.mainIpc.handle('clear-log-file', () => {
+      return logger.transports.file.getFile().clear()
+    })
     this.ipcManager.mainIpc.handle('get-app-version', event => {
       this.updateManager.setSender(event.sender)
       return this.context['appVersion']

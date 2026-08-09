@@ -157,6 +157,13 @@ export const openLogFile: RendererEmitterInvokeFn<'open-log-file'> = () => {
 }
 
 /**
+ * 清空日志文件
+ */
+export const clearLogFile: RendererEmitterInvokeFn<'clear-log-file'> = () => {
+  return emitter.invoke('clear-log-file')
+}
+
+/**
  * 保存配置到本地存储
  */
 export const saveConfigToNativeStore: RendererEmitterSendFn<'save-preference'> = setting => {

@@ -20,6 +20,7 @@ type IpcMainHandleEvents = {
   'open-path': (path: string) => string
   'open-folder': (path: string) => void
   'open-log-file': () => string
+  'clear-log-file': () => boolean
   'start:process': () => void
   'check-for-update': () => UpdateCheckResult | null
   'download-update': () => string[]

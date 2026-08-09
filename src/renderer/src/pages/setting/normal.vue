@@ -26,6 +26,16 @@
             </TooltipTrigger>
             <TooltipContent side="right">查看日志文件</TooltipContent>
           </Tooltip>
+          <Tooltip>
+            <TooltipTrigger>
+              <span
+                class="ml-1 inline-block cursor-pointer hover:text-pink-400"
+                @click="showClearDialog = true">
+                <Trash2Icon class="size-3" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="right">清空日志文件</TooltipContent>
+          </Tooltip>
         </TooltipProvider>
       </div>
       <ToggleGroup
@@ -40,12 +50,26 @@
         </ToggleGroupItem>
       </ToggleGroup>
     </div>
+
+    <!-- 清空日志确认弹窗 -->
+    <AlertDialog v-model:open="showClearDialog">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>清空日志</AlertDialogTitle>
+          <AlertDialogDescription>确定要清空当前日志文件吗？此操作不可恢复。</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogAction @click="handleClearLog">清空日志</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ExternalLink as ExternalLinkIcon } from '@lucide/vue'
-import { openLogFile } from '@renderer/api'
+import { ExternalLink as ExternalLinkIcon, Trash2 as Trash2Icon } from '@lucide/vue'
+import { clearLogFile, openLogFile } from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
 import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
@@ -56,6 +80,7 @@ const store = usePreferenceStore()
 const { preference } = storeToRefs(store)
 
 const logLevelOptions = ref(['verbose', 'info', 'warn', 'error'])
+const showClearDialog = ref(false)
 
 const openLog = async (): Promise<void> => {
   const err = await openLogFile()
@@ -64,6 +89,30 @@ const openLog = async (): Promise<void> => {
     mittbus.emit('toast:add', {
       severity: 'error',
       message: err
+    })
+  }
+}
+
+const handleClearLog = async (): Promise<void> => {
+  showClearDialog.value = false
+  try {
+    const ok = await clearLogFile()
+    if (ok) {
+      mittbus.emit('toast:add', {
+        severity: 'success',
+        message: '日志已清空'
+      })
+    } else {
+      mittbus.emit('toast:add', {
+        severity: 'error',
+        message: '清空日志失败'
+      })
+    }
+  } catch (error) {
+    logger.error('清空日志失败:', error)
+    mittbus.emit('toast:add', {
+      severity: 'error',
+      message: error instanceof Error ? error.message : String(error)
     })
   }
 }
