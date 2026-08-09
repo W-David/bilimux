@@ -1,7 +1,6 @@
 import { IpcMainEvents, IpcRendererEvents } from '@shared/ipc/events'
 import type { ExtractArgs, ExtractHandler, IpcEventMap, IpcListenEventMap } from '@shared/ipc/types'
 import { ipcMain } from 'electron'
-import logger from './Logger'
 
 /**
  * Typed listener for Electron `ipcMain`.
@@ -64,8 +63,6 @@ export default class IPCManager {
   constructor() {
     this.mainIpc = new IpcListener<IpcMainEvents>()
     this.mainEmitter = new IpcEmitter<IpcRendererEvents>()
-
-    logger.info(this.constructor.name, 'inited')
   }
 
   dispose() {

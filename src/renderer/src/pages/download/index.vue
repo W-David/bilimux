@@ -16,11 +16,5 @@
 </template>
 
 <script setup lang="ts">
-import logger from 'electron-log/renderer'
-import { KeepAlive, onUnmounted } from 'vue'
-
-logger.debug('Download index created')
-onUnmounted(() => {
-  logger.debug('Download index unmounted')
-})
+import { KeepAlive } from 'vue'
 </script>

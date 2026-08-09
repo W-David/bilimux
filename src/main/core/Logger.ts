@@ -2,7 +2,7 @@ import is from 'electron-is'
 import { type LogLevel } from 'electron-log'
 import logger from 'electron-log/main'
 
-const level: LogLevel = is.dev() ? 'silly' : 'info'
+const level: LogLevel = is.dev() ? 'verbose' : 'warn'
 
 logger.transports.console.level = level
 logger.transports.console.format = '{h}:{i}:{s} [{level}] {text}'

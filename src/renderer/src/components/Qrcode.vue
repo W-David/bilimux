@@ -1,6 +1,5 @@
 <template>
-  <div
-    class="h-full w-full flex flex-col items-center justify-center gap-2 rounded-md bg-zinc-950 p-6 backdrop-blur-md hover:shadow">
+  <div class="h-full w-full flex flex-col items-center justify-center gap-2 rounded-md">
     <div class="relative h-44 w-44 flex items-center justify-center overflow-hidden rounded-xl bg-transparent">
       <Transition
         name="fade"
@@ -10,7 +9,7 @@
         <div
           v-if="status === 'loading'"
           class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-zinc-900/90 backdrop-blur-sm">
-          <div class="i-mdi-loading animate-spin text-3xl text-pink-500"></div>
+          <Loader2Icon class="size-8 animate-spin text-pink-500" />
         </div>
 
         <!-- Loaded QR Code Image -->
@@ -27,7 +26,7 @@
         <div
           v-else-if="status === 'scanned'"
           class="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-xl bg-zinc-900/90 p-4 text-center backdrop-blur-md">
-          <div class="i-mdi-cellphone-check animate-pulse text-5xl text-green-500"></div>
+          <SmartphoneIcon class="size-10 animate-pulse text-green-500" />
         </div>
 
         <!-- Expired State -->
@@ -35,15 +34,14 @@
           v-else-if="status === 'expired'"
           class="absolute inset-0 z-20 flex flex-col cursor-pointer items-center justify-center rounded-xl bg-black/80 text-white backdrop-blur-sm transition-all hover:bg-black/90"
           @click="initQRCode">
-          <div
-            class="i-mdi-refresh text-4xl text-gray-400 transition-transform duration-500 group-hover:rotate-180"></div>
+          <RefreshCwIcon class="size-8 text-gray-400 transition-transform duration-500 group-hover:rotate-180" />
         </div>
 
         <!-- Success State -->
         <div
           v-else-if="status === 'success'"
           class="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-xl bg-zinc-900/95">
-          <div class="i-mdi-check-circle animate-bounce text-5xl text-green-500"></div>
+          <CircleCheckIcon class="size-10 animate-bounce text-green-500" />
         </div>
 
         <!-- Initial State -->
@@ -51,23 +49,19 @@
           v-else
           class="group absolute inset-0 z-10 flex flex-col cursor-pointer items-center justify-center border-2 border-zinc-700 rounded-xl border-dashed bg-zinc-800/50 transition-colors duration-300 hover:border-pink-500/50 hover:bg-zinc-800"
           @click="initQRCode">
-          <div
-            class="i-mdi-qrcode-scan mb-3 transform text-5xl text-gray-600 transition-colors duration-300 group-hover:scale-110 group-hover:text-pink-500"></div>
+          <QrCodeIcon
+            class="mb-3 size-10 text-gray-600 transition-colors duration-300 group-hover:scale-110 group-hover:text-pink-500" />
           <span class="text-xs text-gray-500 font-medium transition-colors group-hover:text-gray-300">获取二维码</span>
         </div>
       </Transition>
     </div>
 
     <!-- Status Text -->
-    <div
-      class="mt-4 w-full text-sm text-gray-200"
-      flex="~ items-center justify-center">
+    <div class="mt-4 w-full text-sm text-gray-200 flex items-center justify-center">
       <div v-if="status === 'loading'">正在加载二维码...</div>
       <div v-else-if="status === 'loaded'">
         <div class="mb-1">请使用 Bilibili 移动端扫码</div>
-        <div
-          class="font-size-3 color-gray-200"
-          flex="~ justify-center items-center">
+        <div class="text-xs text-gray-200 flex items-center justify-center">
           <div>即将于</div>
           <div class="w-10 text-center text-pink-500 font-mono">{{ countdown }}s</div>
           <div>后过期</div>
@@ -90,20 +84,32 @@
       </div>
       <div
         v-else
-        class="color-pink">
-        点击上方图标开始登录
+        class="w-50 overflow-hidden text-center text-wrap text-xs text-gray-400 font-normal leading-relaxed italic">
+        <div>为避免触发 B 站风控</div>
+        <div>登录后会一次性获取所有收藏夹视频</div>
+        <div>后续可手动刷新</div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { $dt } from '@primeuix/themes'
+import {
+  CircleCheck as CircleCheckIcon,
+  Loader2 as Loader2Icon,
+  QrCode as QrCodeIcon,
+  RefreshCw as RefreshCwIcon,
+  Smartphone as SmartphoneIcon
+} from '@lucide/vue'
+import { persistCookie } from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
+import { fetchCurrentUserInfo } from '@renderer/services/user'
 import { useAuthStore } from '@renderer/store/auth'
+import { useFavoritesStore } from '@renderer/store/favorites'
+import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
 import QRCode from 'qrcode'
-import { onUnmounted, ref } from 'vue'
+import { onActivated, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { checkQrCodeLoginStatus, getQrCode } from '../api/network'
 
@@ -121,6 +127,7 @@ enum QRCodeStatus {
 // 状态定义
 const status = ref<LoginStatus>('initial')
 const authStore = useAuthStore()
+const favoritesStore = useFavoritesStore()
 const router = useRouter()
 const qrCodeUrl = ref('')
 const qrCodeKey = ref('')
@@ -151,7 +158,7 @@ const initQRCode = async () => {
         margin: 1,
         width: 200,
         color: {
-          dark: $dt('pink.600').value as string,
+          dark: '#ec4899',
           light: '#ffffff'
         }
       })
@@ -164,10 +171,7 @@ const initQRCode = async () => {
       logger.error(message)
       mittbus.emit('toast:add', {
         severity: 'error',
-        closable: false,
-        life: 3000,
-        summary: 'error',
-        detail: message
+        message
       })
     }
   } catch (error) {
@@ -179,6 +183,7 @@ const initQRCode = async () => {
 const resetState = () => {
   stopPolling()
   stopCountdown()
+  status.value = 'initial'
   qrCodeUrl.value = ''
   qrCodeKey.value = ''
   countdown.value = 180
@@ -235,21 +240,27 @@ const startPolling = () => {
             status.value = 'success'
             stopPolling()
             stopCountdown()
-            logger.debug('扫码已确认')
             authStore.isAuthenticated = true
+            try {
+              // 登录成功后主动持久化 cookie jar，避免重启后登录态丢失
+              await persistCookie()
+            } catch (error) {
+              logger.error('持久化登录 Cookie 失败:', error)
+            }
+            await persistUserInfoOnLogin()
+            // 登录成功后只在这里触发一次收藏夹获取，下载页不再挂载即自动获取
+            favoritesStore.refreshAllFavorites().catch(error => {
+              logger.error('登录后获取收藏夹失败:', error)
+            })
             router.push({ name: 'download-task' })
-            // TODO 登录成功后，触发事件通知父组件或进行跳转
             break
           case QRCodeStatus.SCANNED: // 已扫码未确认
-            logger.debug('扫码未确认')
             status.value = 'scanned'
             break
           case QRCodeStatus.EXPIRED: // 二维码已失效
-            logger.debug('二维码已过期')
             handleExpired()
             break
           case QRCodeStatus.WAITING: // 未扫码 (waiting)
-            logger.debug('interval waiting...')
             break
           default:
             logger.warn('未知的扫码状态:', res.data)
@@ -259,6 +270,22 @@ const startPolling = () => {
       logger.error('检查扫码状态失败:', error)
     }
   }, 2000) // 每2秒轮询一次
+}
+
+/**
+ * 扫码登录成功后单独获取并持久化用户信息
+ */
+const persistUserInfoOnLogin = async (): Promise<void> => {
+  try {
+    const userInfo = await fetchCurrentUserInfo()
+    const preferenceStore = usePreferenceStore()
+    preferenceStore.preference['user-info'] = userInfo
+    // 新账号登录后清掉上一个账号的收藏夹缓存
+    preferenceStore.preference['favorites-data'] = null
+    preferenceStore.savePreference()
+  } catch (error) {
+    logger.error('登录后获取用户信息失败:', error)
+  }
 }
 
 // 停止轮询
@@ -277,10 +304,14 @@ const stopCountdown = () => {
   }
 }
 
-logger.info('Qrcode created')
+// KeepAlive 复用缓存实例时，若已退出登录则重置为初始画面
+onActivated(() => {
+  if (!authStore.isAuthenticated) {
+    resetState()
+  }
+})
 
 onUnmounted(() => {
   resetState()
-  logger.info('Qrcode unmounted')
 })
 </script>

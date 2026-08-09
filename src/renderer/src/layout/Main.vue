@@ -1,5 +1,5 @@
 <template>
-  <div class="relative h-full flex flex-col overflow-auto bg-dark-800">
+  <div class="relative h-full flex flex-col overflow-auto bg-[#181818]">
     <RouterView v-slot="{ Component, route }">
       <Transition
         :name="route.meta.transition"
@@ -8,7 +8,7 @@
         <KeepAlive>
           <component
             :is="Component"
-            :key="route.name"></component>
+            :key="route.matched[2]?.path ?? route.path"></component>
         </KeepAlive>
       </Transition>
     </RouterView>
@@ -16,11 +16,5 @@
 </template>
 
 <script setup lang="ts">
-import logger from 'electron-log/renderer'
-import { KeepAlive, onUnmounted } from 'vue'
-
-logger.debug('Main created')
-onUnmounted(() => {
-  logger.debug('Main unmounted')
-})
+import { KeepAlive } from 'vue'
 </script>

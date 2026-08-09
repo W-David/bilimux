@@ -15,11 +15,16 @@ export const usePreferenceStore = defineStore('preference', () => {
       forceComposition: false,
       genConfig: false
     },
+    'download-config': {
+      outputDir: '',
+      concurrent: 1
+    },
     'open-at-login': false,
     'auto-hide-window': false,
     'bind-close-to-hide': false,
     'log-level': 'verbose',
-    'user-cookie': ''
+    'user-info': null,
+    'favorites-data': null
   })
 
   // open-at-login, auto-hide-window 触发自动保存

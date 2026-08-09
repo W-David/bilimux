@@ -1,7 +1,6 @@
 import { app } from 'electron/main'
 import os from 'node:os'
 import process from 'node:process'
-import logger from './Logger'
 
 type ProcessContext = {
   platform: NodeJS.Platform
@@ -25,7 +24,5 @@ export default class Context implements ProcessContext {
     this.nodeVersion = version
     this.appVersion = app.getVersion()
     this.cpus = os.cpus()
-
-    logger.info(this.constructor.name, 'inited')
   }
 }

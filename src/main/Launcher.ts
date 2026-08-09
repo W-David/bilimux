@@ -35,13 +35,16 @@ export default class Launcher {
     app.whenReady().then(() => {
       app.setAppUserModelId('com.rushwang.bilimux')
       globalThis.application = this.application
+      // 首次启动打开主窗口；macOS 的 activate 事件会复用同一窗口
+      this.application.windowManager.openWindow('main')
+      this.application.windowManager.initTray()
       app.on('activate', () => {
         globalThis.application.windowManager.openWindow('main')
       })
     })
     app.on('will-quit', () => {})
     app.on('window-all-closed', () => {
-      if (this.application.context['platform'] === 'darwin') {
+      if (this.application.context['platform'] !== 'darwin') {
         app.quit()
       }
     })

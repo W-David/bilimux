@@ -7,7 +7,6 @@ export default class ExceptionHandler {
   showDialog: boolean
   constructor() {
     this.showDialog = !is.dev()
-    logger.info(this.constructor.name, 'inited')
   }
 
   setup(): void {
@@ -22,6 +21,15 @@ export default class ExceptionHandler {
 
       if (showDialog && app.isReady()) {
         dialog.showErrorBox('Error: ', message)
+      }
+    })
+    process.on('unhandledRejection', reason => {
+      const error = reason instanceof Error ? reason : new Error(String(reason))
+      logger.error(`UnhandledRejection: ${error.message}`)
+      logger.error(error.stack)
+
+      if (showDialog && app.isReady()) {
+        dialog.showErrorBox('Error: ', error.message)
       }
     })
   }

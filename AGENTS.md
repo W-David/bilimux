@@ -6,7 +6,8 @@ BiliMux — Electron desktop app that scans Bilibili client cache (split m4s) an
 
 - **Package manager: pnpm only** (`packageManager`: `pnpm@11.18.0`). Node >= 22.
 - pnpm 11 settings live in `pnpm-workspace.yaml` (`allowBuilds`, `shamefullyHoist`, `pmOnFail`) — not in `package.json` `pnpm` field or `.npmrc`.
-- `.npmrc` only has Electron download mirrors (npmmirror). Slow Electron install: set `ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/`.
+- `.npmrc` only has two Electron-related mirrors (npmmirror): `electron_mirror` and `electron_builder_binaries_mirror`. Slow Electron install: set `ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/`.
+- `allowBuilds` currently registers `electron`, `esbuild` and `vue-demi`. When adding/upgrading a dependency that runs a postinstall build script, register it in `pnpm-workspace.yaml` first — pnpm 11 skips unregistered build scripts.
 - If a non-TTY `pnpm install` aborts during a pnpm layout migration, delete `node_modules` and rerun `pnpm install`.
 
 ## Commands
@@ -43,18 +44,18 @@ No test suite. CI (`.github/workflows/lint.yml`): `pnpm lint:fix` then `pnpm typ
 
 ## Layout
 
-| Path | Role |
-| --- | --- |
-| `src/main/` | Main process. Entry `index.ts` → `Application` + `Launcher`. Core services under `core/` |
-| `src/preload/` | `contextBridge` → `window.electron` |
-| `src/renderer/` | Vue 3 UI (`src/renderer/src/`). Root HTML at `src/renderer/index.html` |
-| `src/shared/` | Cross-process types + IPC contracts |
-| `extra/{darwin,linux,win32}/` | Bundled MP4Box binaries (electron-builder `extraResources`) |
-| `out/` | electron-vite output (gitignored) |
-| `dist/` | packaged installers (gitignored) |
-| `build/` | app icons + mac entitlements |
-| `resources/` | extra app assets (e.g. `bilimux.png`) |
-| `PNPM_MIGRATION.md` | pnpm 11 migration notes (historical) |
+| Path                          | Role                                                                                     |
+| ----------------------------- | ---------------------------------------------------------------------------------------- |
+| `src/main/`                   | Main process. Entry `index.ts` → `Application` + `Launcher`. Core services under `core/` |
+| `src/preload/`                | `contextBridge` → `window.electron`                                                      |
+| `src/renderer/`               | Vue 3 UI (`src/renderer/src/`). Root HTML at `src/renderer/index.html`                   |
+| `src/shared/`                 | Cross-process types + IPC contracts                                                      |
+| `extra/{darwin,linux,win32}/` | Bundled MP4Box binaries (electron-builder `extraResources`)                              |
+| `out/`                        | electron-vite output (gitignored)                                                        |
+| `dist/`                       | packaged installers (gitignored)                                                         |
+| `build/`                      | app icons + mac entitlements                                                             |
+| `resources/`                  | extra app assets (e.g. `bilimux.png`)                                                    |
+| `PNPM_MIGRATION.md`           | pnpm 11 migration notes (historical)                                                     |
 
 ### Path aliases
 
@@ -63,7 +64,7 @@ No test suite. CI (`.github/workflows/lint.yml`): `pnpm lint:fix` then `pnpm typ
 
 ### Main process wiring
 
-`Application` owns: `Context`, `ConfigManager` (electron-store), `AutoLauncher`, `IPCManager`, `HttpClient` (got), `ComposEngine` + `ProcessQueue`, `WindowManager`, `UpdateManager`. Do not invent parallel singletons — extend these.
+`Application` owns: `Context`, `ConfigManager` (electron-store), `AutoLauncher`, `IPCManager`, `HttpClient` (got), `ComposEngine` + `ProcessQueue`, `DownloadManager`, `DownloadHistoryStore` (node:sqlite), `ConvertHistoryStore` (node:sqlite), `WindowManager`, `UpdateManager`. Do not invent parallel singletons — extend these.
 
 `Launcher` owns `ExceptionHandler` and the single-instance lock (non-macOS).
 
@@ -73,11 +74,22 @@ MP4Box path: `getEngineBinPath()` in `src/main/utils/index.ts` — dev uses `ext
 
 Typed contracts in `src/shared/ipc/events.d.ts` (`IpcMainHandleEvents`, `IpcMainListenEvents`, `IpcRendererEvents`). Main: `IPCManager` + handlers in `Application`. Renderer: `src/renderer/src/ipc/`. **Add/change channels in the shared events file first**, then wire both sides.
 
+Download flow: `DownloadManager` fetches `wbi/playurl` (Wbi signed via `src/main/utils/wbi.ts`), downloads DASH m4s or MP4 through `HttpClient.downloadFile`, and reuses `ComposEngine.mergeFiles` for m4s merging. Progress events: `download:item:start/progress/end`. Pause/resume is in-memory only (`download:pause`/`download:resume` IPC): partial files are kept, resume sends `Range` via `HttpClient.downloadFile`, and playurl is refreshed on retry so expired URLs restart from scratch. Download history is persisted in `userData/downloads.db` via `DownloadHistoryStore` (node:sqlite): start/complete/fail transitions write records, and renderer queries them through `download:history:list/get` IPC.
+
+Convert flow: `ComposEngine` emits `process:item:start/end` with `{ bvid, success, message, outputPath?, durationMs?, skipped? }`; `Application` persists finished items to `userData/converts.db` via `ConvertHistoryStore` and exposes `convert:history:list/clear` IPC. Renderer `store/convert.ts` merges in-memory tasks with the persisted history.
+
+### Persistence
+
+- electron-store (`ConfigManager`): `user-info`, `favorites-data`, `convert-config`, `download-config`.
+- node:sqlite: `userData/downloads.db` (`DownloadHistoryStore`) and `userData/converts.db` (`ConvertHistoryStore`).
+
 ### Renderer
 
-- Vue 3 + Pinia + vue-router **memory history** + PrimeVue 4 (Aura pink preset) + UnoCSS
-- PrimeVue + local components auto-imported (`unplugin-vue-components`; dirs: `components/`, `layout/`)
-- Pages: Convert, Download (auth/task), Prefer, About
+- Vue 3 + Pinia + vue-router **memory history** + Tailwind CSS v4 + shadcn-vue (Reka UI + lucide + vue-sonner)
+- shadcn-vue + local components auto-imported via `unplugin-vue-components` (dirs: `src/components`, `src/layout`, relative to the `src/renderer` root)
+- shadcn-vue config lives in root `components.json` (aliases `@renderer/components`, `@renderer/components/ui`, `@renderer/lib/utils`); generated UI components live in `src/renderer/src/components/ui/`; `cn` helper in `src/renderer/src/lib/utils.ts`; theme CSS variables in `src/renderer/src/styles/base.css` (dark-only, `.dark` on `<html>`, pink primary). Add/update components with `pnpm dlx shadcn-vue@latest add <component>`.
+- Pages: Convert (legacy), Convert Manager (`pages/convert/{index,complete,entire,unconverted}.vue`), Download (auth/task), Settings (`pages/setting/{index,normal,user,convert,download}.vue`), About
+- Pinia stores live in `store/` (`auth`, `favorites`, `download`, `convert`, `preference`, `update`); Bilibili data fetching lives in `services/{favorites,user}.ts`. One-shot favorites fetch (`fetchAllFavorites`) waits 500ms between folders to avoid risk control.
 - Dark-only UI
 
 ### Build gotchas

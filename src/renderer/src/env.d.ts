@@ -1,7 +1,6 @@
 /// <reference types="vite/client" />
 /// <reference types="vue-router" />
 
-import type { AttributifyAttributes } from '@unocss/preset-attributify'
 import { ElectronAPI } from '../../preload/index'
 
 declare global {
@@ -12,15 +11,11 @@ declare global {
 
 declare module 'vue-router' {
   interface RouteMeta {
-    order?: number
+    switchTransition?: boolean
     transition?: string
     requireAuth?: boolean
     activeMenu?: string
   }
-}
-
-declare module '@vue/runtime-dom' {
-  interface HTMLAttributes extends AttributifyAttributes {}
 }
 
 export {}

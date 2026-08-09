@@ -16,10 +16,14 @@ win:
       arch:
         - x64
   extraResources:
-    from: ./extra/win32/
-    to: ./
-    filter:
-      - '**/*'
+    - from: ./extra/win32/
+      to: ./
+      filter:
+        - '**/*'
+    - from: ./resources/
+      to: ./resources/
+      filter:
+        - bilimux.png
 nsis:
   oneClick: false # 改为 false，允许用户选择安装目录（工具类应用标配）
   allowToChangeInstallationDirectory: true
@@ -43,10 +47,14 @@ mac:
     - target: dmg
       arch: arm64
   extraResources:
-    from: ./extra/darwin/
-    to: ./
-    filter:
-      - '**/*'
+    - from: ./extra/darwin/
+      to: ./
+      filter:
+        - '**/*'
+    - from: ./resources/
+      to: ./resources/
+      filter:
+        - bilimux.png
 dmg:
   artifactName: ${productName}-v${version}.${ext}
   window:
@@ -67,10 +75,14 @@ linux:
     - deb
   category: Utility
   extraResources:
-    from: ./extra/linux/
-    to: ./
-    filter:
-      - '**/*'
+    - from: ./extra/linux/
+      to: ./
+      filter:
+        - '**/*'
+    - from: ./resources/
+      to: ./resources/
+      filter:
+        - bilimux.png
 appImage:
   artifactName: ${productName}-v${version}.${ext}
 npmRebuild: false

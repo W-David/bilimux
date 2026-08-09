@@ -10,22 +10,27 @@ import {
   PLAYURL_FILE_NAME,
   VIDEO_INFO_FILE_NAME
 } from '../config/constants'
-import { createDirIfNotExist, isExist, isValidFile } from '../utils'
+import { createDirIfNotExist, isExist, isValidFile, mapLimit, sanitizeFileName } from '../utils'
 import ConfigManager from './ConfigManager'
 import Engine from './Engine'
 import logger from './Logger'
 import ProcessQueue from './ProcessQueue'
 
+export type ConvertTaskResult = {
+  duration: number
+  skipped: boolean
+  fileSize: number
+}
+
 export class ComposEngine extends EventEmitter<ComposEventMap> {
   private configManager: ConfigManager
-  private processQueue: ProcessQueue<number>
+  private processQueue: ProcessQueue<ConvertTaskResult>
   private isRunning = false
 
-  constructor(processQueue: ProcessQueue<number>, configManager: ConfigManager) {
+  constructor(processQueue: ProcessQueue<ConvertTaskResult>, configManager: ConfigManager) {
     super()
     this.configManager = configManager
     this.processQueue = processQueue
-    logger.info(this.constructor.name, 'inited')
   }
 
   /**
@@ -93,7 +98,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
         const confFilePath = path.join(outputDir, CONF_FILE_NAME)
         await fs.writeFile(confFilePath, bvsBuffer)
         const message = `已写入 conf 文件: ${confFilePath}`
-        logger.info(message)
+        logger.debug(message)
       }
 
       // 合成队列处理
@@ -116,8 +121,8 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
   private async syntheticTask(bvs: VideoTaskInfo[], config: ConfigOptions): Promise<void> {
     const { gpacBinPath, outputDir, forceTransform, forceComposition } = config
 
-    const taskFn = async (bv: VideoTaskInfo) => {
-      const { videoM4sPath, videoMp4Path, audioM4sPath, audioMp3Path, fileName } = bv.fileInfo
+    const taskFn = async (bv: VideoTaskInfo, outputFilePath: string) => {
+      const { videoM4sPath, videoMp4Path, audioM4sPath, audioMp3Path } = bv.fileInfo
 
       logger.info(`开始转换: (${bv.bvid}) - (${bv.fileInfo.fileName})`)
 
@@ -130,7 +135,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       if (!isVideoExist || forceTransform) {
         await this.transformFile(videoM4sPath, videoMp4Path)
         const message = `已转换视频${forceTransform ? '（覆盖）' : ''}: ${videoM4sPath} -> ${videoMp4Path}`
-        logger.info(message)
+        logger.debug(message)
         this.emit('process:item:progress', {
           bvid: bv.bvid,
           type: 'preprocess',
@@ -138,7 +143,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
         })
       } else {
         const message = `视频已存在,跳过转换: ${videoMp4Path}`
-        logger.info(message)
+        logger.debug(message)
         this.emit('process:item:progress', {
           bvid: bv.bvid,
           type: 'preprocess',
@@ -151,7 +156,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       if (!isAudioExist || forceTransform) {
         await this.transformFile(audioM4sPath, audioMp3Path)
         const message = `已转换音频${forceTransform ? '（覆盖）' : ''}: ${audioM4sPath} -> ${audioMp3Path}`
-        logger.info(message)
+        logger.debug(message)
         this.emit('process:item:progress', {
           bvid: bv.bvid,
           type: 'preprocess',
@@ -159,7 +164,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
         })
       } else {
         const message = `音频已存在,跳过转换: ${audioMp3Path}`
-        logger.info(message)
+        logger.debug(message)
         this.emit('process:item:progress', {
           bvid: bv.bvid,
           type: 'preprocess',
@@ -168,7 +173,6 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       }
 
       // 合成 (Composition)
-      const outputFilePath = path.join(outputDir, fileName)
       const isOutputExist = await isExist(outputFilePath)
       if (!isOutputExist || forceComposition) {
         await this.compose(gpacBinPath, {
@@ -178,14 +182,24 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
           outputFile: outputFilePath
         })
         const message = `已合成文件${forceComposition ? '（覆盖）' : ''}: ${outputFilePath}`
-        logger.info(message)
+        logger.debug(message)
       } else {
         const message = `合成文件已存在,跳过: ${outputFilePath}`
-        logger.info(message)
+        logger.debug(message)
       }
 
       const duration = new Date().getTime() - start
-      return duration
+      const skipped = isOutputExist && !forceComposition
+      const stat = await fs.stat(outputFilePath).catch(() => null)
+      // 合成成功且产物仍在时清理中间转换文件，避免缓存目录长期翻倍占用磁盘
+      if (stat) {
+        await Promise.all([
+          fs.rm(videoMp4Path, { force: true }).catch(() => undefined),
+          fs.rm(audioMp3Path, { force: true }).catch(() => undefined)
+        ])
+        logger.info(`已清理中间产物: ${videoMp4Path}, ${audioMp3Path}`)
+      }
+      return { duration, skipped, fileSize: stat?.size ?? 0 }
     }
 
     return new Promise(resolve => {
@@ -199,18 +213,23 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       logger.info('启动队列任务:', `总任务数: [${bvs.length}]`)
 
       bvs.forEach(bv => {
+        const outputFilePath = path.join(outputDir, bv.fileInfo.fileName)
         this.processQueue
           .add(() => {
-            this.emit('process:item:start', { bv })
-            return taskFn(bv)
+            this.emit('process:item:start', { bv, outputPath: outputFilePath })
+            return taskFn(bv, outputFilePath)
           })
-          .then(duration => {
+          .then(({ duration, skipped, fileSize }) => {
             count.success += 1
 
             this.emit('process:item:end', {
               bvid: bv.bvid,
               success: true,
-              message: `耗时: ${duration} ms`
+              message: `耗时: ${duration} ms${skipped ? '（已跳过合成）' : ''}`,
+              outputPath: outputFilePath,
+              durationMs: duration,
+              skipped,
+              fileSize
             })
           })
           .catch(error => {
@@ -219,7 +238,9 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
             this.emit('process:item:end', {
               bvid: bv.bvid,
               success: false,
-              message: error instanceof Error ? error.message : String(error)
+              message: error instanceof Error ? error.message : String(error),
+              outputPath: outputFilePath,
+              skipped: false
             })
           })
       })
@@ -242,16 +263,11 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
     if (bvs.length === 0) {
       return [[], []]
     }
-    const validBVS: VideoTaskInfo[] = []
-    const inValidBVS: VideoTaskInfo[] = []
-
-    for (const bv of bvs) {
+    const results = await mapLimit(bvs, 4, async bv => {
       const { videoM4sPath, audioM4sPath } = bv.fileInfo
 
       // 视频未缓存完成
       if (bv.status !== 'completed') {
-        inValidBVS.push(bv)
-
         const message = `未缓存完成,跳过合成: ${bv.fileInfo.fileName}`
         logger.warn(message)
         this.emit('process:item:progress', {
@@ -259,14 +275,12 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
           type: 'preprocess',
           progress: 0
         })
-        continue
+        return false
       }
 
       // 检查视频源文件
       const videoValidError = await isValidFile(videoM4sPath, fs.constants.R_OK)
       if (videoValidError) {
-        inValidBVS.push(bv)
-
         const message = `${videoValidError}: ${videoM4sPath}, 跳过处理`
         logger.warn(message)
         this.emit('process:item:progress', {
@@ -274,14 +288,12 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
           type: 'preprocess',
           progress: 0
         })
-        continue
+        return false
       }
 
       // 检查音频源文件
       const audioValidError = await isValidFile(audioM4sPath, fs.constants.R_OK)
       if (audioValidError) {
-        inValidBVS.push(bv)
-
         const message = `${audioValidError}, 跳过: ${audioM4sPath}`
         logger.warn(message)
         this.emit('process:item:progress', {
@@ -289,12 +301,14 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
           type: 'preprocess',
           progress: 0
         })
-        continue
+        return false
       }
 
-      validBVS.push(bv)
-    }
+      return true
+    })
 
+    const validBVS = bvs.filter((_, index) => results[index])
+    const inValidBVS = bvs.filter((_, index) => !results[index])
     return [validBVS, inValidBVS]
   }
 
@@ -307,14 +321,8 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       if (cacheDirs.length === 0) {
         return []
       }
-      const bvs: VideoTaskInfo[] = []
-      for (const cacheDir of cacheDirs) {
-        const videoTaskInfo = await this.getVideoTaskInfo(cacheDir)
-        if (videoTaskInfo) {
-          bvs.push(videoTaskInfo)
-        }
-      }
-      return bvs
+      const taskInfos = await mapLimit(cacheDirs, 4, cacheDir => this.getVideoTaskInfo(cacheDir))
+      return taskInfos.filter((info): info is VideoTaskInfo => Boolean(info))
     } catch (error) {
       logger.error(`扫描缓存失败: ${error instanceof Error ? error.message : String(error)}`)
       throw error
@@ -417,7 +425,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
 
       videoTaskInfo.fileInfo.dirPath = dirPath
       videoTaskInfo.fileInfo.fileName =
-        `${this.filterFileName(videoTaskInfo.title)}-[${videoTaskInfo.uname}]` + MP4_SUFFIX
+        `[${videoTaskInfo.bvid}]-[${videoTaskInfo.uname}]-${sanitizeFileName(videoTaskInfo.title)}` + MP4_SUFFIX
       videoTaskInfo.fileInfo.filePath = path.join(
         this.configManager.getStore()['convert-config'].outputDir,
         videoTaskInfo.fileInfo.fileName
@@ -430,32 +438,6 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       logger.error(`获取文件信息失败: ${error instanceof Error ? error.message : String(error)}`)
       return null
     }
-  }
-
-  /**
-   * 过滤文件名中的特殊字符
-   * @param name 原始文件名
-   * @returns 过滤后的文件名
-   */
-  private filterFileName(name: string): string {
-    if (!name) return ''
-
-    return name
-      .replace(/（/g, '(')
-      .replace(/）/g, ')')
-      .replace(/</g, '《')
-      .replace(/>/g, '》')
-      .replace(/\\/g, '#')
-      .replace(/"/g, "'")
-      .replace(/\//g, '#')
-      .replace(/\|/g, '_')
-      .replace(/\?/g, '？')
-      .replace(/\*/g, '-')
-      .replace(/【/g, '[')
-      .replace(/】/g, ']')
-      .replace(/:/g, '：')
-      .replace(/\s+/g, '')
-      .trim()
   }
 
   /**
@@ -516,6 +498,47 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       this.emit('process:item:progress', progressData)
     })
     return engine.start()
+  }
+
+  /**
+   * 合并下载的音视频文件（M4S）
+   * @param params 合并参数
+   */
+  public async mergeFiles(params: {
+    bvid: string
+    title: string
+    videoPath: string
+    audioPath: string
+    outputPath: string
+    tempDir: string
+    onProgress?: (type: 'preprocess' | 'importing' | 'writing', progress: number) => void
+  }): Promise<void> {
+    const { bvid, videoPath, audioPath, outputPath, tempDir, onProgress } = params
+    const gpacBinPath = this.configManager.getStore()['convert-config'].gpacBinPath
+
+    await createDirIfNotExist(path.dirname(outputPath))
+    await createDirIfNotExist(tempDir)
+
+    const tempVideoPath = path.join(tempDir, 'video.mp4')
+    const tempAudioPath = path.join(tempDir, 'audio.mp3')
+
+    onProgress?.('preprocess', 0)
+    await this.transformFile(videoPath, tempVideoPath)
+    onProgress?.('preprocess', 50)
+    await this.transformFile(audioPath, tempAudioPath)
+    onProgress?.('preprocess', 100)
+
+    const engine = new Engine(gpacBinPath, {
+      bvInfo: { bvid } as VideoTaskInfo,
+      videoFile: tempVideoPath,
+      audioFile: tempAudioPath,
+      outputFile: outputPath
+    })
+    engine.on('process:item:progress', data => {
+      const type = data.type === 'importing' || data.type === 'writing' ? data.type : 'preprocess'
+      onProgress?.(type, data.progress)
+    })
+    await engine.start()
   }
 
   /**

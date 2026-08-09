@@ -1,7 +1,15 @@
 <script setup lang="ts">
+import {
+  BadgeCheck as BadgeCheckIcon,
+  Bug as BugIcon,
+  Info as InfoIcon,
+  Loader2 as Loader2Icon,
+  RefreshCw as RefreshCwIcon
+} from '@lucide/vue'
 import { checkForUpdate, getAppVersion } from '@renderer/api'
+import { mittbus } from '@renderer/ipc'
 import logger from 'electron-log/renderer'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const appVersion = ref('')
 const isChecking = ref(false)
@@ -14,16 +22,45 @@ const fetchAppVersion = () => {
 
 const handleCheckUpdate = async () => {
   if (isChecking.value) return
+
+  // 开发模式下 electron-updater 会直接跳过检查，主动提示用户
+  if (import.meta.env.DEV) {
+    mittbus.emit('toast:add', {
+      severity: 'warn',
+      message: '开发模式暂不支持检查更新',
+      data: {
+        description: 'electron-updater 在未打包环境下会跳过检查，请使用打包后的应用测试'
+      }
+    })
+    return
+  }
+
   isChecking.value = true
   try {
     const result = await checkForUpdate()
-    if (result && result.updateInfo) {
-      logger.info('Update available:', result.updateInfo)
+    if (result?.updateInfo) {
+      mittbus.emit('toast:add', {
+        severity: 'success',
+        message: `发现新版本 v${result.updateInfo.version}`,
+        data: {
+          description: '新版本已就绪，可以下载更新'
+        }
+      })
     } else {
-      logger.info('No update available')
+      mittbus.emit('toast:add', {
+        severity: 'info',
+        message: '当前已是最新版本'
+      })
     }
   } catch (error) {
-    logger.error('Check update failed:', error)
+    const message = error instanceof Error ? error.message : String(error)
+    mittbus.emit('toast:add', {
+      severity: 'error',
+      message: '检查更新失败',
+      data: {
+        description: message
+      }
+    })
   } finally {
     isChecking.value = false
   }
@@ -35,50 +72,46 @@ const versionList = computed(() => [
   {
     label: `v${appVersion.value}`,
     value: isChecking.value ? '检查中...' : '检查更新',
-    icon: isChecking.value ? 'i-mdi-loading animate-spin' : 'i-mdi-update',
+    icon: isChecking.value ? Loader2Icon : RefreshCwIcon,
+    spin: isChecking.value,
     color: 'text-blue-400',
     action: handleCheckUpdate
   },
   {
     label: 'About',
     value: '关于我们',
-    icon: 'i-mdi-about',
+    icon: InfoIcon,
     color: 'text-sky-400',
     link: 'https://github.com/W-David/bilimux' // Assuming a link or keep empty if not known
   },
   {
     label: 'License',
     value: '开源许可',
-    icon: 'i-mdi-license',
+    icon: BadgeCheckIcon,
     color: 'text-emerald-400',
     link: 'https://github.com/W-David/bilimux/blob/main/LICENSE'
   },
   {
     label: 'Bug Report',
     value: '问题反馈',
-    icon: 'i-mdi-bug',
+    icon: BugIcon,
     color: 'text-rose-400',
     link: 'https://github.com/W-David/bilimux/issues'
   }
 ])
-
-logger.debug('About created')
-onUnmounted(() => {
-  logger.debug('About unmounted')
-})
 </script>
 
 <template>
   <div class="h-full flex select-none items-center justify-center overflow-hidden">
-    <div class="relative z-10 w-[480px]">
+    <div class="relative z-10 w-120">
       <!-- Header -->
       <div class="flex flex-col items-center gap-6 pb-8 pt-10">
         <div class="group relative cursor-default">
           <!-- Glow effects -->
           <div
-            class="absolute rounded-full from-blue-500/20 to-purple-500/20 bg-gradient-to-r opacity-0 blur-3xl transition-opacity duration-700 -inset-8 group-hover:opacity-100"></div>
+            class="absolute rounded-full from-blue-500/20 to-purple-500/20 bg-linear-to-r opacity-0 blur-3xl transition-opacity duration-700 -inset-8 group-hover:opacity-100"></div>
           <div
-            class="absolute rounded-full from-blue-500/10 to-purple-500/10 bg-gradient-to-r opacity-100 blur-2xl -inset-4"></div>
+            class="absolute rounded-full from-blue-500/10 to-purple-500/10 bg-linear-to-r opacity-100 blur-2xl -inset-4"></div>
 
           <img
             src="../assets/bilimux.svg"
@@ -88,10 +121,10 @@ onUnmounted(() => {
 
         <div class="relative text-center space-y-2">
           <h1
-            class="from-pink to-sky bg-gradient-to-r bg-clip-text text-4xl text-transparent font-black tracking-tight drop-shadow-sm">
+            class="from-pink-400 to-sky-400 bg-linear-to-r bg-clip-text text-4xl text-transparent font-black tracking-tight drop-shadow-sm">
             BiliMux
           </h1>
-          <p class="text-sm text-gray-400 font-medium tracking-wide opacity-90">B站缓存视频转换工具</p>
+          <p class="text-sm text-gray-400 font-medium tracking-wide opacity-90">Bilibili 缓存视频一站式工具箱</p>
         </div>
       </div>
 
@@ -108,7 +141,10 @@ onUnmounted(() => {
           <!-- Icon -->
           <div
             class="flex shrink-0 items-center justify-center transition-transform duration-300 group-hover:scale-110">
-            <div :class="[item.icon, item.color, 'text-3xl']"></div>
+            <component
+              :is="item.icon"
+              class="size-8"
+              :class="[item.color, { 'animate-spin': item.spin }]" />
           </div>
 
           <!-- Content -->
@@ -128,7 +164,7 @@ onUnmounted(() => {
       <div class="mt-12 flex flex-col items-center gap-2">
         <div class="flex items-center gap-1.5 text-xs text-gray-500 font-medium transition-colors hover:text-gray-400">
           <span>Designed & Developed by</span>
-          <span class="from-blue-400 to-purple-400 bg-gradient-to-r bg-clip-text text-transparent font-bold">
+          <span class="from-blue-400 to-purple-400 bg-linear-to-r bg-clip-text text-transparent font-bold">
             rushwang
           </span>
         </div>
