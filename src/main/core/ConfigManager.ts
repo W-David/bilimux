@@ -1,6 +1,7 @@
 import { ConfigOptions, DownloadConfigOptions, UserStore } from '@shared/types'
 import Store from 'electron-store'
 import { app } from 'electron/main'
+import is from 'electron-is'
 import path from 'node:path'
 import { CONVERT_DIR_NAME, DOWNLOAD_DIR_NAME, OUTPUT_DIR_NAME } from '../config/constants'
 import { getEngineBinPath } from '../utils'
@@ -58,7 +59,7 @@ export default class ConfigManager {
       'open-at-login': false,
       'auto-hide-window': false,
       'bind-close-to-hide': true,
-      'log-level': 'verbose'
+      'log-level': is.dev() ? 'verbose' : 'warn'
     }
     return defaultConfig
   }
