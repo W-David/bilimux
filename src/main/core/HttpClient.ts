@@ -1,13 +1,15 @@
 import { DOMAIN, ERROR_CODE } from '@main/config/constants'
 import { BiliResponseType } from '@shared/types'
-import type { Got, OptionsOfJSONResponseBody, OptionsOfTextResponseBody, StreamOptions } from 'got'
+import type { Got, OptionsOfJSONResponseBody, OptionsOfTextResponseBody } from 'got'
 import got from 'got'
+import { app } from 'electron/main'
 import fs from 'node:fs'
+import { mkdir, rename, writeFile } from 'node:fs/promises'
+import path from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import { CookieJar } from 'tough-cookie'
 import UserAgent from 'user-agents'
 import { resetWbiKeys } from '../utils/wbi'
-import ConfigManager from './ConfigManager'
 import logger from './Logger'
 
 export interface HtmlResponseType {
@@ -19,7 +21,6 @@ export interface HtmlResponseType {
 export type HttpGetHtml = (url: string, options?: OptionsOfTextResponseBody) => Promise<HtmlResponseType>
 export type HttpGetJson = (url: string, options?: OptionsOfJSONResponseBody) => Promise<BiliResponseType>
 export type HttpPostJson = (url: string, options?: OptionsOfJSONResponseBody) => Promise<BiliResponseType>
-export type HttpPostStream = (url: string, options?: StreamOptions) => Promise<unknown>
 
 export type DownloadFileResponseInfo = {
   statusCode: number
@@ -42,12 +43,14 @@ export type DownloadFileOptions = {
 export default class HttpClient {
   cookieJar: CookieJar
   userAgent: UserAgent
-  configManager: ConfigManager
   client: Got
+  private cookieFilePath: string
+  private cookieSaveTimer: NodeJS.Timeout | null = null
+  private cookieSaveChain: Promise<void> = Promise.resolve()
 
-  constructor(configManager: ConfigManager) {
+  constructor() {
     this.userAgent = new UserAgent({ deviceCategory: 'desktop' })
-    this.configManager = configManager
+    this.cookieFilePath = path.join(app.getPath('userData'), 'cookies.json')
     this.cookieJar = this.loadCookieJar()
     this.client = this.initGot()
   }
@@ -68,8 +71,8 @@ export default class HttpClient {
         afterResponse: [
           response => {
             if (response.statusCode >= 200 && response.statusCode < 300) {
-              // 只要响应成功就把当前 cookie jar 持久化，避免登录 Cookie 丢失
-              this.saveCookieJar()
+              // 响应成功后防抖持久化 cookie，避免登录态丢失；写的是独立小文件
+              this.scheduleCookieSave()
             }
             if (response.request.options.responseType === 'json' && (response.body as BiliResponseType).code !== 0) {
               const { code, message } = response.body as BiliResponseType
@@ -96,21 +99,61 @@ export default class HttpClient {
   }
 
   private loadCookieJar() {
-    const cookieStr = this.configManager.store.get('user-cookie')
-    if (cookieStr) {
-      const jar = CookieJar.deserializeSync(JSON.parse(cookieStr))
-      return jar
+    try {
+      const cookieStr = fs.readFileSync(this.cookieFilePath, 'utf8')
+      const parsed = JSON.parse(cookieStr)
+      if (parsed && typeof parsed === 'object' && Array.isArray((parsed as { cookies?: unknown[] }).cookies)) {
+        return CookieJar.deserializeSync(parsed as Parameters<typeof CookieJar.deserializeSync>[0])
+      }
+      logger.warn('[Cookie] Cookie 文件格式异常，已忽略')
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code
+      if (code !== 'ENOENT') {
+        logger.warn('[Cookie] 读取 Cookie 文件失败:', error)
+      }
     }
     return new CookieJar()
   }
 
-  public saveCookieJar() {
-    const cookie = this.cookieJar.serializeSync()
-    if (!cookie) {
-      logger.warn('[Cookie] saveCookieJar: cookieJar 序列化失败，跳过写入')
-      return
+  /**
+   * 防抖调度一次 Cookie 落盘（高频请求时合并写入）
+   */
+  private scheduleCookieSave(): void {
+    if (this.cookieSaveTimer) return
+    this.cookieSaveTimer = setTimeout(() => {
+      this.cookieSaveTimer = null
+      void this.flushCookieJar()
+    }, 300)
+  }
+
+  /**
+   * 立即持久化 Cookie 到独立配置文件
+   */
+  public saveCookieJar(): Promise<void> {
+    if (this.cookieSaveTimer) {
+      clearTimeout(this.cookieSaveTimer)
+      this.cookieSaveTimer = null
     }
-    this.configManager.store.set('user-cookie', JSON.stringify(cookie))
+    return this.flushCookieJar()
+  }
+
+  /**
+   * 写入 cookies.json（串行队列 + 临时文件原子替换）
+   */
+  public flushCookieJar(): Promise<void> {
+    this.cookieSaveChain = this.cookieSaveChain
+      .then(async () => {
+        const cookie = this.cookieJar.serializeSync()
+        if (!cookie) return
+        await mkdir(path.dirname(this.cookieFilePath), { recursive: true })
+        const tmpPath = `${this.cookieFilePath}.tmp`
+        await writeFile(tmpPath, JSON.stringify(cookie), 'utf8')
+        await rename(tmpPath, this.cookieFilePath)
+      })
+      .catch(error => {
+        logger.error('[Cookie] 写入 Cookie 文件失败:', error)
+      })
+    return this.cookieSaveChain
   }
 
   async getCookieKey(key: string) {
@@ -141,10 +184,10 @@ export default class HttpClient {
 
     // 清空内存中的 Cookie（保持同一个 CookieJar 实例，避免已创建的 got 客户端失效）
     this.cookieJar.removeAllCookiesSync()
-    // 清空持久化的登录信息
-    this.configManager.store.set('user-cookie', '')
     // 清空基于账号信息缓存的 Wbi 密钥
     resetWbiKeys()
+    // 立即把空 Cookie 写入独立文件
+    await this.saveCookieJar()
     logger.info('[Logout] 本地登录信息已清空')
   }
 
@@ -199,20 +242,6 @@ export default class HttpClient {
   }
 
   /**
-   * 下载文件流
-   * @param url 下载地址
-   * @param options 请求选项
-   */
-  public stream: HttpPostStream = async (url, options) => {
-    try {
-      return this.client.stream(url, { ...options, method: 'POST', isStream: true })
-    } catch (error) {
-      logger.error(`[POST Stream]: ${url}`, error)
-      throw error
-    }
-  }
-
-  /**
    * 下载文件到本地
    * @param url 文件地址
    * @param destPath 目标路径
@@ -243,6 +272,16 @@ export default class HttpClient {
 
     let total = 0
     let received = 0
+    let lastProgressAt = 0
+
+    const emitProgress = (force = false): void => {
+      if (total <= 0) return
+      const percent = Math.min(100, Math.round(((offset + received) / total) * 100))
+      const now = Date.now()
+      if (!force && now - lastProgressAt < 100) return
+      lastProgressAt = now
+      onProgress?.(percent, offset + received, total)
+    }
 
     downloadStream.on('response', response => {
       const contentLength = Number(response.headers['content-length'] || 0)
@@ -282,9 +321,11 @@ export default class HttpClient {
 
     downloadStream.on('data', chunk => {
       received += chunk.length
-      if (total > 0) {
-        onProgress?.(Math.min(100, Math.round(((offset + received) / total) * 100)), offset + received, total)
-      }
+      emitProgress()
+    })
+
+    downloadStream.on('end', () => {
+      emitProgress(true)
     })
 
     await pipeline(downloadStream, fs.createWriteStream(destPath, { flags: offset > 0 ? 'a' : 'w' }))

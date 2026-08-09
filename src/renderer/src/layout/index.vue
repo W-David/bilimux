@@ -8,7 +8,7 @@ import Sidebar from './sidebar/index.vue'
     <Update />
     <div
       class="grid grid-cols-[82px_1fr] h-full w-full"
-      :style="{ 'grid-template-columns': '--sidebar-width 1fr' }">
+      :style="{ 'grid-template-columns': 'var(--sidebar-width) 1fr' }">
       <div class="h-full overflow-hidden">
         <Sidebar></Sidebar>
       </div>

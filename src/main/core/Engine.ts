@@ -128,25 +128,11 @@ export default class Engine extends EventEmitter<EngineEventMap> {
     return [...videoParams, ...audioParams, ...outputParams]
   }
 
-  isRunning(pid: number): boolean {
-    try {
-      return process.kill(pid, 0)
-    } catch (error) {
-      logger.error(`关闭Mp4Box进程出错: ${(error as Error).message}`)
-      return true
-    }
-  }
-
   stop(): void {
     if (this.#instance) {
       logger.info(`关闭Mp4Box进程, PID: ${this.#instance.pid}`)
       this.#instance.kill()
       this.#instance = null
     }
-  }
-
-  restart(): void {
-    this.stop()
-    this.start()
   }
 }

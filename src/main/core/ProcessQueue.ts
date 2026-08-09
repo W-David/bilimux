@@ -1,11 +1,6 @@
 import { EventEmitter } from 'node:events'
 
 interface QueueEventMap {
-  'active-count-change': [number]
-  'task-completed': []
-  paused: []
-  resumed: []
-  cleared: []
   drain: []
 }
 
@@ -23,14 +18,12 @@ export default class ProcessQueue<T> extends EventEmitter<QueueEventMap> {
   private queue: QueueTask<T>[]
   private activeCount: number
   private concurrency: number
-  private isPaused: boolean
 
   constructor(options: ProcessQueueOptions) {
     super()
     this.concurrency = options.concurrency || 4
     this.activeCount = 0
     this.queue = []
-    this.isPaused = false
   }
 
   /**
@@ -48,13 +41,10 @@ export default class ProcessQueue<T> extends EventEmitter<QueueEventMap> {
    * 执行队列中的下一个任务
    */
   private next() {
-    if (this.isPaused) return
-
     while (this.activeCount < this.concurrency && this.queue.length > 0) {
       const task = this.queue.shift()
       if (task) {
         this.activeCount++
-        this.emit('active-count-change', this.activeCount)
 
         task
           .fn()
@@ -62,8 +52,6 @@ export default class ProcessQueue<T> extends EventEmitter<QueueEventMap> {
           .catch(task.reject)
           .finally(() => {
             this.activeCount--
-            this.emit('active-count-change', this.activeCount)
-            this.emit('task-completed')
             this.next()
 
             if (this.activeCount === 0 && this.queue.length === 0) {
@@ -81,48 +69,6 @@ export default class ProcessQueue<T> extends EventEmitter<QueueEventMap> {
     if (count < 1) return
     this.concurrency = count
     this.next()
-  }
-
-  /**
-   * 暂停队列执行
-   */
-  public pause() {
-    this.isPaused = true
-    this.emit('paused')
-  }
-
-  /**
-   * 恢复队列执行
-   */
-  public resume() {
-    if (this.isPaused) {
-      this.isPaused = false
-      this.emit('resumed')
-      this.next()
-    }
-  }
-
-  /**
-   * 清空队列（未执行的任务会被 reject）
-   */
-  public clear() {
-    while (this.queue.length > 0) {
-      const task = this.queue.shift()
-      task?.reject(new Error('Queue cleared'))
-    }
-    this.emit('cleared')
-  }
-
-  /**
-   * 获取当前状态
-   */
-  public get status() {
-    return {
-      active: this.activeCount,
-      pending: this.queue.length,
-      concurrency: this.concurrency,
-      isPaused: this.isPaused
-    }
   }
 
   /**

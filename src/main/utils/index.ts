@@ -1,25 +1,9 @@
 import { app } from 'electron'
 import is from 'electron-is'
-import type { Stats } from 'fs'
 import fs from 'fs/promises'
 import path from 'path'
 import { ENGINE_BIN_MAP } from '../config/constants'
 import logger from '../core/Logger'
-
-/**
- * 获取文件信息
- * @param path 文件路径
- * @returns 文件Stats信息
- */
-export async function fileStats(path: string): Promise<Stats | null> {
-  try {
-    const stats = await fs.stat(path)
-    return stats
-  } catch (error) {
-    logger.debug(`未获取到文件信息: ${error instanceof Error ? error.message : String(error)}`)
-    return null
-  }
-}
 
 /**
  * 检查文件或目录是否存在
@@ -118,44 +102,80 @@ export function getEngineBinPath(platform: NodeJS.Platform): string {
 }
 
 /**
- * 使用 setTimeout 模拟 setInterval
- * 确保上一次任务执行完成后，再经过指定延迟才开始下一次任务，避免任务堆积
- * @param callback 回调函数，支持异步
- * @param delay 延迟时间（毫秒）
- * @param immediate 是否立即执行一次，默认为 false
- * @returns 停止定时器的函数
+ * 过滤文件名中的特殊字符，保证跨平台可用（转换与下载共用）
+ * @param name 原始标题
+ * @returns 清洗后的文件名
  */
-export function setTimerInterval(
-  callback: () => void | Promise<void>,
-  delay: number,
-  immediate: boolean = false
-): () => void {
-  let timer: NodeJS.Timeout | null = null
-  let stopped = false
+export function sanitizeFileName(name: string): string {
+  if (!name) return ''
 
-  const tick = async (): Promise<void> => {
-    if (stopped) return
-    try {
-      await callback()
-    } catch (error) {
-      logger.error(`定时任务执行出错: ${error instanceof Error ? error.message : String(error)}`)
-    }
-    if (!stopped) {
-      timer = setTimeout(tick, delay)
+  return name
+    .replace(/（/g, '(')
+    .replace(/）/g, ')')
+    .replace(/</g, '《')
+    .replace(/>/g, '》')
+    .replace(/\\/g, '#')
+    .replace(/"/g, "'")
+    .replace(/\//g, '#')
+    .replace(/\|/g, '_')
+    .replace(/\?/g, '？')
+    .replace(/\*/g, '-')
+    .replace(/【/g, '[')
+    .replace(/】/g, ']')
+    .replace(/:/g, '：')
+    .replace(/\s+/g, '')
+    .trim()
+}
+
+/**
+ * 批量检查文件是否存在（限制并发，避免一次性打开过多句柄）
+ * @param paths 文件路径列表
+ * @returns 路径 -> 是否存在
+ */
+export async function checkFilesExist(paths: string[]): Promise<Map<string, boolean>> {
+  const uniquePaths = [...new Set(paths.filter(Boolean))]
+  const result = new Map<string, boolean>()
+  let index = 0
+
+  const worker = async (): Promise<void> => {
+    while (index < uniquePaths.length) {
+      const filePath = uniquePaths[index++]
+      try {
+        await fs.stat(filePath)
+        result.set(filePath, true)
+      } catch {
+        result.set(filePath, false)
+      }
     }
   }
 
-  if (immediate) {
-    tick()
-  } else {
-    timer = setTimeout(tick, delay)
-  }
+  const workerCount = Math.min(16, uniquePaths.length)
+  await Promise.all(Array.from({ length: workerCount }, () => worker()))
+  return result
+}
 
-  return () => {
-    stopped = true
-    if (timer) {
-      clearTimeout(timer)
-      timer = null
+/**
+ * 固定并发执行异步映射，保持结果顺序与入参一致
+ * @param items 待处理列表
+ * @param limit 并发上限
+ * @param fn 异步处理函数
+ */
+export async function mapLimit<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length)
+  let nextIndex = 0
+
+  const worker = async (): Promise<void> => {
+    while (nextIndex < items.length) {
+      const index = nextIndex++
+      results[index] = await fn(items[index], index)
     }
   }
+
+  const workerCount = Math.max(1, Math.min(limit, items.length))
+  await Promise.all(Array.from({ length: workerCount }, () => worker()))
+  return results
 }

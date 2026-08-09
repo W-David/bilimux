@@ -332,11 +332,12 @@ type ConfigOptions = {
 // 下载配置
 type DownloadConfigOptions = {
   outputDir: string
+  /** 并行下载任务数（1-16） */
+  concurrent: number
 }
 
 // electron-store 配置类型
 type UserStore = {
-  'user-cookie'?: string
   'user-info'?: UserInfo | null
   'favorites-data'?: FavoritesData | null
   'convert-config': ConfigOptions

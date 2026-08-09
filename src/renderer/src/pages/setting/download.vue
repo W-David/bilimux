@@ -13,6 +13,17 @@
     </div>
 
     <div class="flex items-center justify-between">
+      <label class="font-normal">并行下载任务数</label>
+      <Input
+        :model-value="preference['download-config'].concurrent"
+        type="number"
+        min="1"
+        max="16"
+        class="w-24 text-right"
+        @update:model-value="onConcurrentChange" />
+    </div>
+
+    <div class="flex items-center justify-between">
       <label class="font-normal">刷新收藏夹缓存</label>
       <Button
         size="sm"
@@ -118,6 +129,14 @@ const refreshFavoritesCache = async (): Promise<void> => {
   } finally {
     refreshingFavorites.value = false
   }
+}
+
+/**
+ * 并行下载任务数变更：限制在 1-16
+ */
+const onConcurrentChange = (value: string | number): void => {
+  const concurrent = Math.min(16, Math.max(1, Math.trunc(Number(value)) || 1))
+  preference.value['download-config'].concurrent = concurrent
 }
 
 const clearFavoritesCache = (): void => {

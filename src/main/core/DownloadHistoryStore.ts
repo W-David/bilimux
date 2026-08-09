@@ -3,6 +3,7 @@ import { app } from 'electron/main'
 import fs from 'node:fs'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import { checkFilesExist } from '../utils'
 
 type HistoryRow = {
   bvid: string
@@ -88,7 +89,7 @@ export default class DownloadHistoryStore {
   /**
    * 按 bvid 批量查询下载历史，已完成记录附带文件存在性校验
    */
-  public getMany(bvids: string[]): DownloadHistoryRecord[] {
+  public async getMany(bvids: string[]): Promise<DownloadHistoryRecord[]> {
     if (bvids.length === 0) return []
     const placeholders = bvids.map(() => '?').join(', ')
     const rows = this.db
@@ -99,14 +100,15 @@ export default class DownloadHistoryStore {
       )
       .all(...bvids) as unknown as HistoryRow[]
 
-    return rows.map(row => this.toRecord(row))
+    const existence = await checkFilesExist(rows.map(row => row.output_path).filter((p): p is string => Boolean(p)))
+    return rows.map(row => this.toRecord(row, existence))
   }
 
   /**
    * 查询单个下载历史
    */
-  public getByBvid(bvid: string): DownloadHistoryRecord | null {
-    const rows = this.getMany([bvid])
+  public async getByBvid(bvid: string): Promise<DownloadHistoryRecord | null> {
+    const rows = await this.getMany([bvid])
     return rows[0] ?? null
   }
 
@@ -140,10 +142,10 @@ export default class DownloadHistoryStore {
     }
   }
 
-  private toRecord(row: HistoryRow): DownloadHistoryRecord {
+  private toRecord(row: HistoryRow, existence: Map<string, boolean>): DownloadHistoryRecord {
     let fileExists: boolean | undefined
     if (row.output_path) {
-      fileExists = fs.existsSync(row.output_path)
+      fileExists = existence.get(row.output_path) ?? false
     }
     return {
       bvid: row.bvid,

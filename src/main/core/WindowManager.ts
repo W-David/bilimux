@@ -134,7 +134,8 @@ export default class WindowManager extends EventEmitter {
     const iconPath = is.dev()
       ? path.join(app.getAppPath(), 'resources', 'bilimux.png')
       : path.join(process.resourcesPath, 'resources', 'bilimux.png')
-    const image = nativeImage.createFromPath(iconPath)
+    // macOS 菜单栏按原始尺寸绘制图标，必须缩到标准大小（16x16），否则 1024x1024 的 Logo 会占满菜单栏
+    const image = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
     if (image.isEmpty()) {
       logger.warn(`托盘图标加载失败: ${iconPath}`)
       return
@@ -160,41 +161,6 @@ export default class WindowManager extends EventEmitter {
     )
     this.tray.on('click', () => this.openWindow('main'))
     logger.info('托盘已初始化')
-  }
-
-  toggleWindow(pageName: keyof Pages): void {
-    const window = this.windows[pageName]
-    if (!window) {
-      return
-    }
-    if (!window.isVisible() || window.isFullScreen()) {
-      window.show()
-    } else {
-      window.hide()
-    }
-  }
-
-  showWindow(pageName: keyof Pages): void {
-    const window = this.windows[pageName]
-    if (!window) {
-      logger.warn(`此窗口不存在: ${pageName}`)
-      return
-    }
-    if (window.isVisible() && !window.isMinimized()) {
-      return
-    }
-    window.show()
-  }
-
-  hideWindow(pageName: keyof Pages): void {
-    const window = this.windows[pageName]
-    if (!window) {
-      return
-    }
-    if (!window.isVisible()) {
-      return
-    }
-    window.hide()
   }
 
   onWindowBlur(_: Electron.Event, window: Electron.BrowserWindow) {
@@ -228,10 +194,6 @@ export default class WindowManager extends EventEmitter {
     this.getWindowList().forEach(window => {
       this.ipcManager.mainEmitter.send(window.webContents, command, ...args)
     })
-  }
-
-  getFocusedWindow(): BrowserWindow | null {
-    return BrowserWindow.getFocusedWindow()
   }
 
   setWillQuit(value: boolean): void {

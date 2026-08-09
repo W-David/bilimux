@@ -10,7 +10,7 @@ import {
   PLAYURL_FILE_NAME,
   VIDEO_INFO_FILE_NAME
 } from '../config/constants'
-import { createDirIfNotExist, isExist, isValidFile } from '../utils'
+import { createDirIfNotExist, isExist, isValidFile, mapLimit, sanitizeFileName } from '../utils'
 import ConfigManager from './ConfigManager'
 import Engine from './Engine'
 import logger from './Logger'
@@ -191,6 +191,14 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       const duration = new Date().getTime() - start
       const skipped = isOutputExist && !forceComposition
       const stat = await fs.stat(outputFilePath).catch(() => null)
+      // 合成成功且产物仍在时清理中间转换文件，避免缓存目录长期翻倍占用磁盘
+      if (stat) {
+        await Promise.all([
+          fs.rm(videoMp4Path, { force: true }).catch(() => undefined),
+          fs.rm(audioMp3Path, { force: true }).catch(() => undefined)
+        ])
+        logger.info(`已清理中间产物: ${videoMp4Path}, ${audioMp3Path}`)
+      }
       return { duration, skipped, fileSize: stat?.size ?? 0 }
     }
 
@@ -255,16 +263,11 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
     if (bvs.length === 0) {
       return [[], []]
     }
-    const validBVS: VideoTaskInfo[] = []
-    const inValidBVS: VideoTaskInfo[] = []
-
-    for (const bv of bvs) {
+    const results = await mapLimit(bvs, 4, async bv => {
       const { videoM4sPath, audioM4sPath } = bv.fileInfo
 
       // 视频未缓存完成
       if (bv.status !== 'completed') {
-        inValidBVS.push(bv)
-
         const message = `未缓存完成,跳过合成: ${bv.fileInfo.fileName}`
         logger.warn(message)
         this.emit('process:item:progress', {
@@ -272,14 +275,12 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
           type: 'preprocess',
           progress: 0
         })
-        continue
+        return false
       }
 
       // 检查视频源文件
       const videoValidError = await isValidFile(videoM4sPath, fs.constants.R_OK)
       if (videoValidError) {
-        inValidBVS.push(bv)
-
         const message = `${videoValidError}: ${videoM4sPath}, 跳过处理`
         logger.warn(message)
         this.emit('process:item:progress', {
@@ -287,14 +288,12 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
           type: 'preprocess',
           progress: 0
         })
-        continue
+        return false
       }
 
       // 检查音频源文件
       const audioValidError = await isValidFile(audioM4sPath, fs.constants.R_OK)
       if (audioValidError) {
-        inValidBVS.push(bv)
-
         const message = `${audioValidError}, 跳过: ${audioM4sPath}`
         logger.warn(message)
         this.emit('process:item:progress', {
@@ -302,12 +301,14 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
           type: 'preprocess',
           progress: 0
         })
-        continue
+        return false
       }
 
-      validBVS.push(bv)
-    }
+      return true
+    })
 
+    const validBVS = bvs.filter((_, index) => results[index])
+    const inValidBVS = bvs.filter((_, index) => !results[index])
     return [validBVS, inValidBVS]
   }
 
@@ -320,14 +321,8 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       if (cacheDirs.length === 0) {
         return []
       }
-      const bvs: VideoTaskInfo[] = []
-      for (const cacheDir of cacheDirs) {
-        const videoTaskInfo = await this.getVideoTaskInfo(cacheDir)
-        if (videoTaskInfo) {
-          bvs.push(videoTaskInfo)
-        }
-      }
-      return bvs
+      const taskInfos = await mapLimit(cacheDirs, 4, cacheDir => this.getVideoTaskInfo(cacheDir))
+      return taskInfos.filter((info): info is VideoTaskInfo => Boolean(info))
     } catch (error) {
       logger.error(`扫描缓存失败: ${error instanceof Error ? error.message : String(error)}`)
       throw error
@@ -430,7 +425,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
 
       videoTaskInfo.fileInfo.dirPath = dirPath
       videoTaskInfo.fileInfo.fileName =
-        `[${videoTaskInfo.bvid}]-[${videoTaskInfo.uname}]-${this.filterFileName(videoTaskInfo.title)}` + MP4_SUFFIX
+        `[${videoTaskInfo.bvid}]-[${videoTaskInfo.uname}]-${sanitizeFileName(videoTaskInfo.title)}` + MP4_SUFFIX
       videoTaskInfo.fileInfo.filePath = path.join(
         this.configManager.getStore()['convert-config'].outputDir,
         videoTaskInfo.fileInfo.fileName
@@ -443,32 +438,6 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       logger.error(`获取文件信息失败: ${error instanceof Error ? error.message : String(error)}`)
       return null
     }
-  }
-
-  /**
-   * 过滤文件名中的特殊字符
-   * @param name 原始文件名
-   * @returns 过滤后的文件名
-   */
-  private filterFileName(name: string): string {
-    if (!name) return ''
-
-    return name
-      .replace(/（/g, '(')
-      .replace(/）/g, ')')
-      .replace(/</g, '《')
-      .replace(/>/g, '》')
-      .replace(/\\/g, '#')
-      .replace(/"/g, "'")
-      .replace(/\//g, '#')
-      .replace(/\|/g, '_')
-      .replace(/\?/g, '？')
-      .replace(/\*/g, '-')
-      .replace(/【/g, '[')
-      .replace(/】/g, ']')
-      .replace(/:/g, '：')
-      .replace(/\s+/g, '')
-      .trim()
   }
 
   /**

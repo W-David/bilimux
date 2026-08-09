@@ -47,11 +47,11 @@ export default class ConfigManager {
     }
 
     const defaultDownloadConfig: Required<DownloadConfigOptions> = {
-      outputDir: downloadOutputDir
+      outputDir: downloadOutputDir,
+      concurrent: 1
     }
 
     const defaultConfig: Required<UserStore> = {
-      'user-cookie': '',
       'user-info': null,
       'favorites-data': null,
       'convert-config': defaultConvertConfig,
@@ -82,11 +82,27 @@ export default class ConfigManager {
     }
 
     // 初始化下载配置（老版本没有该配置项）
-    if (!this.store.store['download-config']) {
+    const downloadConfig = this.store.get('download-config')
+    if (!downloadConfig) {
       this.store.set('download-config', {
-        outputDir: path.join(cachePath, OUTPUT_DIR_NAME, DOWNLOAD_DIR_NAME)
+        outputDir: path.join(cachePath, OUTPUT_DIR_NAME, DOWNLOAD_DIR_NAME),
+        concurrent: 1
       })
       logger.info('[Config] 已初始化视频下载输出目录:', path.join(cachePath, OUTPUT_DIR_NAME, DOWNLOAD_DIR_NAME))
+    } else if (typeof downloadConfig.concurrent !== 'number') {
+      this.store.set('download-config', {
+        ...downloadConfig,
+        concurrent: 1
+      })
+      logger.info('[Config] 已初始化并行下载任务数配置')
+    }
+
+    // 登录 Cookie 迁移到独立的 cookies.json，清理旧配置中的残留
+    type LegacyStore = UserStore & { 'user-cookie'?: string }
+    const legacyStore = this.store as unknown as Store<LegacyStore>
+    if (legacyStore.has('user-cookie')) {
+      legacyStore.delete('user-cookie')
+      logger.info('[Config] 登录 Cookie 已迁移到独立文件 cookies.json')
     }
   }
 

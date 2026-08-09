@@ -2,7 +2,7 @@ import { DownloadEventMap, DownloadProgressStatus, DownloadVideoTask } from '@sh
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { createDirIfNotExist } from '../utils'
+import { createDirIfNotExist, sanitizeFileName } from '../utils'
 import { getWbiSignedParams } from '../utils/wbi'
 import { ComposEngine } from './ComposEngine'
 import ConfigManager from './ConfigManager'
@@ -81,6 +81,23 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
     this.historyStore = historyStore
     this.queue = new ProcessQueue<void>({ concurrency: 1 })
     this.tasks = new Map()
+    this.applyConcurrency()
+  }
+
+  /**
+   * 从配置读取并行下载任务数并应用到队列
+   */
+  private applyConcurrency(): void {
+    const config = this.configManager.getStore()['download-config']
+    this.setConcurrency(config.concurrent)
+  }
+
+  /**
+   * 设置并行下载任务数（限制 1-16）
+   */
+  public setConcurrency(count: number): void {
+    const safe = Math.min(16, Math.max(1, Math.trunc(Number(count)) || 1))
+    this.queue.setConcurrency(safe)
   }
 
   /**
@@ -141,7 +158,7 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
   private createRuntime(task: DownloadVideoTask): TaskRuntime {
     const outputDir = this.configManager.getStore()['download-config'].outputDir
     // 直接按文件名生成在 output/download 目录下
-    const finalPath = path.join(outputDir, `[${task.bvid}]-[${task.uname}]-${this.sanitizeFileName(task.title)}.mp4`)
+    const finalPath = path.join(outputDir, `[${task.bvid}]-[${task.uname}]-${sanitizeFileName(task.title)}.mp4`)
     const folderDir = path.dirname(finalPath)
 
     return {
@@ -519,16 +536,5 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
   private streamOverallProgress(runtime: TaskRuntime, kind: StreamKind, streamPercent: number): number {
     if (runtime.mode !== 'dash') return streamPercent
     return kind === 'video' ? Math.round(streamPercent / 2) : 50 + Math.round(streamPercent / 2)
-  }
-
-  /**
-   * 过滤文件名中的特殊字符
-   */
-  private sanitizeFileName(name: string): string {
-    if (!name) return ''
-    return name
-      .replace(/[\\/:*?"<>|]/g, '_')
-      .replace(/\s+/g, '')
-      .trim()
   }
 }

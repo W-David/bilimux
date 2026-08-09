@@ -3,6 +3,7 @@ import { app } from 'electron/main'
 import fs from 'node:fs'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import { checkFilesExist } from '../utils'
 
 type HistoryRow = {
   run_id: string
@@ -133,7 +134,7 @@ export default class ConvertHistoryStore {
   /**
    * 查询全部转换历史（按开始时间倒序）
    */
-  public list(): ConvertHistoryRecord[] {
+  public async list(): Promise<ConvertHistoryRecord[]> {
     const rows = this.db
       .prepare(
         `SELECT rowid AS id, run_id, bvid, type, title, uname, group_title, source_dir, output_path,
@@ -143,7 +144,8 @@ export default class ConvertHistoryStore {
       )
       .all() as unknown as (HistoryRow & { id: number })[]
 
-    return rows.map(row => this.toRecord(row))
+    const existence = await checkFilesExist(rows.map(row => row.output_path).filter((p): p is string => Boolean(p)))
+    return rows.map(row => this.toRecord(row, existence))
   }
 
   /**
@@ -179,11 +181,11 @@ export default class ConvertHistoryStore {
     }
   }
 
-  private toRecord(row: HistoryRow & { id: number }): ConvertHistoryRecord {
+  private toRecord(row: HistoryRow & { id: number }, existence: Map<string, boolean>): ConvertHistoryRecord {
     let fileExists: boolean | undefined
     let status = row.status
     if (row.output_path) {
-      fileExists = fs.existsSync(row.output_path)
+      fileExists = existence.get(row.output_path) ?? false
       if (status === 'completed' && !fileExists) {
         status = 'missing'
       }

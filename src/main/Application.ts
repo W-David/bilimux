@@ -1,6 +1,7 @@
 import { shell } from 'electron'
 import { LogLevel } from 'electron-log'
 import { dialog } from 'electron/main'
+import type { DownloadConfigOptions } from '@shared/types'
 import AutoLauncher from './core/AutoLauncher'
 import { ComposEngine, ConvertTaskResult } from './core/ComposEngine'
 import ConfigManager from './core/ConfigManager'
@@ -43,7 +44,7 @@ export default class Application {
 
     this.ipcManager = new IPCManager()
 
-    this.httpClient = new HttpClient(this.configManager)
+    this.httpClient = new HttpClient()
 
     this.downloadHistoryStore = new DownloadHistoryStore()
     this.convertHistoryStore = new ConvertHistoryStore()
@@ -144,13 +145,16 @@ export default class Application {
     this.configManager.onChangedListener('bind-close-to-hide', val => {
       this.windowManager.setCloseToHide(Boolean(val))
     })
+    this.configManager.onChangedListener('download-config', val => {
+      const downloadConfig = val as DownloadConfigOptions
+      this.downloadManager.setConcurrency(downloadConfig.concurrent)
+    })
   }
 
   handleIpcEvents(): void {
     this.ipcManager.mainIpc.on('save-preference', (_, config) => {
-      // user-cookie 由主进程 HttpClient 独占管理，忽略渲染层回传的值，避免覆盖登录 Cookie
-      const { 'user-cookie': _userCookie, ...preference } = config
-      this.configManager.store.set(preference)
+      // Cookie 已由 HttpClient 独立管理（cookies.json），配置里不再包含该字段
+      this.configManager.store.set(config)
       this.windowManager.sendCommandToAll('fetch-preference')
       logger.debug('preference saved')
     })
@@ -230,8 +234,8 @@ export default class Application {
     this.ipcManager.mainIpc.handle('download:history:clear', () => {
       this.downloadHistoryStore.clear()
     })
-    this.ipcManager.mainIpc.handle('persist-cookie', () => {
-      this.httpClient.saveCookieJar()
+    this.ipcManager.mainIpc.handle('persist-cookie', async () => {
+      await this.httpClient.saveCookieJar()
     })
     this.ipcManager.mainIpc.handle('get-cookie', async (_, key: string) => {
       const cookie = await this.httpClient.getCookieKey(key)

@@ -23,5 +23,14 @@ export default class ExceptionHandler {
         dialog.showErrorBox('Error: ', message)
       }
     })
+    process.on('unhandledRejection', reason => {
+      const error = reason instanceof Error ? reason : new Error(String(reason))
+      logger.error(`UnhandledRejection: ${error.message}`)
+      logger.error(error.stack)
+
+      if (showDialog && app.isReady()) {
+        dialog.showErrorBox('Error: ', error.message)
+      }
+    })
   }
 }

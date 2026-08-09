@@ -16,7 +16,8 @@ export const usePreferenceStore = defineStore('preference', () => {
       genConfig: false
     },
     'download-config': {
-      outputDir: ''
+      outputDir: '',
+      concurrent: 1
     },
     'open-at-login': false,
     'auto-hide-window': false,
@@ -33,10 +34,7 @@ export const usePreferenceStore = defineStore('preference', () => {
 
   async function fetchPreference(): Promise<UserPreference> {
     const config = await loadConfigFromNativeStore()
-    // user-cookie 由主进程 HttpClient 独占管理，渲染层不需要持有，
-    // 剥掉后再赋值，避免 savePreference 回传时覆盖主进程的登录 Cookie
-    const { 'user-cookie': _userCookie, ...safeConfig } = config
-    const assignPreference = Object.assign(preference, safeConfig)
+    const assignPreference = Object.assign(preference, config)
     return assignPreference
   }
 
