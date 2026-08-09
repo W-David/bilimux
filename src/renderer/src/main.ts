@@ -22,7 +22,7 @@ const initApp = () => {
     .then(() => {
       app.mount('#app')
       // 应用挂载后再检查登录态，确保失效提示的 toast 监听已就绪
-      useAuthStore().refreshAuth()
+      useAuthStore().ensureReady()
       router.push({ name: 'convert' })
     })
     .catch(error => {

@@ -50,7 +50,6 @@ declare module 'vue' {
     DialogTrigger: typeof import('./src/components/ui/dialog/DialogTrigger.vue')['default']
     DownloadStatus: typeof import('./src/components/DownloadStatus.vue')['default']
     FavoritesProgressToast: typeof import('./src/components/FavoritesProgressToast.vue')['default']
-    FavoritesRefreshProgress: typeof import('./src/components/FavoritesRefreshProgress.vue')['default']
     Field: typeof import('./src/components/ui/field/Field.vue')['default']
     FieldContent: typeof import('./src/components/ui/field/FieldContent.vue')['default']
     FieldDescription: typeof import('./src/components/ui/field/FieldDescription.vue')['default']

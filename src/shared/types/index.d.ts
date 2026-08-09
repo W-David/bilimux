@@ -349,7 +349,7 @@ type UserStore = {
 
 type BiliResponseType<D = unknown> = {
   ttl: number
-  data: D
+  data: D | null
   code: number
   message: string
 }

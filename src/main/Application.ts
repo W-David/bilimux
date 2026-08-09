@@ -141,6 +141,9 @@ export default class Application {
     this.configManager.onChangedListener('auto-hide-window', val => {
       val ? this.windowManager.bindWindowBlur() : this.windowManager.unbindWindowBlur()
     })
+    this.configManager.onChangedListener('bind-close-to-hide', val => {
+      this.windowManager.setCloseToHide(Boolean(val))
+    })
   }
 
   handleIpcEvents(): void {

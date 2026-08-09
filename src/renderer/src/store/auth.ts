@@ -7,12 +7,17 @@ import { defineStore } from 'pinia'
 
 interface AuthState {
   isAuthenticated: boolean
+  /** 登录态是否已完成首次检查（用于路由守卫等待启动竞态） */
+  initialized: boolean
 }
+
+let authReadyPromise: Promise<void> | null = null
 
 export const useAuthStore = defineStore('auth', {
   state: (): AuthState => {
     return {
-      isAuthenticated: false
+      isAuthenticated: false,
+      initialized: false
     }
   },
   actions: {
@@ -32,6 +37,14 @@ export const useAuthStore = defineStore('auth', {
           csrf: biliJct.value
         }
       })
+      if (res.code !== 0 || !res.data) {
+        this.clearCachedUserData()
+        mittbus.emit('toast:add', {
+          severity: 'warn',
+          message: '登录状态已失效，请重新扫码登录'
+        })
+        return
+      }
       const { refresh } = res.data
       // refresh 为 true 时，需要刷新 cookie
       if (refresh) {
@@ -46,6 +59,23 @@ export const useAuthStore = defineStore('auth', {
         this.isAuthenticated = true
         logger.debug('用户已登录,使用当前Cookie')
       }
+    },
+    /**
+     * 确保登录态完成首次检查；并发调用共享同一次检查
+     */
+    ensureReady(): Promise<void> {
+      if (this.initialized) return Promise.resolve()
+      if (!authReadyPromise) {
+        authReadyPromise = this.refreshAuth()
+          .catch(error => {
+            logger.error('登录状态检查失败:', error)
+          })
+          .finally(() => {
+            this.initialized = true
+            authReadyPromise = null
+          })
+      }
+      return authReadyPromise
     },
     clearCachedUserData() {
       const preferenceStore = usePreferenceStore()

@@ -1,8 +1,9 @@
 import { IpcRendererEvents } from '@shared/ipc/events'
 import type { Pages } from '@shared/types'
-import { app, BrowserWindow, shell, WebContents } from 'electron'
+import { app, BrowserWindow, Menu, nativeImage, shell, Tray, WebContents } from 'electron'
 import is from 'electron-is'
 import EventEmitter from 'node:events'
+import path from 'node:path'
 import { pages } from '../config/page'
 import ConfigManager from './ConfigManager'
 import IPCManager from './IPCManager'
@@ -15,10 +16,14 @@ export default class WindowManager extends EventEmitter {
   windows: Windows
   // 程序 Quit 标识
   willQuit: boolean
+  // 关闭窗口时是否隐藏到托盘（支持运行时切换）
+  closeToHide: boolean
   // 全局配置管理
   configManager: ConfigManager
   // ipc通信管理
   ipcManager: IPCManager
+  // 托盘实例（保持引用防止被 GC）
+  tray: Tray | null
 
   constructor(configManager: ConfigManager, ipcManager: IPCManager) {
     super()
@@ -27,13 +32,16 @@ export default class WindowManager extends EventEmitter {
     this.ipcManager = ipcManager
     this.windows = {}
     this.willQuit = false
+    this.closeToHide = this.configManager.store.get('bind-close-to-hide') ?? true
+    this.tray = null
     app.on('before-quit', () => {
       this.configManager.removeAllChangedListener()
       this.unbindWindowBlur()
       this.ipcManager.dispose()
+      this.tray?.destroy()
+      this.tray = null
       this.setWillQuit(true)
     })
-    app.on('window-all-closed', () => {})
   }
 
   getPageOptions<T extends keyof Pages>(pageName: T): Pages[T] {
@@ -58,8 +66,6 @@ export default class WindowManager extends EventEmitter {
     }
 
     const page = this.getPageOptions(pageName)
-    const config = this.configManager.store.store
-
     const createdWindow = new BrowserWindow({ ...page.attrs })
 
     createdWindow.loadURL(page.url)
@@ -79,8 +85,8 @@ export default class WindowManager extends EventEmitter {
 
     // 窗口关闭时的特殊处理
     createdWindow.on('close', event => {
-      if (config['bind-close-to-hide'] && !this.willQuit) {
-        // 组织默认的关闭行为
+      if (this.closeToHide && !this.willQuit) {
+        // 阻止默认的关闭行为，改为隐藏窗口
         event.preventDefault()
 
         if (createdWindow.isFullScreen()) {
@@ -92,7 +98,7 @@ export default class WindowManager extends EventEmitter {
       }
     })
 
-    if (config['auto-hide-window']) {
+    if (this.configManager.store.get('auto-hide-window')) {
       this.bindWindowBlur()
     }
 
@@ -110,6 +116,50 @@ export default class WindowManager extends EventEmitter {
     // 将创建的窗口对象添加到 窗口管理对象中
     this.windows[pageName] = createdWindow
     return createdWindow
+  }
+
+  /**
+   * 设置关闭窗口时是否隐藏到托盘
+   */
+  setCloseToHide(value: boolean): void {
+    this.closeToHide = value
+  }
+
+  /**
+   * 初始化托盘（显示主窗口 / 退出），幂等
+   */
+  initTray(): void {
+    if (this.tray) return
+
+    const iconPath = is.dev()
+      ? path.join(app.getAppPath(), 'resources', 'bilimux.png')
+      : path.join(process.resourcesPath, 'resources', 'bilimux.png')
+    const image = nativeImage.createFromPath(iconPath)
+    if (image.isEmpty()) {
+      logger.warn(`托盘图标加载失败: ${iconPath}`)
+      return
+    }
+
+    this.tray = new Tray(image)
+    this.tray.setToolTip('BiliMux')
+    this.tray.setContextMenu(
+      Menu.buildFromTemplate([
+        {
+          label: '显示主窗口',
+          click: () => this.openWindow('main')
+        },
+        { type: 'separator' },
+        {
+          label: '退出',
+          click: () => {
+            this.setWillQuit(true)
+            app.quit()
+          }
+        }
+      ])
+    )
+    this.tray.on('click', () => this.openWindow('main'))
+    logger.info('托盘已初始化')
   }
 
   toggleWindow(pageName: keyof Pages): void {

@@ -181,10 +181,14 @@ function findChildIndex(parent: RouteRecordNormalized | undefined, target: Route
   return index === -1 ? 0 : index
 }
 
-router.beforeEach(to => {
-  const isAuthenticated = useAuthStore().isAuthenticated
-  if (to.meta.requireAuth && !isAuthenticated) {
-    return { name: 'download-auth' }
+router.beforeEach(async to => {
+  const authStore = useAuthStore()
+  if (to.meta.requireAuth && !authStore.isAuthenticated) {
+    // 等待启动时的登录态检查完成，避免首次进入下载页被误判为未登录
+    await authStore.ensureReady()
+    if (!authStore.isAuthenticated) {
+      return { name: 'download-auth' }
+    }
   }
   return
 })
