@@ -7,7 +7,6 @@ export default class ExceptionHandler {
   showDialog: boolean
   constructor() {
     this.showDialog = !is.dev()
-    logger.info(this.constructor.name, 'inited')
   }
 
   setup(): void {

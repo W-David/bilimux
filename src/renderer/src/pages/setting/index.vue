@@ -142,11 +142,8 @@ const clear = (): void => {
   clearNativeStore()
 }
 
-logger.debug('Setting created')
-
 onUnmounted(() => {
   subscribe()
-  logger.debug('Setting unmounted')
 })
 </script>
 

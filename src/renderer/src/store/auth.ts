@@ -18,7 +18,6 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     async refreshAuth() {
       const biliJct = await getCookie('bili_jct')
-      logger.info(`[Auth] refreshAuth: bili_jct ${biliJct ? '存在' : '不存在'}`)
       if (!biliJct) {
         logger.error('bili_jct cookie not found')
         this.clearCachedUserData()

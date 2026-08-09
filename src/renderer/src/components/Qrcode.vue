@@ -240,13 +240,10 @@ const startPolling = () => {
             status.value = 'success'
             stopPolling()
             stopCountdown()
-            logger.debug('扫码已确认')
-            logger.info('扫码登录成功，开始持久化登录 Cookie')
             authStore.isAuthenticated = true
             try {
               // 登录成功后主动持久化 cookie jar，避免重启后登录态丢失
               await persistCookie()
-              logger.info('登录 Cookie 已主动持久化')
             } catch (error) {
               logger.error('持久化登录 Cookie 失败:', error)
             }
@@ -258,15 +255,12 @@ const startPolling = () => {
             router.push({ name: 'download-task' })
             break
           case QRCodeStatus.SCANNED: // 已扫码未确认
-            logger.debug('扫码未确认')
             status.value = 'scanned'
             break
           case QRCodeStatus.EXPIRED: // 二维码已失效
-            logger.debug('二维码已过期')
             handleExpired()
             break
           case QRCodeStatus.WAITING: // 未扫码 (waiting)
-            logger.debug('interval waiting...')
             break
           default:
             logger.warn('未知的扫码状态:', res.data)
@@ -310,8 +304,6 @@ const stopCountdown = () => {
   }
 }
 
-logger.info('Qrcode created')
-
 // KeepAlive 复用缓存实例时，若已退出登录则重置为初始画面
 onActivated(() => {
   if (!authStore.isAuthenticated) {
@@ -321,6 +313,5 @@ onActivated(() => {
 
 onUnmounted(() => {
   resetState()
-  logger.info('Qrcode unmounted')
 })
 </script>

@@ -10,7 +10,6 @@ export default class UpdateManager {
     autoUpdater.autoDownload = false
 
     this.setupListeners()
-    logger.info(this.constructor.name, 'inited')
   }
 
   setSender(sender: WebContents) {

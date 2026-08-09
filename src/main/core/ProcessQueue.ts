@@ -1,5 +1,4 @@
 import { EventEmitter } from 'node:events'
-import logger from './Logger'
 
 interface QueueEventMap {
   'active-count-change': [number]
@@ -32,7 +31,6 @@ export default class ProcessQueue<T> extends EventEmitter<QueueEventMap> {
     this.activeCount = 0
     this.queue = []
     this.isPaused = false
-    logger.info(this.constructor.name, 'inited')
   }
 
   /**

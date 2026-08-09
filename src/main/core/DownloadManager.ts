@@ -81,7 +81,6 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
     this.historyStore = historyStore
     this.queue = new ProcessQueue<void>({ concurrency: 1 })
     this.tasks = new Map()
-    logger.info(this.constructor.name, 'inited')
   }
 
   /**
@@ -127,7 +126,7 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
       type: 'paused',
       progress: this.currentProgress(runtime)
     })
-    logger.info(`下载任务已暂停: ${bvid}`)
+    logger.debug(`下载任务已暂停: ${bvid}`)
   }
 
   /**

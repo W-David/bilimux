@@ -71,6 +71,8 @@ export default class Application {
     this.handleIpcEvents()
 
     this.handleIpcInvoke()
+
+    logger.info('Application 启动完成')
   }
 
   setupLogger(): void {
@@ -223,7 +225,6 @@ export default class Application {
       this.downloadHistoryStore.clear()
     })
     this.ipcManager.mainIpc.handle('persist-cookie', () => {
-      logger.info('[Cookie] 收到 persist-cookie IPC')
       this.httpClient.saveCookieJar()
     })
     this.ipcManager.mainIpc.handle('get-cookie', async (_, key: string) => {

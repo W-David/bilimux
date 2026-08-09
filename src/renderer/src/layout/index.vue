@@ -1,12 +1,6 @@
 <script setup lang="ts">
 import Update from '@renderer/components/Update.vue'
-import logger from 'electron-log/renderer'
-import { onUnmounted } from 'vue'
 import Sidebar from './sidebar/index.vue'
-logger.debug('Layout created')
-onUnmounted(() => {
-  logger.debug('Layout unmounted')
-})
 </script>
 
 <template>

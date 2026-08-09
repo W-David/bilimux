@@ -16,11 +16,5 @@
 </template>
 
 <script setup lang="ts">
-import logger from 'electron-log/renderer'
-import { KeepAlive, onUnmounted } from 'vue'
-
-logger.debug('Main created')
-onUnmounted(() => {
-  logger.debug('Main unmounted')
-})
+import { KeepAlive } from 'vue'
 </script>

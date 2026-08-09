@@ -3,7 +3,6 @@ import { app } from 'electron/main'
 import fs from 'node:fs'
 import path from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import logger from './Logger'
 
 type HistoryRow = {
   run_id: string
@@ -55,8 +54,7 @@ export default class ConvertHistoryStore {
         completed_at INTEGER,
         updated_at INTEGER NOT NULL
       )
-    `)
-    logger.info(this.constructor.name, `sqlite history ready: ${dbPath}`)
+      `)
     this.reconcile()
   }
 

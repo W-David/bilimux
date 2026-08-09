@@ -45,19 +45,11 @@ export default class HttpClient {
   configManager: ConfigManager
   client: Got
 
-  private cookieKeys(cookies: Array<{ key?: string } | undefined>): string {
-    return cookies
-      .filter((cookie): cookie is { key: string } => Boolean(cookie?.key))
-      .map(cookie => cookie.key)
-      .join(', ')
-  }
-
   constructor(configManager: ConfigManager) {
     this.userAgent = new UserAgent({ deviceCategory: 'desktop' })
     this.configManager = configManager
     this.cookieJar = this.loadCookieJar()
     this.client = this.initGot()
-    logger.info(this.constructor.name, 'inited')
   }
 
   private initGot(): Got {
@@ -73,36 +65,18 @@ export default class HttpClient {
         Referer: DOMAIN
       },
       hooks: {
-        beforeRequest: [
-          options => {
-            logger.debug(`[Request    Urls]: ${options.url}`)
-            logger.debug(`[Request Headers]: ${JSON.stringify(options.headers, null, 2)}`)
-          }
-        ],
         afterResponse: [
           response => {
-            logger.debug(`[Response     Url]: ${response.url}`)
-            logger.debug(`[Response Headers]: ${JSON.stringify(response.headers, null, 2)}`)
-            logger.debug(`[Response    Body]: ${JSON.stringify(response.body, null, 2)}`)
             if (response.statusCode >= 200 && response.statusCode < 300) {
               // 只要响应成功就把当前 cookie jar 持久化，避免登录 Cookie 丢失
-              if (response.headers['set-cookie']) {
-                logger.debug(`[Update Cookie] ${response.headers['set-cookie'].join(', ')}`)
-              }
               this.saveCookieJar()
             }
             if (response.request.options.responseType === 'json' && (response.body as BiliResponseType).code !== 0) {
               const { code, message } = response.body as BiliResponseType
               const msg = message ? message : ERROR_CODE[code]
-              logger.error(`[Request  Coce]: ${code}`)
-              logger.error(`[Request Error]: ${msg}`)
+              logger.error(`[Request Error] ${code}: ${msg}`)
             }
             return response
-          }
-        ],
-        beforeRedirect: [
-          (options, response) => {
-            logger.debug(`[Redirect]: ${response.url} -> ${options.url}`)
           }
         ],
         beforeError: [
@@ -125,11 +99,8 @@ export default class HttpClient {
     const cookieStr = this.configManager.store.get('user-cookie')
     if (cookieStr) {
       const jar = CookieJar.deserializeSync(JSON.parse(cookieStr))
-      const cookies = jar.serializeSync()?.cookies ?? []
-      logger.info(`[Cookie] 启动时从 user-cookie 恢复 jar: ${cookies.length} 个 (${this.cookieKeys(cookies)})`)
       return jar
     }
-    logger.info('[Cookie] 启动时 user-cookie 为空，使用空 jar')
     return new CookieJar()
   }
 
@@ -139,19 +110,13 @@ export default class HttpClient {
       logger.warn('[Cookie] saveCookieJar: cookieJar 序列化失败，跳过写入')
       return
     }
-    const cookies = cookie.cookies ?? []
-    logger.info(`[Cookie] saveCookieJar 写入 user-cookie: ${cookies.length} 个 (${this.cookieKeys(cookies)})`)
-    logger.debug('saveCookieJar Runed, [CookieJar]: ', cookie)
     this.configManager.store.set('user-cookie', JSON.stringify(cookie))
   }
 
   async getCookieKey(key: string) {
     // 从整个 jar 中按 key 查找，避免 host-only cookie 因域名不匹配而查不到
     const cookies = await this.cookieJar.store.getAllCookies()
-    logger.info(`[Cookie] getCookieKey('${key}') 当前 jar 共 ${cookies.length} 个: ${this.cookieKeys(cookies)}`)
-    const cookieObj = cookies.find(cookie => cookie.key === key)
-    logger.info(`[Cookie] getCookieKey('${key}') ${cookieObj ? '找到' : '未找到'}`)
-    return cookieObj
+    return cookies.find(cookie => cookie.key === key)
   }
 
   /**

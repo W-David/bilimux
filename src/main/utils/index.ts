@@ -16,7 +16,7 @@ export async function fileStats(path: string): Promise<Stats | null> {
     const stats = await fs.stat(path)
     return stats
   } catch (error) {
-    logger.info(`未获取到文件信息: ${error instanceof Error ? error.message : String(error)}`)
+    logger.debug(`未获取到文件信息: ${error instanceof Error ? error.message : String(error)}`)
     return null
   }
 }
@@ -31,7 +31,7 @@ export async function isExist(path: string): Promise<boolean> {
     await fs.access(path, fs.constants.F_OK)
     return true
   } catch (error) {
-    logger.info(`该文件不存在: ${path}`)
+    logger.debug(`该文件不存在: ${path}`)
     return false
   }
 }
@@ -44,10 +44,10 @@ export async function createDirIfNotExist(path: string): Promise<void> {
   try {
     const pathExist = await isExist(path)
     if (pathExist) {
-      logger.info(`路径已存在: ${path}`)
+      logger.debug(`路径已存在: ${path}`)
     } else {
       await fs.mkdir(path, { recursive: true })
-      logger.info(`目录创建成功: ${path}`)
+      logger.debug(`目录创建成功: ${path}`)
     }
   } catch (error) {
     logger.error(`创建目录失败: ${error instanceof Error ? error.message : String(error)}`)

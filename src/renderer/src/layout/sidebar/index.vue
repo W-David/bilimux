@@ -23,8 +23,7 @@
 
 <script setup lang="ts">
 import { Download as DownloadIcon, Info as InfoIcon, List as ListIcon, Settings as SettingsIcon } from '@lucide/vue'
-import logger from 'electron-log/renderer'
-import { onUnmounted, ref } from 'vue'
+import { ref } from 'vue'
 import SidebarItem from './Item.vue'
 
 const hItems = ref([
@@ -52,12 +51,6 @@ const fItems = ref([
     to: { name: 'prefer', activeMenu: 'prefer' }
   }
 ])
-
-logger.debug('Sidebar created')
-
-onUnmounted(() => {
-  logger.debug('Sidebar unmounted')
-})
 </script>
 
 <style lang="css" scoped></style>

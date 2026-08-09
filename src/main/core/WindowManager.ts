@@ -34,8 +34,6 @@ export default class WindowManager extends EventEmitter {
       this.setWillQuit(true)
     })
     app.on('window-all-closed', () => {})
-
-    logger.info(this.constructor.name, 'inited')
   }
 
   getPageOptions<T extends keyof Pages>(pageName: T): Pages[T] {

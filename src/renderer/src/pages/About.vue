@@ -9,7 +9,7 @@ import {
 import { checkForUpdate, getAppVersion } from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
 import logger from 'electron-log/renderer'
-import { computed, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const appVersion = ref('')
 const isChecking = ref(false)
@@ -46,13 +46,11 @@ const handleCheckUpdate = async () => {
           description: '新版本已就绪，可以下载更新'
         }
       })
-      logger.info('Update available:', result.updateInfo)
     } else {
       mittbus.emit('toast:add', {
         severity: 'info',
         message: '当前已是最新版本'
       })
-      logger.info('No update available')
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
@@ -63,7 +61,6 @@ const handleCheckUpdate = async () => {
         description: message
       }
     })
-    logger.error('Check update failed:', error)
   } finally {
     isChecking.value = false
   }
@@ -102,11 +99,6 @@ const versionList = computed(() => [
     link: 'https://github.com/W-David/bilimux/issues'
   }
 ])
-
-logger.debug('About created')
-onUnmounted(() => {
-  logger.debug('About unmounted')
-})
 </script>
 
 <template>

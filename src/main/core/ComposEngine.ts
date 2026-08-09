@@ -31,7 +31,6 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
     super()
     this.configManager = configManager
     this.processQueue = processQueue
-    logger.info(this.constructor.name, 'inited')
   }
 
   /**
@@ -99,7 +98,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
         const confFilePath = path.join(outputDir, CONF_FILE_NAME)
         await fs.writeFile(confFilePath, bvsBuffer)
         const message = `已写入 conf 文件: ${confFilePath}`
-        logger.info(message)
+        logger.debug(message)
       }
 
       // 合成队列处理
@@ -136,7 +135,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       if (!isVideoExist || forceTransform) {
         await this.transformFile(videoM4sPath, videoMp4Path)
         const message = `已转换视频${forceTransform ? '（覆盖）' : ''}: ${videoM4sPath} -> ${videoMp4Path}`
-        logger.info(message)
+        logger.debug(message)
         this.emit('process:item:progress', {
           bvid: bv.bvid,
           type: 'preprocess',
@@ -144,7 +143,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
         })
       } else {
         const message = `视频已存在,跳过转换: ${videoMp4Path}`
-        logger.info(message)
+        logger.debug(message)
         this.emit('process:item:progress', {
           bvid: bv.bvid,
           type: 'preprocess',
@@ -157,7 +156,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       if (!isAudioExist || forceTransform) {
         await this.transformFile(audioM4sPath, audioMp3Path)
         const message = `已转换音频${forceTransform ? '（覆盖）' : ''}: ${audioM4sPath} -> ${audioMp3Path}`
-        logger.info(message)
+        logger.debug(message)
         this.emit('process:item:progress', {
           bvid: bv.bvid,
           type: 'preprocess',
@@ -165,7 +164,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
         })
       } else {
         const message = `音频已存在,跳过转换: ${audioMp3Path}`
-        logger.info(message)
+        logger.debug(message)
         this.emit('process:item:progress', {
           bvid: bv.bvid,
           type: 'preprocess',
@@ -183,10 +182,10 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
           outputFile: outputFilePath
         })
         const message = `已合成文件${forceComposition ? '（覆盖）' : ''}: ${outputFilePath}`
-        logger.info(message)
+        logger.debug(message)
       } else {
         const message = `合成文件已存在,跳过: ${outputFilePath}`
-        logger.info(message)
+        logger.debug(message)
       }
 
       const duration = new Date().getTime() - start
