@@ -84,7 +84,7 @@
         size="sm"
         variant="destructive"
         :disabled="!currentUserInfo || loggingOut || favoritesStore.running"
-        @click="handleLogout">
+        @click="showLogoutDialog = true">
         <Spinner
           v-if="loggingOut"
           data-icon="inline-start" />
@@ -94,6 +94,27 @@
         退出登录
       </Button>
     </div>
+
+    <!-- 退出登录确认弹窗 -->
+    <AlertDialog v-model:open="showLogoutDialog">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>退出登录</AlertDialogTitle>
+          <AlertDialogDescription>确定要退出当前账号吗？退出后将清除本地保存的登录信息。</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel :disabled="loggingOut">取消</AlertDialogCancel>
+          <AlertDialogAction
+            :disabled="loggingOut || favoritesStore.running"
+            @click="handleLogout">
+            <Spinner
+              v-if="loggingOut"
+              data-icon="inline-start" />
+            退出登录
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>
 
@@ -119,6 +140,7 @@ const router = useRouter()
 
 const refreshingUserInfo = ref(false)
 const loggingOut = ref(false)
+const showLogoutDialog = ref(false)
 
 const currentUserInfo = computed(() => preference.value['user-info'] ?? null)
 const userName = computed(() => currentUserInfo.value?.uname || '')
@@ -161,6 +183,7 @@ const refreshUserInfo = async (): Promise<void> => {
 }
 
 const handleLogout = async (): Promise<void> => {
+  showLogoutDialog.value = false
   loggingOut.value = true
   try {
     await authStore.logout()

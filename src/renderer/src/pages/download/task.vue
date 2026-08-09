@@ -55,10 +55,9 @@
         <Button
           size="sm"
           variant="outline"
-          :disabled="favoritesStore.running"
-          @click="showLogoutDialog = true">
-          <LogOutIcon data-icon="inline-start" />
-          退出登录
+          @click="openDownloadFolder">
+          <FolderOpenIcon data-icon="inline-start" />
+          下载目录
         </Button>
       </div>
     </div>
@@ -97,50 +96,25 @@
         :history-map="historyMap"
         @retry="handleRetry"></VideoList>
     </div>
-
-    <!-- 退出登录确认弹窗 -->
-    <AlertDialog v-model:open="showLogoutDialog">
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>退出登录</AlertDialogTitle>
-          <AlertDialogDescription>确定要退出当前账号吗？退出后将清除本地保存的登录信息。</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel :disabled="loggingOut || favoritesStore.running">取消</AlertDialogCancel>
-          <AlertDialogAction
-            :disabled="loggingOut || favoritesStore.running"
-            @click="handleLogout">
-            <Spinner
-              v-if="loggingOut"
-              data-icon="inline-start" />
-            退出登录
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { LogOut as LogOutIcon } from '@lucide/vue'
-import { getDownloadHistories, getDownloadHistory, subscribeDownloadItemEndEvent } from '@renderer/api'
+import { FolderOpen as FolderOpenIcon } from '@lucide/vue'
+import { getDownloadHistories, getDownloadHistory, openPath, subscribeDownloadItemEndEvent } from '@renderer/api'
 import FolderList from '@renderer/components/FolderList.vue'
 import VideoList from '@renderer/components/VideoList.vue'
 import { mittbus } from '@renderer/ipc'
 import { type FavoriteFolderData } from '@renderer/services/favorites'
-import { useAuthStore } from '@renderer/store/auth'
 import { useFavoritesStore } from '@renderer/store/favorites'
 import { usePreferenceStore } from '@renderer/store/preference'
 import { safeCover } from '@renderer/utils/media'
 import type { DownloadHistoryRecord } from '@shared/types'
 import logger from 'electron-log/renderer'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 
-const authStore = useAuthStore()
 const preferenceStore = usePreferenceStore()
 const favoritesStore = useFavoritesStore()
-const router = useRouter()
 
 const folders = computed(() => preferenceStore.preference['favorites-data']?.folders ?? [])
 const currentFolder = ref<FavoriteFolderData | null>(null)
@@ -157,8 +131,6 @@ const nicknameStyle = computed(() =>
 )
 const errorMessage = ref('')
 const refreshing = ref(false)
-const showLogoutDialog = ref(false)
-const loggingOut = ref(false)
 const historyMap = ref<Map<string, DownloadHistoryRecord>>(new Map())
 
 /**
@@ -214,31 +186,14 @@ const handleRetry = (): void => {
   loadData()
 }
 
-/**
- * 退出登录：清空主进程、本地持久化以及页面内存中的登录信息，并回到登录页
- */
-const handleLogout = async (): Promise<void> => {
-  loggingOut.value = true
-  try {
-    await authStore.logout()
-    // 清空页面内存中的选中状态与下载历史映射
-    currentFolder.value = null
-    errorMessage.value = ''
-    historyMap.value = new Map()
-    showLogoutDialog.value = false
-    mittbus.emit('toast:add', {
-      severity: 'success',
-      message: '本地登录信息已清空'
-    })
-    router.push({ name: 'download-auth' })
-  } catch (error) {
-    logger.error('退出登录失败:', error)
+const openDownloadFolder = async (): Promise<void> => {
+  const outputDir = preferenceStore.preference['download-config'].outputDir
+  const errMessage = await openPath(outputDir)
+  if (errMessage) {
     mittbus.emit('toast:add', {
       severity: 'error',
-      message: error instanceof Error ? error.message : String(error)
+      message: errMessage
     })
-  } finally {
-    loggingOut.value = false
   }
 }
 

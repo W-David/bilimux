@@ -14,7 +14,7 @@
       <div class="flex flex-none items-center gap-2">
         <Button
           size="sm"
-          class="bg-gray-400/5 text-gray-400"
+          variant="outline"
           @click="openOutputFolder">
           <FolderOpenIcon data-icon="inline-start" />
           输出目录
