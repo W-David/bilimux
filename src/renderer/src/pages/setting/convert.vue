@@ -53,13 +53,8 @@
     </div>
 
     <div class="flex items-center justify-between">
-      <label class="font-normal">重名M4S文件覆写</label>
-      <Switch v-model="preference['convert-config'].forceTransform" />
-    </div>
-
-    <div class="flex items-center justify-between">
-      <label class="font-normal">重名视频文件覆写</label>
-      <Switch v-model="preference['convert-config'].forceComposition" />
+      <label class="font-normal">替换重名文件</label>
+      <Switch v-model="replaceExistingFiles" />
     </div>
 
     <div class="flex items-center justify-between">
@@ -102,7 +97,7 @@ import { mittbus } from '@renderer/ipc'
 import { useConvertStore } from '@renderer/store/convert'
 import { usePreferenceStore } from '@renderer/store/preference'
 import { storeToRefs } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const convertStore = useConvertStore()
 const store = usePreferenceStore()
@@ -111,6 +106,16 @@ const { preference } = storeToRefs(store)
 const isValidEngine = ref(true)
 const clearingHistory = ref(false)
 const showClearDialog = ref(false)
+
+/** 替换重名文件：同时控制 m4s 转换覆写与最终视频覆写两个开关 */
+const replaceExistingFiles = computed({
+  get: () =>
+    Boolean(preference.value['convert-config'].forceTransform || preference.value['convert-config'].forceComposition),
+  set: value => {
+    preference.value['convert-config'].forceTransform = value
+    preference.value['convert-config'].forceComposition = value
+  }
+})
 
 const selectCachePath = async (): Promise<void> => {
   const newPath = await openFileDialog({
