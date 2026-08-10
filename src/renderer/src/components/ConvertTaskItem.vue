@@ -1,90 +1,76 @@
 <template>
   <div
-    class="border border-black/5 bg-[#121212] shadow-sm shadow-black/50 min-w-2xl w-full overflow-hidden rounded-xl p-2">
+    class="border border-black/5 bg-[#121212] shadow-lg ring-1 ring-black/50 shadow-black/20 min-w-2xl w-full overflow-hidden rounded-2xl p-2">
     <!-- Line1 -->
-    <div class="flex items-center justify-between gap-4">
-      <!-- bvid -->
-      <div
-        v-if="task.bvid"
-        class="shrink-0 rounded-3xl ring-1 ring-pink-300/20 w-28 h-6 bg-pink-400/10 flex">
-        <span class="m-auto text-xs font-mono text-pink-300">{{ task.bvid }}</span>
-      </div>
-
+    <div class="h-6 flex items-center justify-between gap-4">
       <!-- 标题 -->
       <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2">
-          <span class="min-w-0 truncate text-sm text-gray-200 font-medium tracking-wide">
+          <!-- bvid -->
+          <div
+            v-if="task.bvid"
+            class="shrink-0 ring-1 ring-pink-400/20 text-pink-400 px-1 py-0.5 rounded-sm flex">
+            <span class="text-[10px] font-mono text-zinc">{{ task.bvid }}</span>
+          </div>
+          <span class="min-w-0 truncate text-xs text-gray-300 font-medium tracking-wide">
             {{ task.title }}
           </span>
         </div>
       </div>
 
-      <!-- 操作按钮 -->
-      <div class="h-8 w-8 flex shrink-0 items-center justify-center">
-        <TooltipProvider v-if="isFileMissing">
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <FileQuestionIcon class="size-6 text-orange-400" />
-            </TooltipTrigger>
-            <TooltipContent side="left">产物文件已丢失</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+      <!-- 状态图标 & 操作按钮 -->
+      <div class="h-6 w-6 flex shrink-0 items-center justify-center">
         <CirclePlayIcon
-          v-else-if="task.status === 'success' || task.status === 'skipped'"
-          class="size-6 cursor-pointer text-green-400 transition-transform duration-200 hover:text-green-300"
+          v-if="task.status === 'success' || task.status === 'skipped'"
+          class="size-4 cursor-pointer text-green-400 transition-transform duration-200 hover:text-green-300"
           @click="openTaskFile" />
-        <TooltipProvider v-else-if="task.status === 'fail'">
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <CircleAlertIcon class="size-6 text-red-400" />
-            </TooltipTrigger>
-            <TooltipContent side="left">{{ task.message }}</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <TooltipProvider v-else-if="task.status === 'interrupted'">
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <CirclePauseIcon class="size-6 text-gray-400" />
-            </TooltipTrigger>
-            <TooltipContent side="left">{{ task.message }}</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        <Spinner
+        <div
           v-else
-          class="size-5 shrink-0" />
+          class="size-4 rounded-[12px] shrink-0 flex gap-1 items-center justify-between px-1 transition-all text-xs"
+          :class="badgeClass">
+          <component
+            :is="statusIcon"
+            :key="statusIcon.__name"
+            class="size-3" />
+        </div>
       </div>
     </div>
 
-    <Separator class="my-2"></Separator>
+    <Separator class="my-1 bg-[#1f1f1f]"></Separator>
 
     <!-- Line2 -->
-    <div class="flex items-center justify-between gap-4">
-      <!-- 状态信息 -->
-      <div
-        class="w-24 rounded-2xl h-8 shrink-0 flex items-center justify-between pl-2 pr-3 transition-all text-xs"
-        :class="badgeClass">
-        <component
-          :is="statusIcon"
-          class="size-4" />
-        <span>{{ statusLabel }}</span>
-      </div>
-
+    <div class="h-6 flex items-center justify-end gap-4">
       <!-- 完成信息 -->
       <div
         v-if="showCompletedMeta"
         class="mt-1.5 flex items-center gap-2">
         <span
           v-if="task.durationMs != null"
-          class="flex items-center gap-1 rounded-md bg-black/20 px-1.5 py-0.5 text-xs text-gray-400">
-          <TimerIcon class="size-3.5 text-pink-400/80" />
+          class="flex items-center gap-1.5 rounded-md bg-black/50 px-2 py-0.5 text-xs text-gray-400">
+          <TimerIcon class="size-3 text-pink-400/80" />
           {{ formatDurationMs(task.durationMs) }}
         </span>
         <span
           v-if="task.fileSize != null && task.fileSize > 0"
-          class="flex items-center gap-1 rounded-md bg-black/20 px-1.5 py-0.5 text-xs text-gray-400">
-          <HardDriveIcon class="size-3.5 text-pink-400/80" />
+          class="flex items-center gap-1.5 rounded-md bg-black/50 px-2 py-0.5 text-xs text-gray-400">
+          <HardDriveIcon class="size-3 text-pink-400/80" />
           {{ formatFileSize(task.fileSize) }}
         </span>
+      </div>
+      <!-- 异常状态信息 -->
+      <div
+        v-if="task.status === 'fail' || task.status === 'interrupted' || isFileMissing"
+        class="h-6 w-6 flex shrink-0 items-center justify-center">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <CircleAlertIcon class="size-4 text-red-400" />
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              {{ isFileMissing ? '产物丢失' : task.status === 'interrupted' ? '转换中断' : task.message }}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </div>
   </div>
@@ -136,19 +122,19 @@ const props = defineProps<{
   task: ConvertTask
 }>()
 
-const statusTextMap: Record<string, string> = {
-  importing: '导入中',
-  writing: '写入中',
-  preprocess: '预处理',
-  success: '已完成',
-  fail: '出错了',
-  skipped: '已跳过',
-  interrupted: '转换中断',
-  missing: '文件丢失',
-  waiting: '等待中'
-}
+// const statusTextMap: Record<string, string> = {
+//   importing: '导入中',
+//   writing: '写入中',
+//   preprocess: '预处理',
+//   success: '已完成',
+//   fail: '出错了',
+//   skipped: '已跳过',
+//   interrupted: '转换中断',
+//   missing: '文件丢失',
+//   waiting: '等待中'
+// }
 
-const statusLabel = computed(() => statusTextMap[props.task.status] || '等待中')
+// const statusLabel = computed(() => statusTextMap[props.task.status] || '等待中')
 
 const badgeClass = computed(() => ({
   'bg-orange-500/10 text-orange-400 ring-1 ring-orange-500/20':

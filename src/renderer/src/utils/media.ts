@@ -42,18 +42,13 @@ export const formatDuration = (seconds: number): string => {
  */
 export const formatDurationMs = (ms?: number | null): string => {
   if (ms == null || ms < 0) return ''
-  const totalSeconds = ms / 1000
-  if (totalSeconds < 60) {
-    return `${totalSeconds.toFixed(1)}s`
+  if (ms >= 1000) {
+    return `${Math.round(ms / 1000)}s`
   }
-  const minutes = Math.floor(totalSeconds / 60)
-  if (minutes < 60) {
-    const seconds = Math.round(totalSeconds % 60)
-    return `${minutes}m ${seconds}s`
+  if (ms >= 60 * 1000) {
+    return `${Math.round(ms / (60 * 1000))}m`
   }
-  const hours = Math.floor(minutes / 60)
-  const restMinutes = minutes % 60
-  return `${hours}h ${restMinutes}m`
+  return `${ms}ms`
 }
 
 /**
@@ -61,7 +56,7 @@ export const formatDurationMs = (ms?: number | null): string => {
  */
 export const formatFileSize = (bytes?: number | null): string => {
   if (bytes == null || bytes <= 0) return ''
-  const units = ['B', 'KB', 'MB', 'GB']
+  const units = ['b', 'Kb', 'Mb', 'Gb']
   let value = bytes
   let unitIndex = 0
   while (value >= 1024 && unitIndex < units.length - 1) {

@@ -50,7 +50,7 @@
           <div
             role="button"
             tabindex="0"
-            class="flex h-8 cursor-pointer select-none items-center justify-center gap-2 rounded-2xl bg-gray-400/15 px-3 text-base font-bold text-gray-400 ring-1 ring-gray-400/20 transition-all duration-300 hover:bg-pink-400/25 hover:text-pink-300 active:scale-95 hover:ring-pink-400/20"
+            class="flex h-8 cursor-pointer select-none items-center justify-center gap-2 rounded-2xl bg-gray-400/15 px-3 font-bold text-gray-400 ring-1 ring-gray-300/20 transition-all duration-300 hover:bg-pink-400/25 hover:text-pink-400 hover:ring-pink-300/20"
             :class="
               convertStore.runStatus === 'scanning' || convertStore.runStatus === 'processing'
                 ? 'pointer-events-none opacity-50'
