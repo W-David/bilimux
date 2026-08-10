@@ -1,6 +1,7 @@
 import {
   clearConvertHistories,
   getConvertHistories,
+  removeConvertHistory,
   startProcess,
   subscribeProcessBrokeEvent,
   subscribeProcessItemEndEvent,
@@ -11,6 +12,7 @@ import {
   subscribeProcessSuccessEvent
 } from '@renderer/api'
 import type { ConvertTask } from '@renderer/components/ConvertTaskItem.vue'
+import { mittbus } from '@renderer/ipc'
 import type { ConvertHistoryRecord } from '@shared/types'
 import logger from 'electron-log/renderer'
 import { defineStore } from 'pinia'
@@ -60,7 +62,16 @@ export const useConvertStore = defineStore('convert', () => {
       message: record.errorMessage || (record.status === 'skipped' ? '产物已存在，跳过合成' : ''),
       durationMs: record.durationMs,
       fileSize: record.fileSize,
-      fileExists: record.fileExists
+      fileExists: record.fileExists,
+      type: record.type,
+      uname: record.uname,
+      groupTitle: record.groupTitle,
+      sourceDir: record.sourceDir,
+      outputPath: record.outputPath || undefined,
+      runId: record.runId,
+      startedAt: record.startedAt,
+      completedAt: record.completedAt,
+      updatedAt: record.updatedAt
     }
   }
 
@@ -147,6 +158,31 @@ export const useConvertStore = defineStore('convert', () => {
     }
   }
 
+  /** 删除单个任务：历史记录 + 产物文件 + UI 同步 */
+  const removeItem = async (task: ConvertTask): Promise<void> => {
+    const isHistory = task.id.startsWith('history:')
+    const targetPath = task.outputPath || (isHistory ? task.filePath : undefined)
+    try {
+      await removeConvertHistory(task.bvid, targetPath || undefined)
+      if (isHistory) {
+        history.value = history.value.filter(record => record.bvid !== task.bvid)
+      } else {
+        tasks.value.delete(task.bvid)
+        tasks.value = new Map(tasks.value)
+      }
+      mittbus.emit('toast:add', {
+        severity: 'success',
+        message: '已删除转换任务'
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      mittbus.emit('toast:add', {
+        severity: 'error',
+        message: `删除失败: ${message}`
+      })
+    }
+  }
+
   // 全局只注册一份 process 事件监听
   if (!listenersRegistered) {
     listenersRegistered = true
@@ -165,27 +201,45 @@ export const useConvertStore = defineStore('convert', () => {
           title: bv.title || bv.fileInfo.fileName,
           fileName: bv.fileInfo.fileName,
           filePath: bv.fileInfo.filePath,
+          outputPath: '',
+          type: bv.type,
+          uname: bv.uname,
+          groupTitle: bv.groupTitle,
+          sourceDir: bv.fileInfo.dirPath,
           status: 'waiting',
           progress: 0,
           finished: false,
-          message: ''
+          message: '',
+          startedAt: Date.now(),
+          updatedAt: Date.now()
         })
       })
       tasks.value = next
     })
 
-    subscribeProcessItemStartEvent(({ bv }) => {
-      if (!tasks.value.has(bv.bvid)) {
+    subscribeProcessItemStartEvent(({ bv, outputPath }) => {
+      const existing = tasks.value.get(bv.bvid)
+      if (existing) {
+        existing.outputPath = outputPath ?? ''
+        existing.startedAt ??= Date.now()
+      } else {
         tasks.value.set(bv.bvid, {
           id: bv.bvid,
           bvid: bv.bvid,
           title: bv.title || bv.fileInfo.fileName,
           fileName: bv.fileInfo.fileName,
           filePath: bv.fileInfo.filePath,
+          outputPath: outputPath ?? '',
+          type: bv.type,
+          uname: bv.uname,
+          groupTitle: bv.groupTitle,
+          sourceDir: bv.fileInfo.dirPath,
           status: 'waiting',
           progress: 0,
           finished: false,
-          message: ''
+          message: '',
+          startedAt: Date.now(),
+          updatedAt: Date.now()
         })
       }
     })
@@ -198,7 +252,7 @@ export const useConvertStore = defineStore('convert', () => {
       }
     })
 
-    subscribeProcessItemEndEvent(({ bvid, success, message, skipped, durationMs, fileSize }) => {
+    subscribeProcessItemEndEvent(({ bvid, success, message, skipped, durationMs, fileSize, outputPath }) => {
       const task = tasks.value.get(bvid)
       if (task) {
         task.finished = success
@@ -208,6 +262,8 @@ export const useConvertStore = defineStore('convert', () => {
         task.durationMs = durationMs ?? null
         task.fileSize = fileSize ?? null
         task.fileExists = success ? (fileSize ?? 0) > 0 : false
+        task.outputPath = outputPath ?? task.outputPath ?? ''
+        task.updatedAt = Date.now()
       }
     })
 
@@ -228,7 +284,15 @@ export const useConvertStore = defineStore('convert', () => {
 
   // TEMP: 转换列表测试数据（覆盖 statusIcon 全部状态，仅开发环境；用户确认后删除本代码块）
   if (import.meta.env.DEV) {
-    const seedLiveTasks: ConvertTask[] = [
+    const seedBase = {
+      uname: '测试UP主·阿B',
+      groupTitle: '测试收藏夹',
+      sourceDir: '/tmp/bilimux-test-cache',
+      type: 'ugc',
+      startedAt: Date.now() - 3_600_000,
+      updatedAt: Date.now()
+    }
+    const seedLiveTasks = [
       {
         id: 'seed-live-waiting',
         bvid: 'BV1SEEDWAIT1',
@@ -285,7 +349,8 @@ export const useConvertStore = defineStore('convert', () => {
         message: '耗时: 24580 ms',
         durationMs: 24580,
         fileSize: 3_145_728,
-        fileExists: true
+        fileExists: true,
+        outputPath: '/tmp/bilimux-test-output/seed-success.mp4'
       },
       {
         id: 'seed-live-fail',
@@ -310,7 +375,8 @@ export const useConvertStore = defineStore('convert', () => {
         message: '耗时: 980 ms（已跳过合成）',
         durationMs: 980,
         fileSize: 1_048_576,
-        fileExists: true
+        fileExists: true,
+        outputPath: '/tmp/bilimux-test-output/seed-skipped.mp4'
       },
       {
         id: 'seed-live-interrupted',
@@ -335,7 +401,7 @@ export const useConvertStore = defineStore('convert', () => {
         message: '',
         fileExists: false
       }
-    ]
+    ].map(task => ({ ...seedBase, ...task })) as ConvertTask[]
     tasks.value = new Map(seedLiveTasks.map(task => [task.bvid, task]))
   }
 
@@ -353,6 +419,7 @@ export const useConvertStore = defineStore('convert', () => {
     start,
     reset,
     loadHistory,
-    clearHistory
+    clearHistory,
+    removeItem
   }
 })

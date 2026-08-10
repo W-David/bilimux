@@ -247,6 +247,9 @@ export default class Application {
     this.ipcManager.mainIpc.handle('convert:history:list', () => {
       return this.convertHistoryStore.list()
     })
+    this.ipcManager.mainIpc.handle('convert:history:remove', (_, bvid: string, filePath?: string) => {
+      this.convertHistoryStore.remove(bvid, filePath)
+    })
     this.ipcManager.mainIpc.handle('convert:history:clear', () => {
       this.convertHistoryStore.clear()
     })

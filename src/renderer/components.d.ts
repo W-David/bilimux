@@ -60,6 +60,7 @@ declare module 'vue' {
     FieldSeparator: typeof import('./src/components/ui/field/FieldSeparator.vue')['default']
     FieldSet: typeof import('./src/components/ui/field/FieldSet.vue')['default']
     FieldTitle: typeof import('./src/components/ui/field/FieldTitle.vue')['default']
+    FileDetailsDrawer: typeof import('./src/components/FileDetailsDrawer.vue')['default']
     FolderItem: typeof import('./src/components/FolderItem.vue')['default']
     FolderList: typeof import('./src/components/FolderList.vue')['default']
     Input: typeof import('./src/components/ui/input/Input.vue')['default']

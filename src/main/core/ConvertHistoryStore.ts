@@ -156,6 +156,26 @@ export default class ConvertHistoryStore {
   }
 
   /**
+   * 删除单条转换记录，并删除对应产物文件
+   * @param bvid 任务 bvid
+   * @param filePath 优先删除的文件路径（历史记录里即为产物路径）
+   */
+  public remove(bvid: string, filePath?: string): void {
+    const row = this.db.prepare(`SELECT output_path FROM convert_history WHERE bvid = ?`).get(bvid) as
+      | { output_path: string | null }
+      | undefined
+    const target = filePath ?? row?.output_path
+    if (target) {
+      try {
+        fs.rmSync(target, { force: true })
+      } catch {
+        // 文件可能已被移动/删除，忽略即可
+      }
+    }
+    this.db.prepare(`DELETE FROM convert_history WHERE bvid = ?`).run(bvid)
+  }
+
+  /**
    * 对账：残留的 processing 标记为 interrupted；completed 产物丢失标记为 missing
    */
   public reconcile(): void {

@@ -1,84 +1,97 @@
 <template>
   <div
-    class="border border-black/5 bg-[#121212] shadow-lg ring-1 ring-black/50 shadow-black/20 min-w-2xl w-full overflow-hidden rounded-2xl p-2">
-    <!-- Line1 -->
-    <div class="h-6 flex items-center justify-between gap-4">
+    class="relative border-white/5 bg-black/10 ring-black/20 shadow-black/30 min-w-2xl w-full rounded-full border h-15 shadow-md ring-1">
+    <!-- bvid -->
+    <div
+      class="absolute top-0 left-0 z-10 bg-[#121212] text-pink-400 h-4.5 w-24 rounded-tl-[30px] rounded-br-[30px] rounded-tr-lg rounded-bl-lg shadow-md shadow-black/50 ring-1 ring-zinc-700 flex justify-center items-center">
+      <span class="text-[10px] font-mono">{{ task.bvid }}</span>
+    </div>
+    <div class="flex items-center justify-between gap-4 w-full h-full px-2.5">
       <!-- 标题 -->
       <div class="min-w-0 flex-1">
-        <div class="flex items-center gap-2">
-          <!-- bvid -->
-          <div
-            v-if="task.bvid"
-            class="shrink-0 ring-1 ring-pink-400/20 text-pink-400 px-1 py-0.5 rounded-sm flex">
-            <span class="text-[10px] font-mono text-zinc">{{ task.bvid }}</span>
-          </div>
-          <span class="min-w-0 truncate text-xs text-gray-300 font-medium tracking-wide">
+        <div class="mt-2 flex items-center gap-2 ml-2">
+          <span class="min-w-0 truncate text-[13px] text-zinc-300 font-medium tracking-wide">
             {{ task.title }}
           </span>
         </div>
       </div>
 
-      <!-- 状态图标 & 操作按钮 -->
-      <div class="h-6 w-6 flex shrink-0 items-center justify-center">
-        <CirclePlayIcon
-          v-if="task.status === 'success' || task.status === 'skipped'"
-          class="size-4 cursor-pointer text-green-400 transition-transform duration-200 hover:text-green-300"
-          @click="openTaskFile" />
+      <!-- 操作按钮（胶囊玻璃组） -->
+      <div
+        class="flex items-center gap-1 rounded-full border border-white/5 bg-white/6 py-1.5 px-2 shadow-inner shadow-black/20 backdrop-blur-md">
+        <!-- 删除（历史任务或已生成产物的任务，否则置灰不可用） -->
+        <AlertDialog>
+          <AlertDialogTrigger as-child>
+            <button
+              type="button"
+              aria-label="删除任务"
+              :disabled="!canDelete"
+              class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent">
+              <Trash2Icon class="size-4 text-red-400 transition-colors hover:text-red-300" />
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>删除转换任务？</AlertDialogTitle>
+              <AlertDialogDescription>将删除生成的视频文件并移除该任务记录，此操作不可恢复。</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>取消</AlertDialogCancel>
+              <AlertDialogAction @click="handleDelete">删除</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <!-- 打开文件所在位置 -->
+        <button
+          type="button"
+          aria-label="打开文件所在位置"
+          :disabled="!outputTarget"
+          class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+          @click="openFileLocation">
+          <FolderOpenIcon class="size-4 text-gray-300 transition-colors hover:text-white" />
+        </button>
+
+        <!-- 文件详情 -->
+        <button
+          type="button"
+          aria-label="文件详情"
+          class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10"
+          @click="detailsOpen = true">
+          <InfoIcon class="size-4 text-gray-300 transition-colors hover:text-white" />
+        </button>
+
+        <!-- 播放（可播放/转换成功时显示） -->
+        <button
+          v-if="isPlayable"
+          type="button"
+          aria-label="打开文件"
+          class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10"
+          @click="openTaskFile">
+          <CirclePlayIcon class="size-4 text-gray-400 transition-colors hover:text-green-400" />
+        </button>
+
+        <!-- 状态图标回显转换过程 -->
         <div
           v-else
-          class="size-4 rounded-[12px] shrink-0 flex gap-1 items-center justify-between px-1 transition-all text-xs"
+          class="size-6 rounded-full shrink-0 flex items-center justify-center"
           :class="badgeClass">
           <component
             :is="statusIcon"
-            :key="statusIcon.__name"
             class="size-3" />
         </div>
       </div>
     </div>
 
-    <Separator class="my-1 bg-[#1f1f1f]"></Separator>
-
-    <!-- Line2 -->
-    <div class="h-6 flex items-center justify-end gap-4">
-      <!-- 完成信息 -->
-      <div
-        v-if="showCompletedMeta"
-        class="mt-1.5 flex items-center gap-2">
-        <span
-          v-if="task.durationMs != null"
-          class="flex items-center gap-1.5 rounded-md bg-black/50 px-2 py-0.5 text-xs text-gray-400">
-          <TimerIcon class="size-3 text-pink-400/80" />
-          {{ formatDurationMs(task.durationMs) }}
-        </span>
-        <span
-          v-if="task.fileSize != null && task.fileSize > 0"
-          class="flex items-center gap-1.5 rounded-md bg-black/50 px-2 py-0.5 text-xs text-gray-400">
-          <HardDriveIcon class="size-3 text-pink-400/80" />
-          {{ formatFileSize(task.fileSize) }}
-        </span>
-      </div>
-      <!-- 异常状态信息 -->
-      <div
-        v-if="task.status === 'fail' || task.status === 'interrupted' || isFileMissing"
-        class="h-6 w-6 flex shrink-0 items-center justify-center">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <CircleAlertIcon class="size-4 text-red-400" />
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              {{ isFileMissing ? '产物丢失' : task.status === 'interrupted' ? '转换中断' : task.message }}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-    </div>
+    <FileDetailsDrawer
+      :task="task"
+      :open="detailsOpen"
+      @close="detailsOpen = false" />
   </div>
 </template>
 
 <script lang="ts">
 import type { ProgressStatus } from '@shared/types'
-import Separator from './ui/separator/Separator.vue'
 
 export type ConvertTaskStatus = ProgressStatus | 'skipped' | 'interrupted' | 'missing'
 
@@ -92,6 +105,15 @@ export interface ConvertTask {
   message: string
   bvid: string
   title: string
+  type?: string
+  uname?: string
+  groupTitle?: string
+  sourceDir?: string
+  outputPath?: string
+  runId?: string
+  startedAt?: number | null
+  completedAt?: number | null
+  updatedAt?: number | null
   durationMs?: number | null
   fileSize?: number | null
   fileExists?: boolean
@@ -106,21 +128,35 @@ import {
   CirclePlay as CirclePlayIcon,
   FileOutput as FileOutputIcon,
   FileQuestion as FileQuestionIcon,
-  HardDrive as HardDriveIcon,
+  FolderOpen as FolderOpenIcon,
   Hourglass as HourglassIcon,
   Import as ImportIcon,
+  Info as InfoIcon,
   PencilLine as PencilLineIcon,
   SkipForward as SkipForwardIcon,
-  Timer as TimerIcon
+  Trash2 as Trash2Icon
 } from '@lucide/vue'
-import { openPath } from '@renderer/api'
+import { openFolder, openPath } from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
-import { formatDurationMs, formatFileSize } from '@renderer/utils/media'
-import { computed } from 'vue'
+import { useConvertStore } from '@renderer/store/convert'
+import { computed, ref } from 'vue'
+import FileDetailsDrawer from './FileDetailsDrawer.vue'
 
 const props = defineProps<{
   task: ConvertTask
 }>()
+
+const convertStore = useConvertStore()
+const detailsOpen = ref(false)
+
+/** 删除按钮：历史任务，或实时任务已生成产物 */
+const canDelete = computed(() => props.task.id.startsWith('history:') || Boolean(props.task.outputPath))
+
+/** 优先操作产物文件，实时任务退回源文件路径 */
+const outputTarget = computed(() => props.task.outputPath || props.task.filePath || '')
+
+/** 播放按钮可用：成功或跳过 */
+const isPlayable = computed(() => props.task.status === 'success' || props.task.status === 'skipped')
 
 // const statusTextMap: Record<string, string> = {
 //   importing: '导入中',
@@ -175,21 +211,18 @@ const statusIcon = computed(() => {
   }
 })
 
-/** 产物是否丢失：显式 missing，或已完成/跳过但文件不存在 */
-const isFileMissing = computed(
-  () =>
-    props.task.status === 'missing' ||
-    ((props.task.status === 'success' || props.task.status === 'skipped') && props.task.fileExists === false)
-)
-
-/** 任务完成（成功/跳过）后展示耗时与文件大小 */
-const showCompletedMeta = computed(() => props.task.status === 'success' || props.task.status === 'skipped')
+/**
+ * 删除任务：记录 + 产物文件 + UI 同步
+ */
+const handleDelete = async (): Promise<void> => {
+  await convertStore.removeItem(props.task)
+}
 
 /**
- * 使用系统默认程序打开视频文件
+ * 在文件管理器中显示文件所在位置
  */
-const openTaskFile = async (): Promise<void> => {
-  if (!props.task.filePath) {
+const openFileLocation = async (): Promise<void> => {
+  if (!outputTarget.value) {
     mittbus.emit('toast:add', {
       severity: 'warn',
       message: '文件路径不存在'
@@ -197,7 +230,29 @@ const openTaskFile = async (): Promise<void> => {
     return
   }
 
-  const errMessage = await openPath(props.task.filePath)
+  try {
+    await openFolder(outputTarget.value)
+  } catch (error) {
+    mittbus.emit('toast:add', {
+      severity: 'error',
+      message: error instanceof Error ? error.message : String(error)
+    })
+  }
+}
+
+/**
+ * 使用系统默认程序打开视频文件
+ */
+const openTaskFile = async (): Promise<void> => {
+  if (!outputTarget.value) {
+    mittbus.emit('toast:add', {
+      severity: 'warn',
+      message: '文件路径不存在'
+    })
+    return
+  }
+
+  const errMessage = await openPath(outputTarget.value)
   if (errMessage) {
     mittbus.emit('toast:add', {
       severity: 'error',

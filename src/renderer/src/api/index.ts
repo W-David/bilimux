@@ -30,6 +30,13 @@ export const getConvertHistories: RendererEmitterInvokeFn<'convert:history:list'
 }
 
 /**
+ * 删除单条转换历史（记录 + 产物文件）
+ */
+export const removeConvertHistory: RendererEmitterInvokeFn<'convert:history:remove'> = (bvid, filePath) => {
+  return emitter.invoke('convert:history:remove', bvid, filePath)
+}
+
+/**
  * 清空转换历史
  */
 export const clearConvertHistories: RendererEmitterInvokeFn<'convert:history:clear'> = () => {
