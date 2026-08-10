@@ -75,18 +75,24 @@ export const useConvertStore = defineStore('convert', () => {
     }
   }
 
-  /** 未完成：实时排队/失败 + 历史失败/跳过/中断/丢失 */
+  /** 未完成：实时等待/失败/中断/丢失 + 历史失败/跳过/中断/丢失 */
   const unconvertedList = computed<ConvertTask[]>(() => {
-    const live = Array.from(tasks.value.values()).filter(task => task.status === 'waiting' || task.status === 'fail')
+    const live = Array.from(tasks.value.values()).filter(
+      task =>
+        task.status === 'waiting' ||
+        task.status === 'fail' ||
+        task.status === 'interrupted' ||
+        task.status === 'missing'
+    )
     const historyTasks = history.value
       .filter(record => !liveBvids.value.has(record.bvid) && UNCONVERTED_HISTORY_STATUS.has(record.status))
       .map(toTask)
     return [...live, ...historyTasks]
   })
 
-  /** 已完成：实时成功 + 历史完成（文件存在） */
+  /** 已完成：实时成功/跳过 + 历史完成（文件存在） */
   const completedList = computed<ConvertTask[]>(() => {
-    const live = Array.from(tasks.value.values()).filter(task => task.status === 'success')
+    const live = Array.from(tasks.value.values()).filter(task => task.status === 'success' || task.status === 'skipped')
     const historyTasks = history.value
       .filter(
         record => !liveBvids.value.has(record.bvid) && (record.status === 'completed' || record.status === 'skipped')
@@ -139,6 +145,21 @@ export const useConvertStore = defineStore('convert', () => {
       const records = await getConvertHistories()
       if (version !== historyVersion) return
       history.value = records
+      // 用历史对账信息（文件存在性、状态等）补全保留下来的 live 任务，不替换列表本身
+      const recordMap = new Map(records.map(record => [record.bvid, record]))
+      for (const task of tasks.value.values()) {
+        const record = recordMap.get(task.bvid)
+        if (!record) continue
+        task.outputPath = record.outputPath || task.outputPath || ''
+        task.fileExists = record.fileExists
+        task.runId = record.runId
+        task.startedAt = record.startedAt
+        task.completedAt = record.completedAt
+        task.updatedAt = record.updatedAt
+        task.fileSize = record.fileSize
+        task.durationMs = record.durationMs
+        task.status = HISTORY_STATUS_MAP[record.status]
+      }
     } catch (error) {
       logger.warn('加载转换历史失败:', error)
     }
@@ -271,8 +292,8 @@ export const useConvertStore = defineStore('convert', () => {
       runStatus.value = 'success'
       successCount.value = count.success
       failCount.value = count.fail
-      // 转换结束后清除 live 任务残留，列表只保留历史记录
-      tasks.value = new Map()
+      // 保留 live 任务，只更新内部状态，保证从扫描到完成的列表顺序不变；
+      // 后台加载历史仅用于对账（文件存在性等），不会替换 live 列表
       void loadHistory()
     })
 

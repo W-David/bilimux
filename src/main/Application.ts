@@ -32,6 +32,7 @@ export default class Application {
   downloadHistoryStore: DownloadHistoryStore
   downloadManager: DownloadManager
   currentConvertRunId: string | null = null
+  currentConvertOrder = new Map<string, number>()
 
   constructor() {
     this.context = new Context()
@@ -89,7 +90,12 @@ export default class Application {
     this.composEngine.on('process:item:start', data => {
       this.windowManager.sendCommandToAll('process:item:start', data)
       if (this.currentConvertRunId) {
-        this.convertHistoryStore.markStarted(this.currentConvertRunId, data.bv, data.outputPath)
+        this.convertHistoryStore.markStarted(
+          this.currentConvertRunId,
+          data.bv,
+          data.outputPath,
+          this.currentConvertOrder.get(data.bv.bvid) ?? 0
+        )
       }
     })
     this.composEngine.on('process:item:progress', data => {
@@ -113,6 +119,7 @@ export default class Application {
       this.windowManager.sendCommandToAll('process:start')
     })
     this.composEngine.on('process:ready', data => {
+      this.currentConvertOrder = new Map(data.bvs.map((bv, index) => [bv.bvid, index]))
       this.windowManager.sendCommandToAll('process:ready', data)
     })
     this.composEngine.on('process:broke', data => {

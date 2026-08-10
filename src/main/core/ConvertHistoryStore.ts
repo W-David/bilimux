@@ -7,6 +7,7 @@ import { checkFilesExist } from '../utils'
 
 type HistoryRow = {
   run_id: string
+  run_seq: number
   bvid: string
   type: string
   title: string
@@ -40,6 +41,7 @@ export default class ConvertHistoryStore {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS convert_history (
         run_id TEXT NOT NULL,
+        run_seq INTEGER NOT NULL DEFAULT 0,
         bvid TEXT NOT NULL PRIMARY KEY,
         type TEXT NOT NULL DEFAULT '',
         title TEXT NOT NULL DEFAULT '',
@@ -56,21 +58,27 @@ export default class ConvertHistoryStore {
         updated_at INTEGER NOT NULL
       )
       `)
+    // 旧库迁移：补充 run_seq 列（同一运行内按扫描顺序排序用）
+    const columns = this.db.prepare(`PRAGMA table_info(convert_history)`).all() as { name: string }[]
+    if (!columns.some(column => column.name === 'run_seq')) {
+      this.db.exec(`ALTER TABLE convert_history ADD COLUMN run_seq INTEGER NOT NULL DEFAULT 0`)
+    }
     this.reconcile()
   }
 
   /**
    * 转换开始：写入一条 processing 记录
    */
-  public markStarted(runId: string, bv: VideoTaskInfo, outputPath?: string): void {
+  public markStarted(runId: string, bv: VideoTaskInfo, outputPath?: string, runSeq = 0): void {
     const now = Date.now()
     this.db
       .prepare(
         `INSERT INTO convert_history
-           (run_id, bvid, type, title, uname, group_title, source_dir, output_path, file_size, status, error_message, duration_ms, started_at, completed_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 'processing', '', NULL, ?, NULL, ?)
+           (run_id, run_seq, bvid, type, title, uname, group_title, source_dir, output_path, file_size, status, error_message, duration_ms, started_at, completed_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'processing', '', NULL, ?, NULL, ?)
          ON CONFLICT(bvid) DO UPDATE SET
            run_id = excluded.run_id,
+           run_seq = excluded.run_seq,
            type = excluded.type,
            title = excluded.title,
            uname = excluded.uname,
@@ -87,6 +95,7 @@ export default class ConvertHistoryStore {
       )
       .run(
         runId,
+        runSeq,
         bv.bvid,
         bv.type,
         bv.title,
@@ -132,15 +141,18 @@ export default class ConvertHistoryStore {
   }
 
   /**
-   * 查询全部转换历史（按开始时间倒序）
+   * 查询全部转换历史：按运行开始时间倒序，同一运行内按扫描序号正序
    */
   public async list(): Promise<ConvertHistoryRecord[]> {
     const rows = this.db
       .prepare(
-        `SELECT rowid AS id, run_id, bvid, type, title, uname, group_title, source_dir, output_path,
+        `SELECT rowid AS id, run_id, run_seq, bvid, type, title, uname, group_title, source_dir, output_path,
                 file_size, status, error_message, duration_ms, started_at, completed_at, updated_at
          FROM convert_history
-         ORDER BY started_at DESC, rowid DESC`
+         ORDER BY
+           (SELECT MIN(started_at) FROM convert_history AS h WHERE h.run_id = convert_history.run_id) DESC,
+           run_seq ASC,
+           rowid DESC`
       )
       .all() as unknown as (HistoryRow & { id: number })[]
 
@@ -214,6 +226,7 @@ export default class ConvertHistoryStore {
     return {
       id: row.id,
       runId: row.run_id,
+      runSeq: row.run_seq,
       bvid: row.bvid,
       type: row.type,
       title: row.title,
