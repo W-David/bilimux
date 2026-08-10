@@ -1,7 +1,7 @@
 <div align="center">
   <img src="build/bilimux.png" width="120" height="120" alt="BiliMux Logo" />
   <h1>BiliMux</h1>
-  <p><b>高效、快速的 Bilibili 缓存音视频合并工具</b></p>
+  <p><b>B 站缓存视频一键转 MP4 · 收藏夹视频直接下载</b></p>
 
   <p>
     <a href="https://github.com/W-David/bilimux/releases">
@@ -15,98 +15,64 @@
 
 ---
 
-## 📖 简介 | Introduction
+## 简介
 
-**BiliMux** 是一款基于 Electron 开发的跨平台桌面应用。可以自动扫描 Bilibili 客户端下载的缓存文件（音视频分离的 m4s 文件），调用 MP4Box 工具合并为通用的 MP4 格式。
+BiliMux 是一款基于 Electron 的跨平台桌面应用，帮你把 B 站视频从“缓存”变成真正属于自己的文件：
 
-## ✨ 功能特性 | Features
+- **转换**：自动扫描 Bilibili 客户端的缓存文件（音视频分离的 m4s），调用内置 MP4Box 合并成通用的 MP4。
+- **下载**：扫码登录后浏览自己的收藏夹，一键下载视频，并自动合成 MP4。
 
-- **⚡️ 高效合并**: 内置 MP4Box 引擎，实现无损、快速的音视频流混流。
-- **🔍 智能扫描**: 自动识别并扫描 Bilibili 缓存目录，批量处理任务。
-- **🎨 现代界面**: 基于 UnoCSS 和 PrimeVue 构建的现代化 UI，目前只有深色模式。
-- **💻 跨平台**: 支持 Windows, macOS 和 Linux。
+## 功能特性
 
-## 🛠 技术栈 | Tech Stack
+- ⚡ **缓存转 MP4**：自动扫描缓存目录，批量识别、批量合成，全程无需手动处理文件。
+- 📥 **收藏夹下载**：B 站扫码登录，浏览收藏夹，点击即可下载视频。
+- 🚀 **并行下载**：下载任务数可在 1–16 之间调整，多任务下载更快。
+- ⏸ **暂停与继续**：下载支持暂停、断点续传，失败时自动尝试备用地址。
+- 🗂 **转换与下载历史**：随时查看历史记录，也可一键清空。
+- 🖥 **系统托盘**：关闭窗口自动隐藏到托盘，随时恢复或退出。
+- 🎨 **现代化深色界面**：全新交互设计，操作更顺手。
+- 💻 **跨平台**：支持 Windows（x64）、macOS（Apple Silicon）和 Linux。
 
-本项目采用现代化的前端技术栈构建：
+## 下载安装
 
-- **Core**: [Electron](https://www.electronjs.org/), [TypeScript](https://www.typescriptlang.org/)
-- **Framework**: [Vue 3](https://vuejs.org/), [Vite](https://vitejs.dev/)
-- **UI/Styling**: [UnoCSS](https://unocss.dev/), [PrimeVue](https://primevue.org/)
-- **State Management**: [Pinia](https://pinia.vuejs.org/)
-- **Code Format and Lint**: [Prettier](https://prettier.io/), [ESLint](https://eslint.org/)
-- **Media Engine**: [GPAC / MP4Box](https://gpac.io/)
-- **Package Manager**: [pnpm](https://pnpm.io/)
+前往 [Releases](https://github.com/W-David/bilimux/releases) 下载适合你平台的安装包：
 
-## 🚀 快速开始 | Getting Started
+| 平台                   | 安装包                |
+| ---------------------- | --------------------- |
+| Windows（x64）         | NSIS 安装包（`.exe`） |
+| macOS（Apple Silicon） | DMG（`.dmg`）         |
+| Linux                  | AppImage 与 deb       |
 
-### 安装 | Installation
+> macOS 首次打开提示“已损坏”时，这是未签名应用的正常提示。先把应用拖入“应用程序”文件夹，然后在终端执行：
+>
+> ```bash
+> sudo xattr -rd com.apple.quarantine /Applications/BiliMux.app
+> ```
 
-请前往 [Releases](https://github.com/W-David/bilimux/releases) 页面下载适合您系统的最新安装包：
+## 技术栈
 
-- Windows：x64 NSIS 安装包（`.exe`）
-- macOS：Apple Silicon（arm64）DMG
-- Linux：AppImage 与 deb
+Electron · Vue 3 · TypeScript · electron-vite · Pinia · Tailwind CSS v4 · shadcn-vue · MP4Box（GPAC）· pnpm
 
-### MAC报错应用已损坏
+## 开发
 
-#### 原因
-
-macOS 默认只信任 App Store 下载的应用或拥有“已识别开发者”签名的应用。对于未签名或未公证的应用，macOS 会直接拦截。
-
-#### 解决
-
-你可以手动移除该应用的“隔离属性”，先将应用拖入“应用程序”文件夹，然后在终端运行此命令。
-
-```bash
-sudo xattr -r -d com.apple.quarantine /Applications/BiliMux.app
-```
-
-### 开发 | Development
-
-如果您想参与开发或自行构建，请按照以下步骤操作：
-
-#### 1. 环境准备
-
-确保您的系统已安装 [Node.js >= v22](https://nodejs.org) 和 [pnpm >= 11](https://pnpm.io/)（项目使用 `pnpm@11.18.0`）。
-
-#### 2. 克隆项目
+需要 Node.js >= 22 与 pnpm >= 11。
 
 ```bash
-git clone https://github.com/W-David/bilimux.git
-cd bilimux
-```
-
-#### 3. 安装依赖
-
-```bash
+# 安装依赖
 pnpm install
-```
 
-#### 4. 启动开发模式
-
-```bash
+# 开发模式（热更新）
 pnpm dev
-```
 
-#### 5. 构建应用
+# 代码检查与类型检查
+pnpm lint
+pnpm typecheck
 
-```bash
-# 构建 Windows 版本
-pnpm build:win
-
-# 构建 macOS 版本
-pnpm build:mac
-
-# 构建 Linux 版本
-pnpm build:linux
-```
-
-#### 6. 代码检查与类型检查
-
-```bash
-pnpm lint       # ESLint
-pnpm typecheck  # TypeScript + vue-tsc
+# 构建
+pnpm build
+pnpm build:mac   # macOS
+pnpm build:win   # Windows
+pnpm build:linux # Linux
 ```
 
 ## License
@@ -115,7 +81,4 @@ pnpm typecheck  # TypeScript + vue-tsc
 
 ## About Me
 
-**rushwang**
-
-- Email: <cooody@163.com>
-- Github: [@W-David](https://github.com/W-David)
+**rushwang** · [@W-David](https://github.com/W-David) · <cooody@163.com>
