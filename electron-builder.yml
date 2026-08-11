@@ -46,6 +46,8 @@ mac:
   target:
     - target: dmg
       arch: arm64
+    - target: zip
+      arch: arm64
   extraResources:
     - from: ./extra/darwin/
       to: ./
@@ -68,6 +70,8 @@ dmg:
     - x: 130
       y: 230
       type: file
+zip:
+  artifactName: ${productName}-v${version}-mac.${ext}
 linux:
   icon: build/bilimux.png
   target:
