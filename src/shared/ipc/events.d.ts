@@ -29,6 +29,7 @@ type IpcMainHandleEvents = {
   'get-cookie': (key: string) => Cookie | undefined
   logout: () => void
   'convert:history:list': () => ConvertHistoryRecord[]
+  'convert:history:remove': (bvid: string, filePath?: string) => void
   'convert:history:clear': () => void
   'download:video': (task: DownloadVideoTask) => void
   'download:pause': (bvid: string) => void

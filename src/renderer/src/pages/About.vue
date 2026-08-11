@@ -38,7 +38,7 @@ const handleCheckUpdate = async () => {
   isChecking.value = true
   try {
     const result = await checkForUpdate()
-    if (result?.updateInfo) {
+    if (result?.isUpdateAvailable) {
       mittbus.emit('toast:add', {
         severity: 'success',
         message: `发现新版本 v${result.updateInfo.version}`,

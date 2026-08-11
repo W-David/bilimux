@@ -14,13 +14,23 @@
 
     <div class="flex items-center justify-between">
       <label class="font-normal">并行下载任务数</label>
-      <Input
-        :model-value="preference['download-config'].concurrent"
-        type="number"
-        min="1"
-        max="16"
-        class="w-24 text-right"
-        @update:model-value="onConcurrentChange" />
+      <Select
+        :model-value="concurrentValue"
+        @update:model-value="onConcurrentChange">
+        <SelectTrigger class="w-15">
+          <SelectValue placeholder="选择并行任务数" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectItem
+              v-for="option in CONCURRENT_OPTIONS"
+              :key="option"
+              :value="String(option)">
+              {{ option }}
+            </SelectItem>
+          </SelectGroup>
+        </SelectContent>
+      </Select>
     </div>
 
     <div class="flex items-center justify-between">
@@ -92,13 +102,15 @@ import { useDownloadStore } from '@renderer/store/download'
 import { useFavoritesStore } from '@renderer/store/favorites'
 import { usePreferenceStore } from '@renderer/store/preference'
 import { storeToRefs } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const downloadStore = useDownloadStore()
 const favoritesStore = useFavoritesStore()
 const store = usePreferenceStore()
 const { preference } = storeToRefs(store)
 const { savePreference } = store
+
+const CONCURRENT_OPTIONS = [1, 2, 4, 8, 16] as const
 
 const clearingDownloadHistory = ref(false)
 const showClearDialog = ref(false)
@@ -131,12 +143,19 @@ const refreshFavoritesCache = async (): Promise<void> => {
   }
 }
 
+const concurrentValue = computed(() => {
+  const current = preference.value['download-config'].concurrent
+  return String(CONCURRENT_OPTIONS.some(option => option === current) ? current : CONCURRENT_OPTIONS[0])
+})
+
 /**
- * 并行下载任务数变更：限制在 1-16
+ * 并行下载任务数变更：仅允许 1/2/4/8/16
  */
 const onConcurrentChange = (value: string | number): void => {
-  const concurrent = Math.min(16, Math.max(1, Math.trunc(Number(value)) || 1))
-  preference.value['download-config'].concurrent = concurrent
+  const concurrent = CONCURRENT_OPTIONS.find(option => option === Number(value))
+  if (concurrent) {
+    preference.value['download-config'].concurrent = concurrent
+  }
 }
 
 const clearFavoritesCache = (): void => {

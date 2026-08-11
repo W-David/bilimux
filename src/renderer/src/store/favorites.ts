@@ -4,7 +4,7 @@ import { fetchCurrentUserInfo } from '@renderer/services/user'
 import { usePreferenceStore } from '@renderer/store/preference'
 import type { FavoritesData } from '@shared/types'
 import { defineStore } from 'pinia'
-import { computed, reactive } from 'vue'
+import { computed, markRaw, reactive } from 'vue'
 import { toast } from 'vue-sonner'
 
 const idleProgress = (): FavoritesFetchProgress => ({
@@ -55,7 +55,7 @@ export const useFavoritesStore = defineStore('favorites', () => {
         progress.currentVideoPage = p.currentVideoPage
       })
       toast.promise(dataPromise, {
-        loading: FavoritesProgressToast,
+        loading: markRaw(FavoritesProgressToast),
         class: 'favorites-fetch-toast',
         success: data => {
           const videoCount = data.folders.reduce((sum, folder) => sum + folder.videos.length, 0)

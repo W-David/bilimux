@@ -46,6 +46,8 @@ mac:
   target:
     - target: dmg
       arch: arm64
+    - target: zip
+      arch: arm64
   extraResources:
     - from: ./extra/darwin/
       to: ./

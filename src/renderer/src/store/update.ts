@@ -106,7 +106,6 @@ export const useUpdateStore = defineStore('update', () => {
       subscribeUpdateError(err => {
         logger.error('Update error:', err)
         downloading.value = false
-        updateAvailable.value = false
       })
     )
 

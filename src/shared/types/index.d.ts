@@ -216,6 +216,8 @@ type ConvertHistoryStatus = 'processing' | 'completed' | 'failed' | 'skipped' | 
 type ConvertHistoryRecord = {
   id: number
   runId: string
+  /** 同一运行内的扫描序号，用于保持列表顺序稳定 */
+  runSeq: number
   bvid: string
   type: string
   title: string

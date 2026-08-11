@@ -101,6 +101,8 @@ Convert flow: `ComposEngine` emits `process:item:start/end` with `{ bvid, succes
   Rebuild with `./configure --static-bin --use-zlib=no --disable-curl --disable-nghttp2 && make -j4`; keep zlib/curl/nghttp2
   disabled for a minimal self-contained binary. `extra/linux` and `extra/win32` binaries look self-contained (no `libgpac`
   references) but their provenance is unverified.
+- macOS auto-update requires a `zip` artifact (`latest-mac.yml`), so keep both `dmg` and `zip` targets in
+  `electron-builder.yml`; releasing only a dmg makes `electron-updater` fail with `ERR_UPDATER_ZIP_FILE_NOT_FOUND`.
 - `dev-app-update.yml` is a placeholder (`https://example.com/auto-updates`); the real update feed comes from
   `electron-builder.yml` `publish` + GitHub releases.
 - Dev `userData` is isolated in `src/main/index.ts` (`app.setPath('userData', …/bilimux-dev)` when `!app.isPackaged`), so

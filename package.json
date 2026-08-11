@@ -1,6 +1,6 @@
 {
   "name": "bilimux",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "packageManager": "pnpm@11.18.0",
   "description": "An Electron application with Vue and TypeScript",
   "main": "./out/main/index.js",
