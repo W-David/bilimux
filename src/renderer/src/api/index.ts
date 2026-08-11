@@ -269,6 +269,13 @@ export const subscribeUpdateAvailable: RendererHandlerFn<'update:available'> = l
 }
 
 /**
+ * 订阅 macOS 手动下载更新事件（检测到更新时主进程会打开 GitHub 下载页）
+ */
+export const subscribeUpdateManualDownload: RendererHandlerFn<'update:manual-download'> = listener => {
+  return ipc.on('update:manual-download', (_, args) => listener(args))
+}
+
+/**
  * 订阅没有更新事件
  */
 export const subscribeUpdateNotAvailable: RendererHandlerFn<'update:not-available'> = listener => {

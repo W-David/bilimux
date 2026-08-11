@@ -3,6 +3,7 @@ import {
   downloadUpdate as downloadUpdateApi,
   quitAndInstall as quitAndInstallApi,
   subscribeUpdateAvailable,
+  subscribeUpdateManualDownload,
   subscribeUpdateDownloaded,
   subscribeUpdateError,
   subscribeUpdateNotAvailable,
@@ -78,6 +79,20 @@ export const useUpdateStore = defineStore('update', () => {
         logger.info('Update available:', info)
         updateAvailable.value = true
         updateVersion.value = info.version
+      })
+    )
+
+    registerSubscribe(
+      subscribeUpdateManualDownload(info => {
+        logger.info('Update manual download:', info.version)
+        updateAvailable.value = false
+        mittbus.emit('toast:add', {
+          severity: 'success',
+          message: `发现新版本 v${info.version}`,
+          data: {
+            description: '已为你打开 GitHub 下载页面，请手动下载对应平台的安装包'
+          }
+        })
       })
     )
 

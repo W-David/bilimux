@@ -13,6 +13,7 @@ import { computed, ref } from 'vue'
 
 const appVersion = ref('')
 const isChecking = ref(false)
+const isMac = window.electron.process.platform === 'darwin'
 
 const fetchAppVersion = () => {
   getAppVersion()
@@ -39,6 +40,8 @@ const handleCheckUpdate = async () => {
   try {
     const result = await checkForUpdate()
     if (result?.isUpdateAvailable) {
+      // macOS 由主进程自动打开 GitHub 下载页，并通过 update:manual-download 提示，避免重复 toast
+      if (isMac) return
       mittbus.emit('toast:add', {
         severity: 'success',
         message: `发现新版本 v${result.updateInfo.version}`,

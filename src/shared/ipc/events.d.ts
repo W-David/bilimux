@@ -55,6 +55,7 @@ type IpcRendererEvents = ComposEventMap &
     'fetch-preference': []
     'update:checking': []
     'update:available': [UpdateInfo]
+    'update:manual-download': [UpdateInfo]
     'update:not-available': []
     'update:error': [string]
     'update:progress': [ProgressInfo]

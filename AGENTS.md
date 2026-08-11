@@ -103,6 +103,8 @@ Convert flow: `ComposEngine` emits `process:item:start/end` with `{ bvid, succes
   references) but their provenance is unverified.
 - macOS auto-update requires a `zip` artifact (`latest-mac.yml`), so keep both `dmg` and `zip` targets in
   `electron-builder.yml`; releasing only a dmg makes `electron-updater` fail with `ERR_UPDATER_ZIP_FILE_NOT_FOUND`.
+- macOS 安装包未签名，无法走 Squirrel.Mac 自动安装：`UpdateManager` 在 darwin 上检测到更新时直接打开
+  GitHub Releases 下载页（`update:manual-download`），不再下载/安装；Windows/Linux 保持自动更新。
 - `dev-app-update.yml` is a placeholder (`https://example.com/auto-updates`); the real update feed comes from
   `electron-builder.yml` `publish` + GitHub releases.
 - Dev `userData` is isolated in `src/main/index.ts` (`app.setPath('userData', …/bilimux-dev)` when `!app.isPackaged`), so
