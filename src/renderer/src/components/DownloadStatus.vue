@@ -5,14 +5,14 @@
       <Tooltip>
         <TooltipTrigger as-child>
           <div
-            class="relative h-7 min-w-20 flex cursor-pointer select-none items-center justify-center overflow-hidden rounded-full px-2 text-xs transition-colors shadow-sm shadow-black/10 hover:shadow-lg"
+            class="relative h-8 min-w-20 flex cursor-pointer select-none items-center justify-center overflow-hidden rounded-full px-2 text-xs transition-all duration-200 card-glassy hover:ring-1"
             :class="rootClass"
             role="button"
             tabindex="0"
             @click="handleClick">
             <!-- 下载进度背景 -->
             <div
-              v-if="isProgressing"
+              v-show="isProgressing"
               class="absolute inset-y-0 left-0 bg-pink-400/25 transition-all duration-300"
               :style="{ width: `${progress}%` }"></div>
 
@@ -67,15 +67,15 @@ const isMerging = computed(() => ['preprocess', 'importing', 'writing'].includes
 const rootClass = computed(() => {
   switch (status.value) {
     case 'success':
-      return 'text-green-400 bg-green-400/5 hover:bg-green-400/25'
+      return 'text-green-400 hover:ring-green-400/20'
     case 'fail':
-      return 'text-red-400 bg-red-400/5 hover:bg-red-400/15'
+      return 'text-red-400 hover:ring-red-400/20'
     case 'paused':
-      return 'text-slate-300 bg-slate-400/5 hover:bg-slate-400/15'
+      return 'text-slate-300 hover:ring-slate-300/20'
     case 'idle':
-      return 'text-pink-400 bg-pink-400/5 hover:bg-pink-400/15'
+      return 'text-pink-400 hover:ring-pink-400/20'
     default:
-      return 'text-pink-400'
+      return 'text-pink-400 hover:ring-pink-400/20'
   }
 })
 

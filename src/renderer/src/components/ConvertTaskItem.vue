@@ -1,6 +1,5 @@
 <template>
-  <div
-    class="relative border-white/5 bg-black/10 ring-black/20 shadow-black/30 min-w-2xl w-full rounded-full border h-15 shadow-md ring-1">
+  <div class="relative min-w-2xl w-full rounded-full h-15 card-border">
     <!-- bvid -->
     <div
       class="absolute top-0 left-0 z-10 bg-[#121212] text-pink-400 h-4.5 w-24 rounded-tl-[30px] rounded-br-[30px] rounded-tr-lg rounded-bl-lg shadow-md shadow-black/50 ring-1 ring-zinc-700 flex justify-center items-center">

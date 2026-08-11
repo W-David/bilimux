@@ -1,7 +1,7 @@
 <template>
   <div
     :class="[
-      'mb-2 cursor-pointer p-3 transition-al duration-200 shadow-black/50 shadow-sm hover:text-white rounded-xl',
+      'mb-2 cursor-pointer p-2 transition-all duration-300 card-border card-border-hover hover:text-white rounded-xl',
       active ? 'text-pink-300 bg-pink-400/10 shadow-black' : ''
     ]"
     @click="emit('select', folder)">

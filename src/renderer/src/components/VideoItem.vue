@@ -1,5 +1,5 @@
 <template>
-  <div class="border border-black/5 bg-[#121212] shadow-sm shadow-black/20 cursor-pointer rounded-2xl pt-3.5 pb-3 px-3">
+  <div class="card-border cursor-pointer rounded-2xl p-3">
     <!-- 展示区 -->
     <div class="flex items-center gap-3">
       <div class="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg bg-gray-900">
