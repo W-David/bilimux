@@ -3,7 +3,6 @@ import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'electron-vite'
 import path from 'path'
 import Components from 'unplugin-vue-components/vite'
-import Inspector from 'unplugin-vue-inspector/vite'
 
 export default defineConfig({
   main: {
@@ -49,9 +48,6 @@ export default defineConfig({
       tailwindcss(),
       Components({
         dirs: ['src/components', 'src/layout']
-      }),
-      Inspector({
-        enabled: false
       })
     ],
     build: {
