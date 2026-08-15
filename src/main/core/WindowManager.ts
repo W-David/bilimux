@@ -110,9 +110,21 @@ export default class WindowManager extends EventEmitter {
       this.windows[pageName] = null
     })
 
-    //  阻止在应用中打开外链，外链使用默认浏览器打开
+    const appUrl = page.url
+    createdWindow.webContents.on('will-navigate', (event, url) => {
+      if (!isAllowedNavigation(url, appUrl)) {
+        event.preventDefault()
+      }
+    })
+    createdWindow.webContents.on('will-redirect', (event, url) => {
+      if (!isAllowedNavigation(url, appUrl)) {
+        event.preventDefault()
+      }
+    })
     createdWindow.webContents.setWindowOpenHandler(({ url }) => {
-      shell.openExternal(url)
+      if (url.startsWith('https://')) {
+        void shell.openExternal(url)
+      }
       return { action: 'deny' }
     })
 
@@ -207,5 +219,18 @@ export default class WindowManager extends EventEmitter {
 
   setWillQuit(value: boolean): void {
     this.willQuit = value
+  }
+}
+
+function isAllowedNavigation(url: string, appUrl: string): boolean {
+  try {
+    const next = new URL(url)
+    const app = new URL(appUrl)
+    if (next.protocol === 'file:' && app.protocol === 'file:') {
+      return path.normalize(decodeURIComponent(next.pathname)) === path.normalize(decodeURIComponent(app.pathname))
+    }
+    return next.origin === app.origin
+  } catch {
+    return false
   }
 }

@@ -187,9 +187,8 @@ export const useConvertStore = defineStore('convert', () => {
   /** 删除单个任务：历史记录 + 产物文件 + UI 同步 */
   const removeItem = async (task: ConvertTask): Promise<void> => {
     const isHistory = task.id.startsWith('history:')
-    const targetPath = task.outputPath || (isHistory ? task.filePath : undefined)
     try {
-      await removeConvertHistory(task.bvid, targetPath || undefined)
+      await removeConvertHistory(task.bvid)
       if (isHistory) {
         history.value = history.value.filter(record => record.bvid !== task.bvid)
       } else {

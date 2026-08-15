@@ -1,7 +1,6 @@
 import { emitter } from '@renderer/ipc'
-import { RendererEmitterInvokeFn } from '@shared/ipc/events'
+import { BiliHttpGetOptions, RendererEmitterInvokeFn } from '@shared/ipc/events'
 import { BiliResponseType, FavoriteFolder, FavoriteResource, UserInfo } from '@shared/types'
-import { OptionsOfJSONResponseBody } from 'got'
 import { Nullable } from 'tough-cookie'
 
 type PromiseResponseType<T> = Promise<BiliResponseType<T>>
@@ -13,19 +12,14 @@ const httpGet: RendererEmitterInvokeFn<'http-get'> = (url, options) => {
   return emitter.invoke('http-get', url, options)
 }
 
+type HttpGetOptions = BiliHttpGetOptions
+
 /**
  * 解析 HTML URL 页面，获取视频元数据
  */
 const httpGetVideoMetaData: RendererEmitterInvokeFn<'http-get-video-metadata'> = url => {
   return emitter.invoke('http-get-video-metadata', url)
 }
-
-/**
- * 发送 HTTP POST 请求
- */
-// const httpPost: RendererEmitterInvokeFn<'http-post'> = (url, options?) => {
-//   return emitter.invoke('http-post', url, options)
-// }
 
 // 二维码返回数据类型
 export interface QrCodeResponseData {
@@ -48,7 +42,7 @@ export interface CheckAuthStatusResponseData {
 /**
  * 获取登录二维码
  */
-export const getQrCode = (options?: OptionsOfJSONResponseBody) => {
+export const getQrCode = (options?: HttpGetOptions) => {
   return httpGet(
     'https://passport.bilibili.com/x/passport-login/web/qrcode/generate',
     options
@@ -58,7 +52,7 @@ export const getQrCode = (options?: OptionsOfJSONResponseBody) => {
 /**
  * 轮询检查二维码登录状态
  */
-export const checkQrCodeLoginStatus = (options?: OptionsOfJSONResponseBody) => {
+export const checkQrCodeLoginStatus = (options?: HttpGetOptions) => {
   return httpGet('https://passport.bilibili.com/x/passport-login/web/qrcode/poll', {
     ...options,
     headers: {
@@ -70,7 +64,7 @@ export const checkQrCodeLoginStatus = (options?: OptionsOfJSONResponseBody) => {
 /**
  * 检查用户认证状态以及是否需要刷新 (刷新 Cookie)
  */
-export const checkAuthStatus = (options?: OptionsOfJSONResponseBody) => {
+export const checkAuthStatus = (options?: HttpGetOptions) => {
   return httpGet(
     'https://passport.bilibili.com/x/passport-login/web/cookie/info',
     options

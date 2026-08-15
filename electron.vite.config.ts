@@ -23,6 +23,11 @@ export default defineConfig({
   },
   preload: {
     plugins: [],
+    resolve: {
+      alias: {
+        '@shared': path.resolve(__dirname, './src/shared')
+      }
+    },
     build: {
       outDir: 'out/preload'
     }

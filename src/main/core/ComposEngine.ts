@@ -10,7 +10,7 @@ import {
   PLAYURL_FILE_NAME,
   VIDEO_INFO_FILE_NAME
 } from '../config/constants'
-import { createDirIfNotExist, isExist, isValidFile, mapLimit, sanitizeFileName } from '../utils'
+import { createDirIfNotExist, getEngineBinPath, isExist, isValidFile, mapLimit, sanitizeFileName } from '../utils'
 import ConfigManager from './ConfigManager'
 import Engine from './Engine'
 import logger from './Logger'
@@ -47,7 +47,8 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       this.emit('process:start')
 
       const config = this.configManager.store.get('convert-config')
-      const { gpacBinPath, outputDir, cachePath, genConfig } = config
+      const { outputDir, cachePath, genConfig } = config
+      const gpacBinPath = getEngineBinPath(this.configManager.context.platform)
 
       // 检查 GPAC 可执行文件
       const gpacErrMessage = await isValidFile(gpacBinPath, fs.constants.X_OK)
@@ -119,7 +120,8 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
    * @param bvs bvs列表
    */
   private async syntheticTask(bvs: VideoTaskInfo[], config: ConfigOptions): Promise<void> {
-    const { gpacBinPath, outputDir, forceTransform, forceComposition } = config
+    const { outputDir, forceTransform, forceComposition } = config
+    const gpacBinPath = getEngineBinPath(this.configManager.context.platform)
 
     const taskFn = async (bv: VideoTaskInfo, outputFilePath: string) => {
       const { videoM4sPath, videoMp4Path, audioM4sPath, audioMp3Path } = bv.fileInfo
@@ -514,7 +516,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
     onProgress?: (type: 'preprocess' | 'importing' | 'writing', progress: number) => void
   }): Promise<void> {
     const { bvid, videoPath, audioPath, outputPath, tempDir, onProgress } = params
-    const gpacBinPath = this.configManager.getStore()['convert-config'].gpacBinPath
+    const gpacBinPath = getEngineBinPath(this.configManager.context.platform)
 
     await createDirIfNotExist(path.dirname(outputPath))
     await createDirIfNotExist(tempDir)
@@ -546,8 +548,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
    * @returns 是否可用
    */
   public checkEngine(): Promise<boolean> {
-    const config = this.configManager.getStore()
-    const gpacBinPath = config['convert-config'].gpacBinPath
+    const gpacBinPath = getEngineBinPath(this.configManager.context.platform)
     const engine = new Engine(gpacBinPath, {
       bvInfo: {} as VideoTaskInfo,
       videoFile: '',

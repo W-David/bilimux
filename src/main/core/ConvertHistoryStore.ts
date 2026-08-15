@@ -167,16 +167,18 @@ export default class ConvertHistoryStore {
     this.db.exec('DELETE FROM convert_history')
   }
 
-  /**
-   * 删除单条转换记录，并删除对应产物文件
-   * @param bvid 任务 bvid
-   * @param filePath 优先删除的文件路径（历史记录里即为产物路径）
-   */
-  public remove(bvid: string, filePath?: string): void {
+  public getOutputPath(bvid: string): string | null {
     const row = this.db.prepare(`SELECT output_path FROM convert_history WHERE bvid = ?`).get(bvid) as
       | { output_path: string | null }
       | undefined
-    const target = filePath ?? row?.output_path
+    return row?.output_path ?? null
+  }
+
+  /**
+   * 删除单条转换记录，并删除数据库中记录的产物文件
+   */
+  public remove(bvid: string): void {
+    const target = this.getOutputPath(bvid)
     if (target) {
       try {
         fs.rmSync(target, { force: true })

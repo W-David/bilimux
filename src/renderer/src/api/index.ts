@@ -11,8 +11,8 @@ export const loadConfigFromNativeStore: RendererEmitterInvokeFn<'get-preference'
 /**
  * 获取指定 Cookie 值
  */
-export const getCookie: RendererEmitterInvokeFn<'get-cookie'> = key => {
-  return emitter.invoke('get-cookie', key)
+export const getCookie: RendererEmitterInvokeFn<'get-cookie'> = () => {
+  return emitter.invoke('get-cookie')
 }
 
 /**
@@ -32,8 +32,8 @@ export const getConvertHistories: RendererEmitterInvokeFn<'convert:history:list'
 /**
  * 删除单条转换历史（记录 + 产物文件）
  */
-export const removeConvertHistory: RendererEmitterInvokeFn<'convert:history:remove'> = (bvid, filePath) => {
-  return emitter.invoke('convert:history:remove', bvid, filePath)
+export const removeConvertHistory: RendererEmitterInvokeFn<'convert:history:remove'> = bvid => {
+  return emitter.invoke('convert:history:remove', bvid)
 }
 
 /**

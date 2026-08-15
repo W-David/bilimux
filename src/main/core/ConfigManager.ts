@@ -97,6 +97,15 @@ export default class ConfigManager {
       logger.info('[Config] 已初始化并行下载任务数配置')
     }
 
+    const lockedEnginePath = getEngineBinPath(this.context.platform)
+    const latestConvert = this.store.get('convert-config')
+    if (latestConvert && latestConvert.gpacBinPath !== lockedEnginePath) {
+      this.store.set('convert-config', {
+        ...latestConvert,
+        gpacBinPath: lockedEnginePath
+      })
+    }
+
     // 登录 Cookie 迁移到独立的 cookies.json，清理旧配置中的残留
     type LegacyStore = UserStore & { 'user-cookie'?: string }
     const legacyStore = this.store as unknown as Store<LegacyStore>

@@ -4,7 +4,7 @@ import type { Got, OptionsOfJSONResponseBody, OptionsOfTextResponseBody } from '
 import got from 'got'
 import { app } from 'electron/main'
 import fs from 'node:fs'
-import { mkdir, rename, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, rename, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import { CookieJar } from 'tough-cookie'
@@ -147,8 +147,9 @@ export default class HttpClient {
         if (!cookie) return
         await mkdir(path.dirname(this.cookieFilePath), { recursive: true })
         const tmpPath = `${this.cookieFilePath}.tmp`
-        await writeFile(tmpPath, JSON.stringify(cookie), 'utf8')
+        await writeFile(tmpPath, JSON.stringify(cookie), { encoding: 'utf8', mode: 0o600 })
         await rename(tmpPath, this.cookieFilePath)
+        await chmod(this.cookieFilePath, 0o600)
       })
       .catch(error => {
         logger.error('[Cookie] 写入 Cookie 文件失败:', error)

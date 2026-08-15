@@ -43,7 +43,7 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     async refreshAuth() {
-      const biliJct = await getCookie('bili_jct')
+      const biliJct = await getCookie()
       if (!biliJct) {
         logger.error('bili_jct cookie not found')
         await this.invalidateSession('登录状态已失效，请重新扫码登录')

@@ -1,6 +1,5 @@
 import { OpenDialogOptions } from 'electron'
 import type { ProgressInfo, UpdateCheckResult, UpdateInfo } from 'electron-updater'
-import type { OptionsOfJSONResponseBody } from 'got'
 import type { Cookie } from 'tough-cookie'
 import type {
   BiliResponseType,
@@ -11,6 +10,11 @@ import type {
   DownloadVideoTask,
   UserStore
 } from '../types'
+
+type BiliHttpGetOptions = {
+  searchParams?: Record<string, string | number | boolean | undefined>
+  headers?: Record<string, string>
+}
 
 //主进程 handle IPC 事件
 type IpcMainHandleEvents = {
@@ -26,10 +30,10 @@ type IpcMainHandleEvents = {
   'download-update': () => string[]
   'quit-and-install': () => void
   'check-engine': () => boolean
-  'get-cookie': (key: string) => Cookie | undefined
+  'get-cookie': () => Cookie | undefined
   logout: () => void
   'convert:history:list': () => ConvertHistoryRecord[]
-  'convert:history:remove': (bvid: string, filePath?: string) => void
+  'convert:history:remove': (bvid: string) => void
   'convert:history:clear': () => void
   'download:video': (task: DownloadVideoTask) => void
   'download:pause': (bvid: string) => void
@@ -39,8 +43,7 @@ type IpcMainHandleEvents = {
   'download:history:clear': () => void
   'persist-cookie': () => void
   'http-get-video-metadata': (url: string) => [string[] | null, string | null]
-  'http-get': (url: string, options?: OptionsOfJSONResponseBody) => BiliResponseType
-  'http-post': (url: string, options?: OptionsOfJSONResponseBody) => BiliResponseType
+  'http-get': (url: string, options?: BiliHttpGetOptions) => BiliResponseType
 }
 
 // 主进程 listen IPC 事件
@@ -78,6 +81,7 @@ type RendererHandlerFn<T extends keyof IpcRendererEvents> = (
 type IpcMainEvents = IpcMainHandleEvents | IpcMainListenEvents
 
 export type {
+  BiliHttpGetOptions,
   Cookie,
   IpcMainEvents,
   IpcMainHandleEvents,
