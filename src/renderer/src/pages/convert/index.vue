@@ -68,20 +68,6 @@
       </div>
     </div>
 
-    <div
-      v-if="statusBanner"
-      class="flex flex-none items-center justify-between gap-3 border-b border-[#1f1f1f] px-4 py-2 text-sm"
-      :class="statusBanner.className">
-      <span class="min-w-0">{{ statusBanner.text }}</span>
-      <button
-        v-if="statusBanner.action"
-        type="button"
-        class="shrink-0 cursor-pointer text-pink-400 hover:underline"
-        @click="goToConvertSettings">
-        {{ statusBanner.action }}
-      </button>
-    </div>
-
     <!-- 分组视图（KeepAlive 缓存） -->
     <div class="min-h-0 flex-1">
       <RouterView v-slot="{ Component, route: currentRoute }">
@@ -134,24 +120,6 @@ const runButtonState = computed(() => {
   }
 })
 
-const statusBanner = computed(() => {
-  if (convertStore.runStatus === 'error' && convertStore.errorMessage) {
-    return {
-      text: convertStore.errorMessage,
-      action: '去设置',
-      className: 'bg-rose-500/10 text-rose-300'
-    }
-  }
-  if (convertStore.runStatus === 'success') {
-    return {
-      text: `本轮完成：成功 ${convertStore.successCount}，失败 ${convertStore.failCount}`,
-      action: '',
-      className: convertStore.failCount > 0 ? 'bg-amber-500/10 text-amber-300' : 'bg-emerald-500/10 text-emerald-300'
-    }
-  }
-  return null
-})
-
 const tabs = [
   {
     name: 'convert-entire',
@@ -184,10 +152,6 @@ const switchTab = (name: string): void => {
     return
   }
   router.push({ name })
-}
-
-const goToConvertSettings = (): void => {
-  router.push({ name: 'prefer-convert' })
 }
 
 const openOutputFolder = async (): Promise<void> => {
