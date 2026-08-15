@@ -31,7 +31,11 @@ function mergePreference(app: Application, incoming: UserStore): UserStore {
     'convert-config': {
       ...current['convert-config'],
       ...(convertIncoming ?? {}),
-      gpacBinPath: engineBinPath
+      gpacBinPath: engineBinPath,
+      concurrent: Math.min(
+        8,
+        Math.max(1, Math.trunc(Number(convertIncoming?.concurrent ?? current['convert-config'].concurrent)) || 1)
+      )
     },
     'download-config': {
       ...current['download-config'],

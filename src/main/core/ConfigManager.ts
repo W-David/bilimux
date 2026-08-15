@@ -1,5 +1,6 @@
 import { clampDownloadCodec, clampDownloadQn } from '@shared/download'
 import { ConfigOptions, DownloadConfigOptions, UserStore } from '@shared/types'
+import { probeBilibiliCachePath } from '../utils/bilibili-cache'
 import Store from 'electron-store'
 import { app } from 'electron/main'
 import is from 'electron-is'
@@ -44,7 +45,8 @@ export default class ConfigManager {
       gpacBinPath,
       forceTransform: false,
       forceComposition: false,
-      genConfig: false
+      genConfig: false,
+      concurrent: 1
     }
 
     const defaultDownloadConfig: Required<DownloadConfigOptions> = {
@@ -113,11 +115,27 @@ export default class ConfigManager {
 
     const lockedEnginePath = getEngineBinPath(this.context.platform)
     const latestConvert = this.store.get('convert-config')
-    if (latestConvert && latestConvert.gpacBinPath !== lockedEnginePath) {
-      this.store.set('convert-config', {
+    if (latestConvert) {
+      const probedCache = probeBilibiliCachePath(latestConvert.cachePath || cachePath)
+      const nextConvert = {
         ...latestConvert,
-        gpacBinPath: lockedEnginePath
-      })
+        gpacBinPath: lockedEnginePath,
+        concurrent:
+          typeof latestConvert.concurrent === 'number'
+            ? Math.min(8, Math.max(1, Math.trunc(latestConvert.concurrent) || 1))
+            : 1,
+        cachePath: probedCache
+      }
+      if (
+        nextConvert.gpacBinPath !== latestConvert.gpacBinPath ||
+        nextConvert.concurrent !== latestConvert.concurrent ||
+        nextConvert.cachePath !== latestConvert.cachePath
+      ) {
+        this.store.set('convert-config', nextConvert)
+        if (nextConvert.cachePath !== latestConvert.cachePath) {
+          logger.info('[Config] 已探测到 B 站缓存目录:', nextConvert.cachePath)
+        }
+      }
     }
 
     // 登录 Cookie 迁移到独立的 cookies.json，清理旧配置中的残留

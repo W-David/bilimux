@@ -11,6 +11,7 @@ import {
   VIDEO_INFO_FILE_NAME
 } from '../config/constants'
 import { createDirIfNotExist, getEngineBinPath, isExist, isValidFile, mapLimit, sanitizeFileName } from '../utils'
+import { withEngineLock } from '../utils/engine-lock'
 import ConfigManager from './ConfigManager'
 import Engine from './Engine'
 import logger from './Logger'
@@ -26,6 +27,9 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
   private configManager: ConfigManager
   private processQueue: ProcessQueue<ConvertTaskResult>
   private isRunning = false
+  private cancelled = false
+  private scanned: VideoTaskInfo[] = []
+  private activeEngine: Engine | null = null
 
   constructor(processQueue: ProcessQueue<ConvertTaskResult>, configManager: ConfigManager) {
     super()
@@ -34,23 +38,20 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
   }
 
   /**
-   * 执行主流程
+   * 扫描缓存并预览，不开始合成
    */
-  public async run(): Promise<void> {
+  public async scan(): Promise<void> {
     if (this.isRunning) {
-      logger.warn('已在合成中，忽略重复请求')
+      logger.warn('已在合成中，忽略重复扫描')
       return
     }
 
-    this.isRunning = true
+    this.cancelled = false
     try {
-      this.emit('process:start')
-
       const config = this.configManager.store.get('convert-config')
       const { outputDir, cachePath, genConfig } = config
       const gpacBinPath = getEngineBinPath(this.configManager.context.platform)
 
-      // 检查 GPAC 可执行文件
       const gpacErrMessage = await isValidFile(gpacBinPath, fs.constants.X_OK)
       const isValidEngine = await this.checkEngine()
       if (gpacErrMessage || !isValidEngine) {
@@ -61,58 +62,94 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
         return
       }
 
-      // 检查缓存目录
       const cacheErrMessage = await isValidFile(cachePath, fs.constants.R_OK)
       if (cacheErrMessage) {
         logger.error(cacheErrMessage)
         this.emit('process:broke', {
-          reason: '无效的缓存目录'
+          reason: '无效的缓存目录，请在设置中选择 B 站客户端缓存路径'
         })
         return
       }
 
-      // 生成BVS配置
       const rawBVS = await this.generateBVS(cachePath)
-
-      // 生成空的BVS配置
       if (rawBVS.length === 0) {
+        this.scanned = []
         this.emit('process:broke', {
-          reason: `缓存目录下未扫描到有效的文件`
+          reason: '缓存目录下未扫描到有效的文件'
         })
         return
       }
 
-      // BVS文件源信息检查
-      const [validBVS, _] = await this.pickupBVS(rawBVS)
+      const [validBVS] = await this.pickupBVS(rawBVS)
       if (validBVS.length === 0) {
+        this.scanned = []
         this.emit('process:broke', {
           reason: '没有可处理的缓存文件'
         })
         return
       }
 
-      // 写入 conf 文件
+      this.scanned = validBVS
       if (genConfig) {
-        // 确保输出目录存在
         await createDirIfNotExist(outputDir)
         const bvsBuffer = Buffer.from(JSON.stringify(validBVS, null, 2), 'utf-8')
         const confFilePath = path.join(outputDir, CONF_FILE_NAME)
         await fs.writeFile(confFilePath, bvsBuffer)
-        const message = `已写入 conf 文件: ${confFilePath}`
-        logger.debug(message)
+        logger.debug(`已写入 conf 文件: ${confFilePath}`)
       }
 
-      // 合成队列处理
-      await this.syntheticTask(validBVS, config)
+      this.emit('process:ready', { bvs: validBVS })
+    } catch (error) {
+      const message = `扫描失败: ${error instanceof Error ? error.message : String(error)}`
+      logger.error(message)
+      this.emit('process:broke', { reason: message })
+    }
+  }
+
+  /**
+   * 对已扫描列表中的选中项开始合成
+   */
+  public async start(bvids?: string[]): Promise<void> {
+    if (this.isRunning) {
+      logger.warn('已在合成中，忽略重复请求')
+      return
+    }
+
+    const selected = bvids?.length ? this.scanned.filter(bv => bvids.includes(bv.bvid)) : this.scanned
+    if (selected.length === 0) {
+      this.emit('process:broke', { reason: '没有选中的转换任务，请先扫描缓存' })
+      return
+    }
+
+    this.isRunning = true
+    this.cancelled = false
+    try {
+      this.emit('process:start')
+      const config = this.configManager.store.get('convert-config')
+      await this.syntheticTask(selected, config)
     } catch (error) {
       const message = `合成失败: ${error instanceof Error ? error.message : String(error)}`
       logger.error(message)
-      this.emit('process:broke', {
-        reason: message
-      })
+      this.emit('process:broke', { reason: message })
     } finally {
       this.isRunning = false
     }
+  }
+
+  /**
+   * 兼容旧 IPC：扫描后立即转换全部
+   */
+  public async run(): Promise<void> {
+    await this.scan()
+    if (this.scanned.length === 0) return
+    await this.start()
+  }
+
+  public cancel(): void {
+    this.cancelled = true
+    this.processQueue.clear('已取消')
+    this.activeEngine?.stop()
+    logger.info('已请求取消转换')
   }
 
   /**
@@ -124,6 +161,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
     const gpacBinPath = getEngineBinPath(this.configManager.context.platform)
 
     const taskFn = async (bv: VideoTaskInfo, outputFilePath: string) => {
+      if (this.cancelled) throw new Error('已取消')
       const { videoM4sPath, videoMp4Path, audioM4sPath, audioMp3Path } = bv.fileInfo
 
       logger.info(`开始转换: (${bv.bvid}) - (${bv.fileInfo.fileName})`)
@@ -207,17 +245,13 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
     return new Promise(resolve => {
       const count = { success: 0, fail: 0 }
 
-      this.emit('process:ready', {
-        bvs: bvs
-      })
-
-      // 启动队列任务
       logger.info('启动队列任务:', `总任务数: [${bvs.length}]`)
 
       bvs.forEach(bv => {
         const outputFilePath = path.join(outputDir, bv.fileInfo.fileName)
         this.processQueue
           .add(() => {
+            if (this.cancelled) throw new Error('已取消')
             this.emit('process:item:start', { bv, outputPath: outputFilePath })
             return taskFn(bv, outputFilePath)
           })
@@ -495,11 +529,19 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
    * 调用 MP4Box 进行合成
    */
   private async compose(binPath: string, options: CompositionOptions): Promise<EngineResponse> {
-    const engine = new Engine(binPath, options)
-    engine.on('process:item:progress', progressData => {
-      this.emit('process:item:progress', progressData)
+    return withEngineLock(async () => {
+      if (this.cancelled) throw new Error('已取消')
+      const engine = new Engine(binPath, options)
+      this.activeEngine = engine
+      engine.on('process:item:progress', progressData => {
+        this.emit('process:item:progress', progressData)
+      })
+      try {
+        return await engine.start()
+      } finally {
+        if (this.activeEngine === engine) this.activeEngine = null
+      }
     })
-    return engine.start()
   }
 
   /**
@@ -561,7 +603,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
     bindEngine?.(engine)
     try {
       throwIfAborted()
-      await engine.start()
+      await withEngineLock(() => engine.start())
     } finally {
       signal?.removeEventListener('abort', onAbort)
       bindEngine?.(null)

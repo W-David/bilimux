@@ -29,6 +29,20 @@ export default class Engine extends EventEmitter<EngineEventMap> {
     const args = this.getStartArgs()
 
     return new Promise((resolve, reject) => {
+      const timeout = setTimeout(
+        () => {
+          logger.error(`Mp4Box 超时: ${path.basename(this.#options.outputFile)}`)
+          this.stop()
+          reject(new Error('MP4Box 合成超时'))
+        },
+        10 * 60 * 1000
+      )
+
+      const finish = (fn: () => void): void => {
+        clearTimeout(timeout)
+        fn()
+      }
+
       try {
         logger.info(`开始合成视频: ${path.basename(this.#options.outputFile)}`)
         this.#instance = spawn(this.#engineBinPath, args, {
@@ -42,14 +56,14 @@ export default class Engine extends EventEmitter<EngineEventMap> {
         this.#instance.once('close', (code, signal) => {
           if (code === 0) {
             logger.info(`文件合成完毕: ${path.basename(this.#options.outputFile)}`)
-            resolve({ success: true, code })
+            finish(() => resolve({ success: true, code }))
           } else {
-            reject(new Error(`Mp4Box程序异常退出: ${signal} (Code: ${code})`))
+            finish(() => reject(new Error(`Mp4Box程序异常退出: ${signal} (Code: ${code})`)))
           }
           this.stop()
         })
         this.#instance.on('error', error => {
-          reject(error)
+          finish(() => reject(error))
           this.stop()
         })
 
@@ -57,7 +71,7 @@ export default class Engine extends EventEmitter<EngineEventMap> {
         this.#instance.stderr?.on('data', (data: Buffer) => this.parseProgress(data))
       } catch (error) {
         logger.error(`Mp4Box进程启动失败: ${error instanceof Error ? error.message : String(error)}`)
-        reject(error)
+        finish(() => reject(error))
       }
     })
   }

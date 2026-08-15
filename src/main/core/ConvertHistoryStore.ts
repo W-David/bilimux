@@ -42,7 +42,7 @@ export default class ConvertHistoryStore {
       CREATE TABLE IF NOT EXISTS convert_history (
         run_id TEXT NOT NULL,
         run_seq INTEGER NOT NULL DEFAULT 0,
-        bvid TEXT NOT NULL PRIMARY KEY,
+        bvid TEXT NOT NULL,
         type TEXT NOT NULL DEFAULT '',
         title TEXT NOT NULL DEFAULT '',
         uname TEXT NOT NULL DEFAULT '',
@@ -55,15 +55,62 @@ export default class ConvertHistoryStore {
         duration_ms INTEGER,
         started_at INTEGER,
         completed_at INTEGER,
-        updated_at INTEGER NOT NULL
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (run_id, bvid)
       )
       `)
-    // 旧库迁移：补充 run_seq 列（同一运行内按扫描顺序排序用）
-    const columns = this.db.prepare(`PRAGMA table_info(convert_history)`).all() as { name: string }[]
+    this.migrateToRunPrimaryKey()
+    this.reconcile()
+  }
+
+  /**
+   * 旧库主键只有 bvid，迁移为 (run_id, bvid)
+   */
+  private migrateToRunPrimaryKey(): void {
+    const columns = this.db.prepare(`PRAGMA table_info(convert_history)`).all() as { name: string; pk: number }[]
     if (!columns.some(column => column.name === 'run_seq')) {
       this.db.exec(`ALTER TABLE convert_history ADD COLUMN run_seq INTEGER NOT NULL DEFAULT 0`)
     }
-    this.reconcile()
+    const bvidCol = columns.find(column => column.name === 'bvid')
+    const runCol = columns.find(column => column.name === 'run_id')
+    if (bvidCol?.pk === 1 && (runCol?.pk ?? 0) === 0) {
+      this.db.exec('BEGIN')
+      try {
+        this.db.exec(`
+          CREATE TABLE convert_history_v2 (
+            run_id TEXT NOT NULL,
+            run_seq INTEGER NOT NULL DEFAULT 0,
+            bvid TEXT NOT NULL,
+            type TEXT NOT NULL DEFAULT '',
+            title TEXT NOT NULL DEFAULT '',
+            uname TEXT NOT NULL DEFAULT '',
+            group_title TEXT NOT NULL DEFAULT '',
+            source_dir TEXT NOT NULL DEFAULT '',
+            output_path TEXT,
+            file_size INTEGER NOT NULL DEFAULT 0,
+            status TEXT NOT NULL DEFAULT 'processing',
+            error_message TEXT NOT NULL DEFAULT '',
+            duration_ms INTEGER,
+            started_at INTEGER,
+            completed_at INTEGER,
+            updated_at INTEGER NOT NULL,
+            PRIMARY KEY (run_id, bvid)
+          )
+        `)
+        this.db.exec(`
+          INSERT INTO convert_history_v2
+          SELECT run_id, run_seq, bvid, type, title, uname, group_title, source_dir, output_path,
+                 file_size, status, error_message, duration_ms, started_at, completed_at, updated_at
+          FROM convert_history
+        `)
+        this.db.exec('DROP TABLE convert_history')
+        this.db.exec('ALTER TABLE convert_history_v2 RENAME TO convert_history')
+        this.db.exec('COMMIT')
+      } catch (error) {
+        this.db.exec('ROLLBACK')
+        throw error
+      }
+    }
   }
 
   /**
@@ -76,7 +123,7 @@ export default class ConvertHistoryStore {
         `INSERT INTO convert_history
            (run_id, run_seq, bvid, type, title, uname, group_title, source_dir, output_path, file_size, status, error_message, duration_ms, started_at, completed_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'processing', '', NULL, ?, NULL, ?)
-         ON CONFLICT(bvid) DO UPDATE SET
+         ON CONFLICT(run_id, bvid) DO UPDATE SET
            run_id = excluded.run_id,
            run_seq = excluded.run_seq,
            type = excluded.type,
@@ -135,9 +182,9 @@ export default class ConvertHistoryStore {
            duration_ms = ?,
            completed_at = ?,
            updated_at = ?
-         WHERE bvid = ?`
+         WHERE run_id = ? AND bvid = ?`
       )
-      .run(runId, outputPath, fileSize, status, args.message, args.durationMs ?? null, now, now, bvid)
+      .run(runId, outputPath, fileSize, status, args.message, args.durationMs ?? null, now, now, runId, bvid)
   }
 
   /**
@@ -167,8 +214,8 @@ export default class ConvertHistoryStore {
     this.db.exec('DELETE FROM convert_history')
   }
 
-  public getOutputPath(bvid: string): string | null {
-    const row = this.db.prepare(`SELECT output_path FROM convert_history WHERE bvid = ?`).get(bvid) as
+  public getOutputPathById(id: number): string | null {
+    const row = this.db.prepare(`SELECT output_path FROM convert_history WHERE rowid = ?`).get(id) as
       | { output_path: string | null }
       | undefined
     return row?.output_path ?? null
@@ -177,8 +224,8 @@ export default class ConvertHistoryStore {
   /**
    * 删除单条转换记录，并删除数据库中记录的产物文件
    */
-  public remove(bvid: string): void {
-    const target = this.getOutputPath(bvid)
+  public removeById(id: number): void {
+    const target = this.getOutputPathById(id)
     if (target) {
       try {
         fs.rmSync(target, { force: true })
@@ -186,7 +233,7 @@ export default class ConvertHistoryStore {
         // 文件可能已被移动/删除，忽略即可
       }
     }
-    this.db.prepare(`DELETE FROM convert_history WHERE bvid = ?`).run(bvid)
+    this.db.prepare(`DELETE FROM convert_history WHERE rowid = ?`).run(id)
   }
 
   /**

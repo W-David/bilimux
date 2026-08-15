@@ -1,5 +1,5 @@
 import { LogLevel } from 'electron-log'
-import type { DownloadConfigOptions } from '@shared/types'
+import type { ConfigOptions, DownloadConfigOptions } from '@shared/types'
 import AutoLauncher from './core/AutoLauncher'
 import { ComposEngine, ConvertTaskResult } from './core/ComposEngine'
 import ConfigManager from './core/ConfigManager'
@@ -47,7 +47,11 @@ export default class Application {
     this.downloadHistoryStore = new DownloadHistoryStore()
     this.convertHistoryStore = new ConvertHistoryStore()
 
-    this.processQueue = new ProcessQueue({ concurrency: 1 })
+    const convertConcurrent = Math.min(
+      8,
+      Math.max(1, Math.trunc(Number(this.configManager.getStore()['convert-config'].concurrent)) || 1)
+    )
+    this.processQueue = new ProcessQueue({ concurrency: convertConcurrent })
 
     this.composEngine = new ComposEngine(this.processQueue, this.configManager)
 
@@ -150,6 +154,11 @@ export default class Application {
     this.configManager.onChangedListener('download-config', val => {
       const downloadConfig = val as DownloadConfigOptions
       this.downloadManager.setConcurrency(downloadConfig.concurrent)
+    })
+    this.configManager.onChangedListener('convert-config', val => {
+      const convertConfig = val as ConfigOptions
+      const concurrent = Math.min(8, Math.max(1, Math.trunc(Number(convertConfig.concurrent)) || 1))
+      this.processQueue.setConcurrency(concurrent)
     })
   }
 }

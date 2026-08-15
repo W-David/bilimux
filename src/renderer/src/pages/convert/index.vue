@@ -48,16 +48,22 @@
       <div class="flex items-center justify-end gap-2">
         <div class="flex flex-none items-center gap-2">
           <div
+            v-if="convertStore.runStatus === 'preview'"
             role="button"
             tabindex="0"
             class="flex h-8 cursor-pointer select-none items-center justify-center gap-2 rounded-2xl bg-gray-400/15 px-3 font-bold text-gray-400 ring-1 ring-gray-300/20 transition-all duration-300 hover:bg-pink-400/25 hover:text-pink-400 hover:ring-pink-300/20"
-            :class="
-              convertStore.runStatus === 'scanning' || convertStore.runStatus === 'processing'
-                ? 'pointer-events-none opacity-50'
-                : ''
-            "
-            @click="convertStore.start()"
-            @keydown.enter="convertStore.start()">
+            @click="convertStore.scan()"
+            @keydown.enter="convertStore.scan()">
+            <SearchIcon class="size-5" />
+            <span>重新扫描</span>
+          </div>
+          <div
+            role="button"
+            tabindex="0"
+            class="flex h-8 cursor-pointer select-none items-center justify-center gap-2 rounded-2xl bg-gray-400/15 px-3 font-bold text-gray-400 ring-1 ring-gray-300/20 transition-all duration-300 hover:bg-pink-400/25 hover:text-pink-400 hover:ring-pink-300/20"
+            :class="runButtonState.disabled ? 'pointer-events-none opacity-50' : ''"
+            @click="runButtonState.action()"
+            @keydown.enter="runButtonState.action()">
             <component
               :is="runButtonState.icon"
               class="size-5"
@@ -92,7 +98,6 @@ import {
   CircleX as CircleXIcon,
   FolderOpen as FolderOpenIcon,
   List as ListIcon,
-  Loader2 as Loader2Icon,
   Play as PlayIcon,
   Search as SearchIcon
 } from '@lucide/vue'
@@ -112,11 +117,19 @@ const router = useRouter()
 const runButtonState = computed(() => {
   switch (convertStore.runStatus) {
     case 'scanning':
-      return { icon: SearchIcon, label: '扫描中', spinning: false }
+      return { icon: SearchIcon, label: '扫描中', spinning: false, disabled: true, action: () => undefined }
+    case 'preview':
+      return { icon: PlayIcon, label: '开始转换', spinning: false, disabled: false, action: () => convertStore.start() }
     case 'processing':
-      return { icon: Loader2Icon, label: '运行中', spinning: true }
+      return { icon: CircleXIcon, label: '取消', spinning: false, disabled: false, action: () => convertStore.cancel() }
     default:
-      return { icon: PlayIcon, label: '开始转换', spinning: false }
+      return {
+        icon: SearchIcon,
+        label: '扫描缓存',
+        spinning: false,
+        disabled: false,
+        action: () => convertStore.scan()
+      }
   }
 })
 

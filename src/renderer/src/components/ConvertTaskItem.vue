@@ -1,11 +1,26 @@
 <template>
   <div class="relative min-w-2xl w-full rounded-full h-15 card-border">
+    <div
+      v-show="showProgress"
+      class="absolute inset-x-3 bottom-1 h-1 overflow-hidden rounded-full bg-white/10">
+      <div
+        class="h-full bg-pink-400/80 transition-all duration-300"
+        :style="{ width: `${Math.min(100, Math.max(0, task.progress))}%` }"></div>
+    </div>
     <!-- bvid -->
     <div
       class="absolute top-0 left-0 z-10 bg-[#121212] text-pink-400 h-4.5 w-24 rounded-tl-[30px] rounded-br-[30px] rounded-tr-lg rounded-bl-lg shadow-md shadow-black/50 ring-1 ring-zinc-700 flex justify-center items-center">
       <span class="text-[10px] font-mono">{{ task.bvid }}</span>
     </div>
     <div class="flex items-center justify-between gap-4 w-full h-full px-2.5">
+      <button
+        v-if="selectable"
+        type="button"
+        class="ml-6 flex size-5 shrink-0 items-center justify-center rounded border border-white/20 text-[10px] text-pink-400"
+        :class="selected ? 'bg-pink-400/30' : 'bg-transparent'"
+        @click="emit('toggle', task.bvid)">
+        <span v-if="selected">✓</span>
+      </button>
       <!-- 标题 -->
       <div class="min-w-0 flex-1">
         <div class="mt-2 flex items-center gap-2 ml-2">
@@ -112,9 +127,29 @@ import { useConvertStore } from '@renderer/store/convert'
 import { computed, ref } from 'vue'
 import FileDetailsDrawer from './FileDetailsDrawer.vue'
 
-const props = defineProps<{
-  task: ConvertTask
+const props = withDefaults(
+  defineProps<{
+    task: ConvertTask
+    selectable?: boolean
+    selected?: boolean
+  }>(),
+  {
+    selectable: false,
+    selected: false
+  }
+)
+
+const emit = defineEmits<{
+  (e: 'toggle', bvid: string): void
 }>()
+
+const showProgress = computed(
+  () =>
+    props.task.status === 'waiting' ||
+    props.task.status === 'preprocess' ||
+    props.task.status === 'importing' ||
+    props.task.status === 'writing'
+)
 
 const convertStore = useConvertStore()
 const detailsOpen = ref(false)
