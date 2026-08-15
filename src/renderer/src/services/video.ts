@@ -1,28 +1,31 @@
-import { getVideoView } from '@renderer/api/network'
+import { getVideoPageList } from '@renderer/api/network'
 import type { BiliVideoPage } from '@shared/types'
 
 /**
- * 拉取稿件分 P 列表；单 P 时仍返回一条
+ * 用 pagelist 拉取分 P；失败不回退到稿件 1P 的 cid
  */
 export async function fetchVideoPages(bvid: string): Promise<BiliVideoPage[]> {
-  const res = await getVideoView(bvid)
-  if (res.code !== 0 || !res.data) {
-    throw new Error(res.message || '获取视频信息失败')
+  const res = await getVideoPageList(bvid)
+  if (res.code !== 0) {
+    throw new Error(res.message || '获取分P失败')
   }
 
-  const pages = res.data.pages ?? []
-  if (pages.length > 0) {
-    return pages.map(page => ({
-      cid: page.cid,
-      page: page.page,
-      part: page.part || res.data?.title || '',
-      duration: page.duration ?? 0
-    }))
+  const list = Array.isArray(res.data) ? res.data : []
+  const pages = list
+    .filter(item => Number.isFinite(item.cid) && item.cid > 0)
+    .map((item, index) => {
+      const page = item.page > 0 ? item.page : index + 1
+      return {
+        cid: item.cid,
+        page,
+        part: item.part || `P${page}`,
+        duration: item.duration ?? 0
+      }
+    })
+
+  if (pages.length === 0) {
+    throw new Error('获取视频分P失败')
   }
 
-  if (res.data.cid) {
-    return [{ cid: res.data.cid, page: 1, part: res.data.title || '', duration: 0 }]
-  }
-
-  throw new Error('获取视频分P失败')
+  return pages
 }

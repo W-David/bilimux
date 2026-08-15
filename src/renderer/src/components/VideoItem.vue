@@ -24,7 +24,12 @@
           <span
             v-if="isMultiPage"
             class="shrink-0 rounded-sm bg-pink-400/20 px-1.5 py-0.5 text-[10px] text-pink-400">
-            {{ pages!.length }}P
+            {{ resolvedPageCount }}P
+          </span>
+          <span
+            v-if="isMultiPage && completedCount > 0"
+            class="shrink-0 text-[10px] text-gray-400">
+            {{ completedCount }}/{{ resolvedPageCount }}
           </span>
         </div>
         <div class="flex items-center justify-between gap-2">
@@ -51,8 +56,9 @@
               <Button
                 size="sm"
                 variant="ghost"
-                @click.stop="expanded = !expanded">
-                {{ expanded ? '收起' : '分P' }}
+                :disabled="pagesLoading"
+                @click.stop="toggleSelectPages">
+                {{ expanded ? '收起' : '选分P' }}
               </Button>
             </template>
             <DownloadStatus
@@ -74,11 +80,11 @@
                 type="button"
                 class="relative h-8 min-w-20 flex cursor-pointer select-none items-center justify-center overflow-hidden rounded-full px-2 text-xs text-pink-400 transition-all duration-200 card-glassy hover:ring-1 hover:ring-pink-400/20 disabled:opacity-60"
                 :disabled="pagesLoading"
-                @click.stop="onEntryClick">
+                @click.stop="onSingleDownload">
                 <Spinner
                   v-if="pagesLoading"
                   class="size-4" />
-                <span v-else>{{ legacyPlayable ? '分P' : '下载' }}</span>
+                <span v-else>下载</span>
               </button>
             </template>
           </div>
@@ -90,17 +96,24 @@
       v-if="expanded && isMultiPage"
       class="mt-3 flex flex-col gap-2 border-t border-white/5 pt-3">
       <div
-        v-for="page in pages"
-        :key="page.cid"
-        class="flex items-center justify-between gap-3">
-        <div class="min-w-0 truncate text-xs text-gray-400">P{{ page.page }} {{ page.part }}</div>
-        <DownloadStatus
-          :video="video"
-          :page="page"
-          :pages-total="pages!.length"
-          :folder-name="folderName"
-          :history="historyFor(page.cid)"></DownloadStatus>
+        v-if="!pages?.length"
+        class="text-xs text-gray-500">
+        {{ pagesLoading ? '正在获取分P…' : '尚未获取分P列表' }}
       </div>
+      <template v-else>
+        <div
+          v-for="page in pages"
+          :key="page.cid"
+          class="flex items-center justify-between gap-3">
+          <div class="min-w-0 truncate text-xs text-gray-400">P{{ page.page }} {{ page.part }}</div>
+          <DownloadStatus
+            :video="video"
+            :page="page"
+            :pages-total="resolvedPageCount"
+            :folder-name="folderName"
+            :history="historyFor(page.cid)"></DownloadStatus>
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -114,7 +127,7 @@ import { useDownloadStore } from '@renderer/store/download'
 import { formatDuration, safeCover } from '@renderer/utils/media'
 import type { BiliVideoPage, DownloadHistoryRecord, FavoriteResource } from '@shared/types'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps<{
   video: FavoriteResource
@@ -128,7 +141,14 @@ const { pagesByBvid, pagesLoading: pagesLoadingMap } = storeToRefs(downloadStore
 const expanded = ref(false)
 const pages = computed(() => pagesByBvid.value[props.video.bvid] ?? null)
 const pagesLoading = computed(() => Boolean(pagesLoadingMap.value[props.video.bvid]))
-const isMultiPage = computed(() => (pages.value?.length ?? 0) > 1)
+
+/** 收藏夹 medias.page 是分 P 总数；有 pagelist 后以接口为准 */
+const favoritePageCount = computed(() => {
+  const count = Number(props.video.page)
+  return Number.isFinite(count) && count > 1 ? Math.trunc(count) : 1
+})
+const resolvedPageCount = computed(() => pages.value?.length ?? favoritePageCount.value)
+const isMultiPage = computed(() => resolvedPageCount.value > 1)
 const singlePage = computed<BiliVideoPage | null>(() => (pages.value?.length === 1 ? pages.value[0] : null))
 
 const histories = computed(() => props.histories ?? [])
@@ -144,13 +164,20 @@ const historyFor = (cid: number): DownloadHistoryRecord | null => {
   return null
 }
 
+const completedCount = computed(
+  () =>
+    histories.value.filter(
+      item => (item.status === 'completed' || item.status === 'missing') && item.outputPath && item.fileExists
+    ).length
+)
+
 const legacyCompleted = computed(() =>
   histories.value.find(
     item => (item.status === 'completed' || item.status === 'missing') && item.outputPath && item.fileExists
   )
 )
 
-const legacyPlayable = computed(() => Boolean(legacyCompleted.value))
+const legacyPlayable = computed(() => Boolean(legacyCompleted.value) && !isMultiPage.value)
 
 const playLegacy = async (): Promise<void> => {
   const path = legacyCompleted.value?.outputPath
@@ -164,77 +191,77 @@ const playLegacy = async (): Promise<void> => {
   }
 }
 
+const toastError = (error: unknown): void => {
+  mittbus.emit('toast:add', {
+    severity: 'error',
+    message: error instanceof Error ? error.message : String(error)
+  })
+}
+
 const ensurePages = async (): Promise<BiliVideoPage[]> => {
   return downloadStore.loadPages(props.video.bvid)
 }
 
-const onEntryClick = async (): Promise<void> => {
+const startPage = (page: BiliVideoPage, pagesTotal: number): void => {
+  const item = downloadStore.getItem(props.video.bvid, page.cid)
+  if (['success', 'downloading', 'waiting', 'preprocess', 'importing', 'writing'].includes(item.status)) {
+    return
+  }
+  startDownloadVideo({
+    bvid: props.video.bvid,
+    cid: page.cid,
+    page: page.page,
+    pages: pagesTotal,
+    part: page.part,
+    title: props.video.title,
+    uname: props.video.upper.name,
+    folderName: props.folderName,
+    coverUrl: props.video.cover
+  })
+  item.status = 'waiting'
+}
+
+const onSingleDownload = async (): Promise<void> => {
   try {
     const list = await ensurePages()
     if (list.length > 1) {
       expanded.value = true
+      mittbus.emit('toast:add', {
+        severity: 'info',
+        message: '这是多P，请选择要下载的分集'
+      })
       return
     }
     const page = list[0]
     if (!page) return
-    const item = downloadStore.getItem(props.video.bvid, page.cid)
-    if (item.status === 'success' || item.status === 'downloading' || item.status === 'waiting') return
-    startDownloadVideo({
-      bvid: props.video.bvid,
-      cid: page.cid,
-      page: page.page,
-      pages: list.length,
-      part: page.part,
-      title: props.video.title,
-      uname: props.video.upper.name,
-      folderName: props.folderName,
-      coverUrl: props.video.cover
-    })
-    item.status = 'waiting'
+    startPage(page, 1)
   } catch (error) {
-    mittbus.emit('toast:add', {
-      severity: 'error',
-      message: error instanceof Error ? error.message : String(error)
-    })
+    toastError(error)
+  }
+}
+
+const toggleSelectPages = async (): Promise<void> => {
+  if (expanded.value) {
+    expanded.value = false
+    return
+  }
+  try {
+    await ensurePages()
+    expanded.value = true
+  } catch (error) {
+    toastError(error)
   }
 }
 
 const downloadAllPages = async (): Promise<void> => {
   try {
     const list = await ensurePages()
-    expanded.value = true
+    expanded.value = list.length > 1
     for (const page of list) {
-      const item = downloadStore.getItem(props.video.bvid, page.cid)
-      if (['success', 'downloading', 'waiting', 'preprocess', 'importing', 'writing'].includes(item.status)) {
-        continue
-      }
-      startDownloadVideo({
-        bvid: props.video.bvid,
-        cid: page.cid,
-        page: page.page,
-        pages: list.length,
-        part: page.part,
-        title: props.video.title,
-        uname: props.video.upper.name,
-        folderName: props.folderName,
-        coverUrl: props.video.cover
-      })
-      item.status = 'waiting'
+      startPage(page, list.length)
     }
   } catch (error) {
-    mittbus.emit('toast:add', {
-      severity: 'error',
-      message: error instanceof Error ? error.message : String(error)
-    })
+    toastError(error)
   }
 }
-
-onMounted(() => {
-  if (histories.value.length === 0) return
-  void ensurePages()
-    .then(list => {
-      if (list.length > 1 && histories.value.length > 1) expanded.value = true
-    })
-    .catch(() => undefined)
-})
 </script>

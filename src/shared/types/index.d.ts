@@ -63,6 +63,8 @@ type FavoriteResource = {
   duration: number
   attr: number
   bvid: string
+  /** 稿件分 P 总数，不是第几 P，也不是 cid */
+  page?: number
   upper: {
     mid: number
     name: string

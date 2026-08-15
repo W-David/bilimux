@@ -112,7 +112,7 @@ export const getFavoriteResources = (mediaId: number, pn = 1, ps = 20) => {
   }) as PromiseResponseType<{ info: FavoriteFolder; medias: FavoriteResource[]; has_more: boolean }>
 }
 
-export type VideoViewPage = {
+export type VideoPageListItem = {
   cid: number
   page: number
   part: string
@@ -120,14 +120,10 @@ export type VideoViewPage = {
 }
 
 /**
- * 获取稿件信息（含分 P）
+ * 用 bvid 换分 P 列表（cid / 序号 / 标题）
  */
-export const getVideoView = (bvid: string) => {
-  return httpGet('https://api.bilibili.com/x/web-interface/view', {
+export const getVideoPageList = (bvid: string) => {
+  return httpGet('https://api.bilibili.com/x/player/pagelist', {
     searchParams: { bvid }
-  }) as PromiseResponseType<{
-    cid: number
-    title: string
-    pages?: VideoViewPage[]
-  }>
+  }) as PromiseResponseType<VideoPageListItem[]>
 }
