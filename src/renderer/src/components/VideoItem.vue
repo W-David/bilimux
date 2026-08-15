@@ -1,6 +1,15 @@
 <template>
   <div class="card-border rounded-2xl p-3">
     <div class="flex items-center gap-3">
+      <button
+        v-if="selectable"
+        type="button"
+        class="flex size-5 shrink-0 items-center justify-center rounded border border-white/20 text-[10px] text-pink-400"
+        :class="selected ? 'bg-pink-400/30' : 'bg-transparent'"
+        :disabled="video.attr !== 0"
+        @click.stop="emit('toggle', video.bvid)">
+        <span v-if="selected">✓</span>
+      </button>
       <div class="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg bg-gray-900">
         <img
           v-if="video.cover"
@@ -177,10 +186,23 @@ import type { BiliVideoPage, DownloadHistoryRecord, FavoriteResource } from '@sh
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 
-const props = defineProps<{
-  video: FavoriteResource
-  folderName: string
-  histories?: DownloadHistoryRecord[]
+const props = withDefaults(
+  defineProps<{
+    video: FavoriteResource
+    folderName: string
+    histories?: DownloadHistoryRecord[]
+    selectable?: boolean
+    selected?: boolean
+  }>(),
+  {
+    histories: undefined,
+    selectable: false,
+    selected: false
+  }
+)
+
+const emit = defineEmits<{
+  (e: 'toggle', bvid: string): void
 }>()
 
 const downloadStore = useDownloadStore()

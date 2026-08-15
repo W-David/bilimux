@@ -1,24 +1,40 @@
 <template>
-  <div class="w-full flex items-center justify-between rounded-xl shadow-lg bg-[#1f1f1f]">
+  <div class="flex w-full items-center gap-2 rounded-xl bg-[#1f1f1f] px-2">
     <input
-      v-model="searchText"
+      :value="modelValue"
       type="text"
-      class="flex-1 w-full h-16 px-2 mx-2 rounded-xl bg-transparent text-[#f6f6f6] text-xl outline-none"
-      @keyup.enter="emit('search', searchText)" />
-    <div
-      class="cursor-pointer flex items-center justify-center h-12 w-12 m-2 rounded-xl bg-pink-400/15 text-pink-400 transition-all duration-300 hover:ring-1 hover:ring-pink-400 hover:-translate-y-px"
-      @click="emit('search', searchText)">
-      <SearchIcon class="size-5" />
-    </div>
+      class="h-9 min-w-0 flex-1 bg-transparent text-sm text-[#f6f6f6] outline-none"
+      :placeholder="placeholder"
+      @input="onInput"
+      @keyup.enter="emit('search', modelValue)" />
+    <button
+      type="button"
+      class="flex size-8 cursor-pointer items-center justify-center rounded-lg bg-pink-400/15 text-pink-400 hover:ring-1 hover:ring-pink-400"
+      @click="emit('search', modelValue)">
+      <SearchIcon class="size-4" />
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { Search as SearchIcon } from '@lucide/vue'
-import { ref } from 'vue'
 
-const searchText = ref('')
+withDefaults(
+  defineProps<{
+    modelValue: string
+    placeholder?: string
+  }>(),
+  {
+    placeholder: '搜索标题，或粘贴 BV / 视频链接'
+  }
+)
+
 const emit = defineEmits<{
+  (e: 'update:modelValue', value: string): void
   (e: 'search', value: string): void
 }>()
+
+const onInput = (event: Event): void => {
+  emit('update:modelValue', (event.target as HTMLInputElement).value)
+}
 </script>

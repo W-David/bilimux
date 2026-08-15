@@ -24,15 +24,18 @@ export const REG_TYPE_MAP: RegType[] = [
 ]
 
 export const parseVideoType = (url: string): [VideoType | null, string | null] => {
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    const regType = REG_TYPE_MAP.find(item => item.reg.test(url))
+  const trimmed = url.trim()
+  if (/^BV[0-9A-Za-z]{10}$/i.test(trimmed)) {
+    return ['BV', null]
+  }
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    const regType = REG_TYPE_MAP.find(item => item.reg.test(trimmed))
     if (!regType) {
       return [null, '不支持的视频链接']
     }
     return [regType.type, null]
-  } else {
-    return [null, '不受支持的协议']
   }
+  return [null, '不受支持的协议']
 }
 
 export const parseHtml = (html: string, type: VideoType) => {
@@ -43,6 +46,9 @@ export const parseHtml = (html: string, type: VideoType) => {
   const __playinfo__ = html.match(/<script>window\.__playinfo__=([\s\S]*?)<\/script>/)
   if (__INITIAL_STATE__ && __playinfo__) {
     return [__INITIAL_STATE__[1], __playinfo__[1]]
+  }
+  if (__INITIAL_STATE__) {
+    return [__INITIAL_STATE__[1]]
   }
   return []
 }
