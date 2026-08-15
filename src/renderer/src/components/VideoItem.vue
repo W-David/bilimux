@@ -89,13 +89,13 @@
 
   <Dialog v-model:open="dialogOpen">
     <DialogContent
-      class="gap-3 bg-[#121212] p-4 sm:max-w-lg"
+      class="flex w-full min-w-0 max-w-[min(32rem,calc(100vw-2rem))] flex-col overflow-hidden bg-[#121212] p-4 sm:max-w-[min(32rem,calc(100vw-2rem))]"
       @open-auto-focus.prevent>
       <DialogTitle class="sr-only">选择分P</DialogTitle>
       <DialogDescription class="sr-only">{{ video.title }}</DialogDescription>
 
-      <div class="card-border rounded-2xl p-3">
-        <div class="flex items-center gap-3">
+      <div class="card-border min-w-0 overflow-hidden rounded-2xl p-3">
+        <div class="flex min-w-0 items-center gap-3">
           <div class="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg bg-gray-900">
             <img
               v-if="video.cover"
@@ -141,7 +141,7 @@
         <span v-else>选择全部下载</span>
       </button>
 
-      <div class="flex max-h-[min(50vh,24rem)] flex-col gap-2 overflow-y-auto">
+      <div class="flex min-w-0 max-h-[min(50vh,24rem)] flex-col gap-2 overflow-x-hidden overflow-y-auto">
         <div
           v-if="!pages?.length"
           class="py-4 text-center text-xs text-gray-500">
@@ -151,8 +151,8 @@
           <div
             v-for="page in pages"
             :key="page.cid"
-            class="flex items-center justify-between gap-3">
-            <div class="min-w-0 truncate text-xs text-gray-400">P{{ page.page }} {{ page.part }}</div>
+            class="flex min-w-0 items-center justify-between gap-3">
+            <div class="min-w-0 flex-1 truncate text-xs text-gray-400">P{{ page.page }} {{ page.part }}</div>
             <DownloadStatus
               :video="video"
               :page="page"
