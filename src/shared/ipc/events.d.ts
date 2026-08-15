@@ -7,6 +7,7 @@ import type {
   ConvertHistoryRecord,
   DownloadEventMap,
   DownloadHistoryRecord,
+  DownloadTaskKey,
   DownloadVideoTask,
   UserStore
 } from '../types'
@@ -36,10 +37,11 @@ type IpcMainHandleEvents = {
   'convert:history:remove': (bvid: string) => void
   'convert:history:clear': () => void
   'download:video': (task: DownloadVideoTask) => void
-  'download:pause': (bvid: string) => void
-  'download:resume': (bvid: string) => void
+  'download:pause': (key: DownloadTaskKey) => void
+  'download:resume': (key: DownloadTaskKey) => void
+  'download:cancel': (key: DownloadTaskKey) => void
   'download:history:list': (bvids: string[]) => DownloadHistoryRecord[]
-  'download:history:get': (bvid: string) => DownloadHistoryRecord | null
+  'download:history:get': (key: DownloadTaskKey) => DownloadHistoryRecord | null
   'download:history:clear': () => void
   'persist-cookie': () => void
   'http-get-video-metadata': (url: string) => [string[] | null, string | null]

@@ -513,11 +513,22 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
     audioPath: string
     outputPath: string
     tempDir: string
+    signal?: AbortSignal
+    bindEngine?: (engine: Engine | null) => void
     onProgress?: (type: 'preprocess' | 'importing' | 'writing', progress: number) => void
   }): Promise<void> {
-    const { bvid, videoPath, audioPath, outputPath, tempDir, onProgress } = params
+    const { bvid, videoPath, audioPath, outputPath, tempDir, signal, bindEngine, onProgress } = params
     const gpacBinPath = getEngineBinPath(this.configManager.context.platform)
 
+    const throwIfAborted = (): void => {
+      if (signal?.aborted) {
+        const error = new Error('已取消')
+        error.name = 'AbortError'
+        throw error
+      }
+    }
+
+    throwIfAborted()
     await createDirIfNotExist(path.dirname(outputPath))
     await createDirIfNotExist(tempDir)
 
@@ -526,8 +537,10 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
 
     onProgress?.('preprocess', 0)
     await this.transformFile(videoPath, tempVideoPath)
+    throwIfAborted()
     onProgress?.('preprocess', 50)
     await this.transformFile(audioPath, tempAudioPath)
+    throwIfAborted()
     onProgress?.('preprocess', 100)
 
     const engine = new Engine(gpacBinPath, {
@@ -540,7 +553,19 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       const type = data.type === 'importing' || data.type === 'writing' ? data.type : 'preprocess'
       onProgress?.(type, data.progress)
     })
-    await engine.start()
+
+    const onAbort = (): void => {
+      engine.stop()
+    }
+    signal?.addEventListener('abort', onAbort)
+    bindEngine?.(engine)
+    try {
+      throwIfAborted()
+      await engine.start()
+    } finally {
+      signal?.removeEventListener('abort', onAbort)
+      bindEngine?.(null)
+    }
   }
 
   /**

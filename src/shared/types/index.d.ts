@@ -157,9 +157,27 @@ type UserInfo = {
   is_jury?: boolean
 }
 
-// 下载任务
+type DownloadTaskKey = {
+  bvid: string
+  cid: number
+}
+
+type BiliVideoPage = {
+  cid: number
+  page: number
+  part: string
+  duration: number
+}
+
+type DownloadCodecPref = 'avc' | 'hevc' | 'av1'
+
+// 下载任务（一集/一分 P）
 type DownloadVideoTask = {
   bvid: string
+  cid: number
+  page: number
+  pages: number
+  part: string
   title: string
   uname: string
   folderName: string
@@ -178,17 +196,20 @@ type DownloadProgressStatus =
 
 type DownloadItemStartArgs = {
   bvid: string
+  cid: number
   title: string
 }
 
 type DownloadItemProgressArgs = {
   bvid: string
+  cid: number
   type: DownloadProgressStatus
   progress: number
 }
 
 type DownloadItemEndArgs = {
   bvid: string
+  cid: number
   title: string
   success: boolean
   message: string
@@ -196,10 +217,13 @@ type DownloadItemEndArgs = {
 }
 
 // 下载历史（SQLite 持久化）
-type DownloadHistoryStatus = 'downloading' | 'completed' | 'failed' | 'missing' | 'interrupted'
+type DownloadHistoryStatus = 'downloading' | 'completed' | 'failed' | 'missing' | 'interrupted' | 'cancelled'
 
 type DownloadHistoryRecord = {
   bvid: string
+  cid: number
+  page: number
+  part: string
   title: string
   folderName: string
   outputPath: string | null
@@ -338,6 +362,10 @@ type DownloadConfigOptions = {
   outputDir: string
   /** 并行下载任务数（1-16） */
   concurrent: number
+  /** 目标清晰度 qn，实际取不超过该值的最高可用流 */
+  qn: number
+  /** 编码偏好，同清晰度下按此顺序挑选 */
+  codec: DownloadCodecPref
 }
 
 // electron-store 配置类型
@@ -368,11 +396,13 @@ type RegType = {
 
 export type {
   BiliResponseType,
+  BiliVideoPage,
   ComposEventMap,
   CompositionOptions,
   ConfigOptions,
   ConvertHistoryRecord,
   ConvertHistoryStatus,
+  DownloadCodecPref,
   DownloadEventMap,
   DownloadHistoryRecord,
   DownloadHistoryStatus,
@@ -380,6 +410,7 @@ export type {
   DownloadItemProgressArgs,
   DownloadItemStartArgs,
   DownloadProgressStatus,
+  DownloadTaskKey,
   DownloadTaskStatus,
   DownloadConfigOptions,
   DownloadVideoTask,

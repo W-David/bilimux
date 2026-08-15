@@ -111,3 +111,23 @@ export const getFavoriteResources = (mediaId: number, pn = 1, ps = 20) => {
     searchParams: { media_id: mediaId, pn, ps, platform: 'web' }
   }) as PromiseResponseType<{ info: FavoriteFolder; medias: FavoriteResource[]; has_more: boolean }>
 }
+
+export type VideoViewPage = {
+  cid: number
+  page: number
+  part: string
+  duration: number
+}
+
+/**
+ * 获取稿件信息（含分 P）
+ */
+export const getVideoView = (bvid: string) => {
+  return httpGet('https://api.bilibili.com/x/web-interface/view', {
+    searchParams: { bvid }
+  }) as PromiseResponseType<{
+    cid: number
+    title: string
+    pages?: VideoViewPage[]
+  }>
+}

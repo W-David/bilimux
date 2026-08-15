@@ -13,6 +13,48 @@
     </div>
 
     <div class="flex items-center justify-between">
+      <label class="font-normal">下载清晰度</label>
+      <Select
+        :model-value="qnValue"
+        @update:model-value="onQnChange">
+        <SelectTrigger class="w-36">
+          <SelectValue placeholder="选择清晰度" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectItem
+              v-for="option in DOWNLOAD_QN_OPTIONS"
+              :key="option.qn"
+              :value="String(option.qn)">
+              {{ option.label }}
+            </SelectItem>
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </div>
+
+    <div class="flex items-center justify-between">
+      <label class="font-normal">编码偏好</label>
+      <Select
+        :model-value="codecValue"
+        @update:model-value="onCodecChange">
+        <SelectTrigger class="w-36">
+          <SelectValue placeholder="选择编码" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectGroup>
+            <SelectItem
+              v-for="option in DOWNLOAD_CODEC_OPTIONS"
+              :key="option.value"
+              :value="option.value">
+              {{ option.label }}
+            </SelectItem>
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </div>
+
+    <div class="flex items-center justify-between">
       <label class="font-normal">并行下载任务数</label>
       <Select
         :model-value="concurrentValue"
@@ -101,6 +143,7 @@ import { mittbus } from '@renderer/ipc'
 import { useDownloadStore } from '@renderer/store/download'
 import { useFavoritesStore } from '@renderer/store/favorites'
 import { usePreferenceStore } from '@renderer/store/preference'
+import { clampDownloadCodec, clampDownloadQn, DOWNLOAD_CODEC_OPTIONS, DOWNLOAD_QN_OPTIONS } from '@shared/download'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -148,6 +191,10 @@ const concurrentValue = computed(() => {
   return String(CONCURRENT_OPTIONS.some(option => option === current) ? current : CONCURRENT_OPTIONS[0])
 })
 
+const qnValue = computed(() => String(clampDownloadQn(preference.value['download-config'].qn)))
+
+const codecValue = computed(() => clampDownloadCodec(preference.value['download-config'].codec))
+
 /**
  * 并行下载任务数变更：仅允许 1/2/4/8/16
  */
@@ -156,6 +203,14 @@ const onConcurrentChange = (value: string | number): void => {
   if (concurrent) {
     preference.value['download-config'].concurrent = concurrent
   }
+}
+
+const onQnChange = (value: string | number): void => {
+  preference.value['download-config'].qn = clampDownloadQn(value)
+}
+
+const onCodecChange = (value: string | number): void => {
+  preference.value['download-config'].codec = clampDownloadCodec(value)
 }
 
 const clearFavoritesCache = (): void => {

@@ -1,3 +1,4 @@
+import { clampDownloadCodec, clampDownloadQn } from '@shared/download'
 import { ConfigOptions, DownloadConfigOptions, UserStore } from '@shared/types'
 import Store from 'electron-store'
 import { app } from 'electron/main'
@@ -48,7 +49,9 @@ export default class ConfigManager {
 
     const defaultDownloadConfig: Required<DownloadConfigOptions> = {
       outputDir: downloadOutputDir,
-      concurrent: 1
+      concurrent: 1,
+      qn: 80,
+      codec: 'avc'
     }
 
     const defaultConfig: Required<UserStore> = {
@@ -86,15 +89,26 @@ export default class ConfigManager {
     if (!downloadConfig) {
       this.store.set('download-config', {
         outputDir: path.join(cachePath, OUTPUT_DIR_NAME, DOWNLOAD_DIR_NAME),
-        concurrent: 1
+        concurrent: 1,
+        qn: 80,
+        codec: 'avc'
       })
       logger.info('[Config] 已初始化视频下载输出目录:', path.join(cachePath, OUTPUT_DIR_NAME, DOWNLOAD_DIR_NAME))
-    } else if (typeof downloadConfig.concurrent !== 'number') {
-      this.store.set('download-config', {
+    } else {
+      const nextDownloadConfig = {
         ...downloadConfig,
-        concurrent: 1
-      })
-      logger.info('[Config] 已初始化并行下载任务数配置')
+        concurrent: typeof downloadConfig.concurrent === 'number' ? downloadConfig.concurrent : 1,
+        qn: clampDownloadQn(downloadConfig.qn),
+        codec: clampDownloadCodec(downloadConfig.codec)
+      }
+      if (
+        nextDownloadConfig.concurrent !== downloadConfig.concurrent ||
+        nextDownloadConfig.qn !== downloadConfig.qn ||
+        nextDownloadConfig.codec !== downloadConfig.codec
+      ) {
+        this.store.set('download-config', nextDownloadConfig)
+        logger.info('[Config] 已补齐下载清晰度/编码配置')
+      }
     }
 
     const lockedEnginePath = getEngineBinPath(this.context.platform)

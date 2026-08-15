@@ -67,15 +67,22 @@ export const startDownloadVideo: RendererEmitterInvokeFn<'download:video'> = tas
 /**
  * 暂停下载视频
  */
-export const pauseDownloadVideo: RendererEmitterInvokeFn<'download:pause'> = bvid => {
-  return emitter.invoke('download:pause', bvid)
+export const pauseDownloadVideo: RendererEmitterInvokeFn<'download:pause'> = key => {
+  return emitter.invoke('download:pause', key)
 }
 
 /**
  * 恢复下载视频
  */
-export const resumeDownloadVideo: RendererEmitterInvokeFn<'download:resume'> = bvid => {
-  return emitter.invoke('download:resume', bvid)
+export const resumeDownloadVideo: RendererEmitterInvokeFn<'download:resume'> = key => {
+  return emitter.invoke('download:resume', key)
+}
+
+/**
+ * 取消下载视频（删除临时文件，合并中会杀掉 MP4Box）
+ */
+export const cancelDownloadVideo: RendererEmitterInvokeFn<'download:cancel'> = key => {
+  return emitter.invoke('download:cancel', key)
 }
 
 /**
@@ -88,8 +95,8 @@ export const getDownloadHistories: RendererEmitterInvokeFn<'download:history:lis
 /**
  * 查询单个下载历史
  */
-export const getDownloadHistory: RendererEmitterInvokeFn<'download:history:get'> = bvid => {
-  return emitter.invoke('download:history:get', bvid)
+export const getDownloadHistory: RendererEmitterInvokeFn<'download:history:get'> = key => {
+  return emitter.invoke('download:history:get', key)
 }
 
 /**

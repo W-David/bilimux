@@ -17,7 +17,9 @@ export const usePreferenceStore = defineStore('preference', () => {
     },
     'download-config': {
       outputDir: '',
-      concurrent: 1
+      concurrent: 1,
+      qn: 80,
+      codec: 'avc'
     },
     'open-at-login': false,
     'auto-hide-window': false,

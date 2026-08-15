@@ -65,6 +65,16 @@ import type { DownloadHistoryRecord } from '@shared/types'
 import logger from 'electron-log/renderer'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
+function groupHistories(records: DownloadHistoryRecord[]): Map<string, DownloadHistoryRecord[]> {
+  const map = new Map<string, DownloadHistoryRecord[]>()
+  for (const record of records) {
+    const list = map.get(record.bvid) ?? []
+    list.push(record)
+    map.set(record.bvid, list)
+  }
+  return map
+}
+
 const preferenceStore = usePreferenceStore()
 const favoritesStore = useFavoritesStore()
 
@@ -73,7 +83,7 @@ const currentFolder = ref<FavoriteFolderData | null>(null)
 const userInfo = computed(() => preferenceStore.preference['user-info'] ?? null)
 const errorMessage = ref('')
 const refreshing = ref(false)
-const historyMap = ref<Map<string, DownloadHistoryRecord>>(new Map())
+const historyMap = ref<Map<string, DownloadHistoryRecord[]>>(new Map())
 // 收藏夹数据版本号：丢弃过期的下载历史查询结果，避免旧数据覆盖新数据
 let historyLoadVersion = 0
 
@@ -108,7 +118,7 @@ const loadHistories = async (): Promise<void> => {
   try {
     const records = await getDownloadHistories(bvids)
     if (version !== historyLoadVersion) return
-    historyMap.value = new Map(records.map(record => [record.bvid, record]))
+    historyMap.value = groupHistories(records)
   } catch (error) {
     logger.warn('查询下载历史失败:', error)
   }
@@ -181,16 +191,17 @@ const unregisterSubscribes = (): void => {
 }
 
 registerSubscribe(
-  subscribeDownloadItemEndEvent(async ({ bvid, success }) => {
-    if (success) {
-      try {
-        const record = await getDownloadHistory(bvid)
-        if (record) {
-          historyMap.value.set(bvid, record)
-        }
-      } catch (error) {
-        logger.warn('刷新下载历史失败:', error)
-      }
+  subscribeDownloadItemEndEvent(async ({ bvid, cid }) => {
+    try {
+      const record = await getDownloadHistory({ bvid, cid })
+      if (!record) return
+      const next = new Map(historyMap.value)
+      const list = (next.get(bvid) ?? []).filter(item => item.cid !== cid)
+      list.push(record)
+      next.set(bvid, list)
+      historyMap.value = next
+    } catch (error) {
+      logger.warn('刷新下载历史失败:', error)
     }
   })
 )

@@ -51,7 +51,7 @@
           :key="video.bvid"
           :video="video"
           :folder-name="currentFolder.title"
-          :history="historyMap.get(video.bvid)"></VideoItem>
+          :histories="historyMap.get(video.bvid)"></VideoItem>
       </div>
     </div>
   </div>
@@ -66,7 +66,7 @@ defineProps<{
   videos: FavoriteResource[]
   errorMessage: string
   currentFolder: FavoriteFolderData | null
-  historyMap: Map<string, DownloadHistoryRecord>
+  historyMap: Map<string, DownloadHistoryRecord[]>
 }>()
 
 const emit = defineEmits<{

@@ -1,3 +1,4 @@
+import { clampDownloadCodec, clampDownloadQn } from '@shared/download'
 import type { UserStore } from '@shared/types'
 import type Application from '../Application'
 import { getEngineBinPath } from '../utils'
@@ -35,7 +36,9 @@ function mergePreference(app: Application, incoming: UserStore): UserStore {
     'download-config': {
       ...current['download-config'],
       ...(downloadIncoming ?? {}),
-      concurrent: clampConcurrent(downloadIncoming?.concurrent ?? current['download-config'].concurrent)
+      concurrent: clampConcurrent(downloadIncoming?.concurrent ?? current['download-config'].concurrent),
+      qn: clampDownloadQn(downloadIncoming?.qn ?? current['download-config'].qn),
+      codec: clampDownloadCodec(downloadIncoming?.codec ?? current['download-config'].codec)
     },
     'open-at-login': incoming['open-at-login'] ?? current['open-at-login'],
     'auto-hide-window': incoming['auto-hide-window'] ?? current['auto-hide-window'],

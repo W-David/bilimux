@@ -1,6 +1,5 @@
 <template>
   <div class="flex items-center gap-1">
-    <!-- 状态胶囊按钮 -->
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger as-child>
@@ -10,7 +9,6 @@
             role="button"
             tabindex="0"
             @click="handleClick">
-            <!-- 下载进度背景 -->
             <div
               v-show="isProgressing"
               class="absolute inset-y-0 left-0 bg-pink-400/25 transition-all duration-300"
@@ -28,6 +26,15 @@
         <TooltipContent v-if="status === 'fail'">{{ message }}</TooltipContent>
       </Tooltip>
     </TooltipProvider>
+
+    <button
+      v-if="canCancel"
+      type="button"
+      class="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors card-glassy hover:text-red-400"
+      aria-label="取消下载"
+      @click.stop="handleCancel">
+      <XIcon class="size-3.5" />
+    </button>
   </div>
 </template>
 
@@ -38,31 +45,43 @@ import {
   Download as DownloadIcon,
   Pause as PauseIcon,
   Play as PlayIcon,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  X as XIcon
 } from '@lucide/vue'
-import { openPath, pauseDownloadVideo, resumeDownloadVideo, startDownloadVideo } from '@renderer/api'
+import {
+  cancelDownloadVideo,
+  openPath,
+  pauseDownloadVideo,
+  resumeDownloadVideo,
+  startDownloadVideo
+} from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
 import { useDownloadStore } from '@renderer/store/download'
-import type { DownloadHistoryRecord, FavoriteResource } from '@shared/types'
+import type { BiliVideoPage, DownloadHistoryRecord, FavoriteResource } from '@shared/types'
 import { computed, watch } from 'vue'
 
 const props = defineProps<{
   video: FavoriteResource
   folderName: string
+  page: BiliVideoPage
+  pagesTotal: number
   history?: DownloadHistoryRecord | null
 }>()
 
 const downloadStore = useDownloadStore()
-const item = computed(() => downloadStore.getItem(props.video.bvid))
+const item = computed(() => downloadStore.getItem(props.video.bvid, props.page.cid))
 const status = computed(() => item.value.status)
 const progress = computed(() => item.value.progress)
 const message = computed(() => item.value.message)
 const outputPath = computed(() => item.value.outputPath)
 
+const taskKey = computed(() => ({ bvid: props.video.bvid, cid: props.page.cid }))
+
 const isProgressing = computed(() =>
   ['waiting', 'downloading', 'preprocess', 'importing', 'writing'].includes(status.value)
 )
 const isMerging = computed(() => ['preprocess', 'importing', 'writing'].includes(status.value))
+const canCancel = computed(() => isProgressing.value || status.value === 'paused')
 
 const rootClass = computed(() => {
   switch (status.value) {
@@ -123,6 +142,18 @@ const label = computed(() => {
   }
 })
 
+const buildTask = () => ({
+  bvid: props.video.bvid,
+  cid: props.page.cid,
+  page: props.page.page,
+  pages: props.pagesTotal,
+  part: props.page.part,
+  title: props.video.title,
+  uname: props.video.upper.name,
+  folderName: props.folderName,
+  coverUrl: props.video.cover
+})
+
 const handleClick = (): void => {
   if (status.value === 'success') {
     play()
@@ -130,31 +161,31 @@ const handleClick = (): void => {
   }
 
   if (status.value === 'paused') {
-    resumeDownloadVideo(props.video.bvid)
+    resumeDownloadVideo(taskKey.value)
     item.value.status = 'waiting'
     return
   }
 
   if (status.value === 'downloading' || status.value === 'waiting') {
-    pauseDownloadVideo(props.video.bvid)
+    pauseDownloadVideo(taskKey.value)
     return
   }
 
   if (isProgressing.value) return
 
   const previous = status.value
-  startDownloadVideo({
-    bvid: props.video.bvid,
-    title: props.video.title,
-    uname: props.video.upper.name,
-    folderName: props.folderName,
-    coverUrl: props.video.cover
-  })
+  startDownloadVideo(buildTask())
 
   item.value.status = 'waiting'
   if (previous !== 'fail') {
     item.value.progress = 0
   }
+}
+
+const handleCancel = (): void => {
+  cancelDownloadVideo(taskKey.value)
+  item.value.status = 'fail'
+  item.value.message = '已取消'
 }
 
 const play = async (): Promise<void> => {
@@ -172,7 +203,7 @@ const play = async (): Promise<void> => {
  * 根据持久化历史初始化组件状态（仅在没有实时事件覆盖时生效）
  */
 const applyHistory = (): void => {
-  const state = downloadStore.getItem(props.video.bvid)
+  const state = downloadStore.getItem(props.video.bvid, props.page.cid)
   if (!props.history || state.status !== 'idle') return
 
   const { status: historyStatus, fileExists, outputPath: path } = props.history
@@ -193,6 +224,12 @@ const applyHistory = (): void => {
   if (historyStatus === 'failed') {
     state.status = 'fail'
     state.message = '上次下载失败'
+    return
+  }
+
+  if (historyStatus === 'cancelled') {
+    state.status = 'fail'
+    state.message = '已取消'
     return
   }
 

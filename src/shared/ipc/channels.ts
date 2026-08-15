@@ -19,6 +19,7 @@ export const INVOKE_CHANNELS = [
   'download:video',
   'download:pause',
   'download:resume',
+  'download:cancel',
   'download:history:list',
   'download:history:get',
   'download:history:clear',
