@@ -29,12 +29,13 @@ export async function createDirIfNotExist(path: string): Promise<void> {
     const pathExist = await isExist(path)
     if (pathExist) {
       logger.debug(`路径已存在: ${path}`)
-    } else {
-      await fs.mkdir(path, { recursive: true })
-      logger.debug(`目录创建成功: ${path}`)
+      return
     }
+    await fs.mkdir(path, { recursive: true })
+    logger.debug(`目录创建成功: ${path}`)
   } catch (error) {
     logger.error(`创建目录失败: ${error instanceof Error ? error.message : String(error)}`)
+    throw error
   }
 }
 
@@ -106,10 +107,12 @@ export function getEngineBinPath(platform: NodeJS.Platform): string {
  * @param name 原始标题
  * @returns 清洗后的文件名
  */
-export function sanitizeFileName(name: string): string {
-  if (!name) return ''
+const WINDOWS_RESERVED_NAMES = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i
 
-  return name
+export function sanitizeFileName(name: string): string {
+  if (!name) return 'untitled'
+
+  const sanitized = name
     .replace(/（/g, '(')
     .replace(/）/g, ')')
     .replace(/</g, '《')
@@ -124,7 +127,14 @@ export function sanitizeFileName(name: string): string {
     .replace(/】/g, ']')
     .replace(/:/g, '：')
     .replace(/\s+/g, '')
+    .replace(/[. ]+$/g, '')
     .trim()
+
+  if (!sanitized) return 'untitled'
+  if (WINDOWS_RESERVED_NAMES.test(sanitized)) {
+    return `_${sanitized}`
+  }
+  return sanitized
 }
 
 /**

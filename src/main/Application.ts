@@ -1,4 +1,4 @@
-import { shell } from 'electron'
+import { BrowserWindow, shell } from 'electron'
 import { LogLevel } from 'electron-log'
 import { dialog } from 'electron/main'
 import type { DownloadConfigOptions } from '@shared/types'
@@ -177,19 +177,16 @@ export default class Application {
       const config = this.configManager.store.store
       return config
     })
-    this.ipcManager.mainIpc.handle('open-file-dialog', (_, options) => {
-      return new Promise((resolve, reject) => {
-        dialog
-          .showOpenDialog(options)
-          .then(({ canceled, filePaths }) => {
-            resolve(canceled ? '' : filePaths[0])
-          })
-          .catch(err => {
-            const message = err instanceof Error ? err.message : String(err)
-            logger.error(message)
-            reject(message)
-          })
-      })
+    this.ipcManager.mainIpc.handle('open-file-dialog', (event, options) => {
+      const parent = BrowserWindow.fromWebContents(event.sender)
+      const openDialog = parent ? dialog.showOpenDialog(parent, options) : dialog.showOpenDialog(options)
+      return openDialog
+        .then(({ canceled, filePaths }) => (canceled ? '' : filePaths[0]))
+        .catch(err => {
+          const message = err instanceof Error ? err.message : String(err)
+          logger.error(message)
+          throw message
+        })
     })
     this.ipcManager.mainIpc.handle('start:process', async () => {
       return this.composEngine.run()

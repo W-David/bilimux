@@ -2,55 +2,7 @@
   <div class="h-full w-full flex flex-col overflow-hidden">
     <!-- 顶部 Header -->
     <div class="flex flex-none items-center justify-between border-b border-[#1f1f1f] border-solid p-4 pt-8">
-      <div class="min-w-0 flex items-center gap-3">
-        <Avatar
-          v-if="userFace"
-          size="lg">
-          <AvatarImage
-            :src="safeCover(userFace)"
-            alt="" />
-          <AvatarFallback>{{ (userName || 'Bili').slice(0, 1) }}</AvatarFallback>
-        </Avatar>
-        <Avatar
-          v-else
-          size="lg">
-          <AvatarFallback>{{ (userName || 'Bili').slice(0, 1) }}</AvatarFallback>
-        </Avatar>
-        <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <span
-              class="truncate text-base font-black"
-              :class="
-                nicknameStyle
-                  ? 'text-[#f6f6f6]'
-                  : 'from-pink-400 to-sky-400 bg-linear-to-r bg-clip-text text-transparent'
-              "
-              :style="nicknameStyle">
-              {{ userName || 'Bili' }}
-            </span>
-            <span
-              v-if="userLevel !== undefined"
-              class="shrink-0 rounded-sm bg-pink-400/15 px-1.5 py-0.5 text-[10px] text-pink-400 font-bold">
-              LV{{ userLevel }}
-            </span>
-            <span
-              v-if="isVip"
-              class="shrink-0 rounded-sm bg-violet-400/15 px-1.5 py-0.5 text-[10px] text-violet-300 font-bold">
-              {{ vipLabel }}
-            </span>
-            <span
-              v-if="isSeniorMember"
-              class="shrink-0 rounded-sm bg-sky-400/15 px-1.5 py-0.5 text-[10px] text-sky-300 font-bold">
-              硬核会员
-            </span>
-          </div>
-          <div
-            v-if="userCoins !== undefined"
-            class="mt-1 text-xs text-gray-400">
-            {{ userCoins }} 硬币
-          </div>
-        </div>
-      </div>
+      <UserCard :user="userInfo" />
       <div class="flex flex-none items-center gap-2">
         <Button
           size="sm"
@@ -108,7 +60,6 @@ import { mittbus } from '@renderer/ipc'
 import { type FavoriteFolderData } from '@renderer/services/favorites'
 import { useFavoritesStore } from '@renderer/store/favorites'
 import { usePreferenceStore } from '@renderer/store/preference'
-import { safeCover } from '@renderer/utils/media'
 import type { DownloadHistoryRecord } from '@shared/types'
 import logger from 'electron-log/renderer'
 import { computed, onUnmounted, ref, watch } from 'vue'
@@ -119,16 +70,6 @@ const favoritesStore = useFavoritesStore()
 const folders = computed(() => preferenceStore.preference['favorites-data']?.folders ?? [])
 const currentFolder = ref<FavoriteFolderData | null>(null)
 const userInfo = computed(() => preferenceStore.preference['user-info'] ?? null)
-const userName = computed(() => userInfo.value?.uname || '')
-const userFace = computed(() => userInfo.value?.face || '')
-const userLevel = computed(() => userInfo.value?.level_info?.current_level)
-const isVip = computed(() => userInfo.value?.vipStatus === 1)
-const vipLabel = computed(() => userInfo.value?.vip_label?.text || '大会员')
-const isSeniorMember = computed(() => userInfo.value?.is_senior_member === 1)
-const userCoins = computed(() => userInfo.value?.money)
-const nicknameStyle = computed(() =>
-  userInfo.value?.vip_nickname_color ? { color: userInfo.value.vip_nickname_color } : undefined
-)
 const errorMessage = ref('')
 const refreshing = ref(false)
 const historyMap = ref<Map<string, DownloadHistoryRecord>>(new Map())

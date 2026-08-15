@@ -11,7 +11,7 @@ import {
   subscribeProcessStartEvent,
   subscribeProcessSuccessEvent
 } from '@renderer/api'
-import type { ConvertTask } from '@renderer/components/ConvertTaskItem.vue'
+import type { ConvertTask } from '@renderer/types/convert'
 import { mittbus } from '@renderer/ipc'
 import type { ConvertHistoryRecord } from '@shared/types'
 import logger from 'electron-log/renderer'

@@ -24,6 +24,8 @@ export default class WindowManager extends EventEmitter {
   ipcManager: IPCManager
   // 托盘实例（保持引用防止被 GC）
   tray: Tray | null
+  // 失焦隐藏是否已绑定，避免 openWindow / 配置变更重复注册
+  private windowBlurBound: boolean
 
   constructor(configManager: ConfigManager, ipcManager: IPCManager) {
     super()
@@ -34,6 +36,7 @@ export default class WindowManager extends EventEmitter {
     this.willQuit = false
     this.closeToHide = this.configManager.store.get('bind-close-to-hide') ?? true
     this.tray = null
+    this.windowBlurBound = false
     app.on('before-quit', () => {
       this.configManager.removeAllChangedListener()
       this.unbindWindowBlur()
@@ -168,11 +171,15 @@ export default class WindowManager extends EventEmitter {
   }
 
   bindWindowBlur() {
+    if (this.windowBlurBound) return
     app.on('browser-window-blur', this.onWindowBlur)
+    this.windowBlurBound = true
   }
 
   unbindWindowBlur() {
+    if (!this.windowBlurBound) return
     app.removeListener('browser-window-blur', this.onWindowBlur)
+    this.windowBlurBound = false
   }
 
   getWindowList(): BrowserWindow[] {
@@ -184,6 +191,7 @@ export default class WindowManager extends EventEmitter {
     command: Extract<T, string>,
     ...args: IpcRendererEvents[T]
   ): void {
+    if (webContents.isDestroyed()) return
     this.ipcManager.mainEmitter.send(webContents, command, ...args)
   }
 
@@ -192,6 +200,7 @@ export default class WindowManager extends EventEmitter {
     ...args: IpcRendererEvents[T]
   ): void {
     this.getWindowList().forEach(window => {
+      if (window.isDestroyed() || window.webContents.isDestroyed()) return
       this.ipcManager.mainEmitter.send(window.webContents, command, ...args)
     })
   }

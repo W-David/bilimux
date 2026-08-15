@@ -42,11 +42,11 @@ export const formatDuration = (seconds: number): string => {
  */
 export const formatDurationMs = (ms?: number | null): string => {
   if (ms == null || ms < 0) return ''
-  if (ms >= 1000) {
-    return `${Math.round(ms / 1000)}s`
-  }
   if (ms >= 60 * 1000) {
     return `${Math.round(ms / (60 * 1000))}m`
+  }
+  if (ms >= 1000) {
+    return `${Math.round(ms / 1000)}s`
   }
   return `${ms}ms`
 }

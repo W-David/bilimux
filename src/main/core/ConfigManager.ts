@@ -113,7 +113,7 @@ export default class ConfigManager {
   onChangedListener(...params: Parameters<Store<UserStore>['onDidChange']>): void {
     const [key, callback] = params
     const unsubscribe = this.store.onDidChange(key, (nv, ov) => {
-      logger.info('检测到配置变化:', `${key}: ${ov} => ${nv}`)
+      logger.info('检测到配置变化:', `${key}: ${formatConfigValue(ov)} => ${formatConfigValue(nv)}`)
       callback(nv, ov)
     })
     this.#unsubscribe.push(unsubscribe)
@@ -121,5 +121,17 @@ export default class ConfigManager {
 
   removeAllChangedListener(): void {
     this.#unsubscribe.forEach(fn => fn())
+  }
+}
+
+function formatConfigValue(value: unknown): string {
+  if (value === undefined) return 'undefined'
+  if (value === null) return 'null'
+  if (typeof value !== 'object') return String(value)
+  try {
+    const json = JSON.stringify(value)
+    return json.length > 200 ? `${json.slice(0, 200)}…` : json
+  } catch {
+    return Object.prototype.toString.call(value)
   }
 }

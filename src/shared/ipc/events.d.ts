@@ -1,6 +1,6 @@
 import { OpenDialogOptions } from 'electron'
 import type { ProgressInfo, UpdateCheckResult, UpdateInfo } from 'electron-updater'
-import type { Options, OptionsOfJSONResponseBody } from 'got'
+import type { OptionsOfJSONResponseBody } from 'got'
 import type { Cookie } from 'tough-cookie'
 import type {
   BiliResponseType,
@@ -60,7 +60,6 @@ type IpcRendererEvents = ComposEventMap &
     'update:error': [string]
     'update:progress': [ProgressInfo]
     'update:downloaded': []
-    'download:video': [string, Options?]
   }
 
 // 支持泛型函数的 RendererEmitterInvokeFn 类型
@@ -80,7 +79,6 @@ type IpcMainEvents = IpcMainHandleEvents | IpcMainListenEvents
 
 export type {
   Cookie,
-  RendererInvokeFn as InvokeFunction,
   IpcMainEvents,
   IpcMainHandleEvents,
   IpcMainListenEvents,

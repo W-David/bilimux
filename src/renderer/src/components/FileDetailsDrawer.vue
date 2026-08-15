@@ -46,7 +46,7 @@ import { XIcon } from '@lucide/vue'
 import { formatDurationMs, formatFileSize } from '@renderer/utils/media'
 import { DialogClose, DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 import { computed } from 'vue'
-import type { ConvertTask } from './ConvertTaskItem.vue'
+import type { ConvertTask } from '@renderer/types/convert'
 
 const props = defineProps<{
   task: ConvertTask | null

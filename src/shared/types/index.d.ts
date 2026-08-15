@@ -357,7 +357,7 @@ type BiliResponseType<D = unknown> = {
   message: string
 }
 
-type VideoType = 'BV' | 'BVS' | 'FESTIVAl' | 'BANGUMI' | 'CHEESE'
+type VideoType = 'BV' | 'BVS' | 'FESTIVAL' | 'BANGUMI' | 'CHEESE'
 
 type RegType = {
   reg: RegExp

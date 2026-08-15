@@ -20,9 +20,14 @@ export default class UpdateManager {
     this.sender = sender
   }
 
+  private sendToRenderer(channel: string, ...args: unknown[]): void {
+    if (!this.sender || this.sender.isDestroyed()) return
+    this.sender.send(channel, ...args)
+  }
+
   private setupListeners() {
     autoUpdater.on('checking-for-update', () => {
-      this.sender?.send('update:checking')
+      this.sendToRenderer('update:checking')
     })
 
     autoUpdater.on('update-available', info => {
@@ -30,33 +35,33 @@ export default class UpdateManager {
         void this.openManualDownloadPage(info)
         return
       }
-      this.sender?.send('update:available', info)
+      this.sendToRenderer('update:available', info)
     })
 
     autoUpdater.on('update-not-available', () => {
-      this.sender?.send('update:not-available')
+      this.sendToRenderer('update:not-available')
     })
 
     autoUpdater.on('error', err => {
-      this.sender?.send('update:error', err.message)
+      this.sendToRenderer('update:error', err.message)
     })
 
     autoUpdater.on('download-progress', progressObj => {
-      this.sender?.send('update:progress', progressObj)
+      this.sendToRenderer('update:progress', progressObj)
     })
 
     autoUpdater.on('update-downloaded', () => {
-      this.sender?.send('update:downloaded')
+      this.sendToRenderer('update:downloaded')
     })
   }
 
   private async openManualDownloadPage(info: UpdateInfo) {
     try {
       await shell.openExternal(RELEASE_PAGE_URL)
-      this.sender?.send('update:manual-download', info)
+      this.sendToRenderer('update:manual-download', info)
     } catch (error) {
       logger.error('Open update download page failed:', error)
-      this.sender?.send('update:error', error instanceof Error ? error.message : String(error))
+      this.sendToRenderer('update:error', error instanceof Error ? error.message : String(error))
     }
   }
 
@@ -73,7 +78,7 @@ export default class UpdateManager {
   downloadUpdate() {
     if (process.platform === 'darwin') {
       const error = new Error('macOS 请前往 GitHub 下载页面手动安装')
-      this.sender?.send('update:error', error.message)
+      this.sendToRenderer('update:error', error.message)
       return Promise.reject(error)
     }
     return autoUpdater.downloadUpdate()

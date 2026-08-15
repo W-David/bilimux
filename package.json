@@ -2,7 +2,7 @@
   "name": "bilimux",
   "version": "2.0.1",
   "packageManager": "pnpm@11.18.0",
-  "description": "An Electron application with Vue and TypeScript",
+  "description": "B 站缓存视频一键转 MP4，支持收藏夹下载",
   "main": "./out/main/index.js",
   "author": {
     "name": "rushwang",

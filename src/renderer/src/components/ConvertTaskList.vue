@@ -22,8 +22,9 @@
 
 <script setup lang="ts">
 import { Inbox as InboxIcon } from '@lucide/vue'
+import type { ConvertTask } from '@renderer/types/convert'
 import type { Component } from 'vue'
-import ConvertTaskItem, { type ConvertTask } from './ConvertTaskItem.vue'
+import ConvertTaskItem from './ConvertTaskItem.vue'
 
 withDefaults(
   defineProps<{

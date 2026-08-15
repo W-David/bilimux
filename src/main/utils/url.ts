@@ -11,7 +11,7 @@ export const REG_TYPE_MAP: RegType[] = [
   },
   {
     reg: new RegExp(/.*\/festival\//, 'i'),
-    type: 'FESTIVAl'
+    type: 'FESTIVAL'
   },
   {
     reg: new RegExp(/.*\/bangumi\/play\//, 'i'),

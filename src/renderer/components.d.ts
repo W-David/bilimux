@@ -109,6 +109,7 @@ declare module 'vue' {
     TooltipProvider: typeof import('./src/components/ui/tooltip/TooltipProvider.vue')['default']
     TooltipTrigger: typeof import('./src/components/ui/tooltip/TooltipTrigger.vue')['default']
     Update: typeof import('./src/components/Update.vue')['default']
+    UserCard: typeof import('./src/components/UserCard.vue')['default']
     VideoItem: typeof import('./src/components/VideoItem.vue')['default']
     VideoList: typeof import('./src/components/VideoList.vue')['default']
   }
