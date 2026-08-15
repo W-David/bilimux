@@ -196,6 +196,12 @@ const applyHistory = (): void => {
     return
   }
 
+  if (historyStatus === 'interrupted' || historyStatus === 'downloading') {
+    state.status = 'fail'
+    state.message = '上次下载未完成'
+    return
+  }
+
   state.status = 'fail'
   state.message = '上次下载未完成'
 }

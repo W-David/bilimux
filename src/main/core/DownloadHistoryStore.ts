@@ -120,9 +120,15 @@ export default class DownloadHistoryStore {
   }
 
   /**
-   * 对账：已完成但文件丢失的降级为 missing，文件找回的恢复为 completed
+   * 对账：残留的 downloading 标为 interrupted；
+   * 已完成但文件丢失的降级为 missing，文件找回的恢复为 completed
    */
   public reconcile(): void {
+    const now = Date.now()
+    this.db
+      .prepare(`UPDATE download_history SET status = 'interrupted', updated_at = ? WHERE status = 'downloading'`)
+      .run(now)
+
     const rows = this.db
       .prepare(
         `SELECT bvid, output_path, file_size, status FROM download_history WHERE status IN ('completed', 'missing')`

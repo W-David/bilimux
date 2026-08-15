@@ -1,5 +1,4 @@
 import { app } from 'electron'
-import is from 'electron-is'
 import Application from './Application'
 import ExceptionHandler from './core/ExceptionHandler'
 
@@ -13,20 +12,16 @@ export default class Launcher {
   }
 
   makeSingleInstance(callback: () => void): void {
-    if (is.macOS()) {
-      callback && callback()
-      return
-    }
-
     const lock = app.requestSingleInstanceLock()
     if (!lock) {
       app.quit()
-    } else {
-      app.on('second-instance', () => {
-        this.application.windowManager.openWindow('main')
-      })
-      callback && callback()
+      return
     }
+
+    app.on('second-instance', () => {
+      this.application.windowManager.openWindow('main')
+    })
+    callback && callback()
   }
 
   init(): void {

@@ -56,6 +56,8 @@ type TaskRuntime = {
   tempDir: string | null
   streams: Partial<Record<StreamKind, StreamRuntime>>
   abort?: AbortController
+  /** 已在队列中或正在执行 handleTask，防止 pause/resume 重复入队 */
+  busy: boolean
 }
 
 class DownloadPausedError extends Error {}
@@ -106,7 +108,7 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
   public start(task: DownloadVideoTask): void {
     const runtime = this.tasks.get(task.bvid)
     if (runtime) {
-      if (runtime.status === 'waiting' || runtime.status === 'downloading') {
+      if (runtime.status === 'waiting' || runtime.status === 'downloading' || runtime.busy) {
         return
       }
       if (runtime.status === 'success') {
@@ -169,17 +171,28 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
       folderDir,
       finalPath,
       tempDir: null,
-      streams: {}
+      streams: {},
+      busy: false
     }
   }
 
   private enqueue(runtime: TaskRuntime): void {
     runtime.status = 'waiting'
+    if (runtime.busy) return
+
+    runtime.busy = true
     this.queue
       .add(() => this.handleTask(runtime))
       .catch(error => {
-        if (error instanceof DownloadPausedError || this.isPaused(runtime)) return
+        if (error instanceof DownloadPausedError || this.isPaused(runtime) || this.isAbortError(error)) return
         logger.error(`下载任务队列执行失败: ${runtime.task.title}`, error)
+      })
+      .finally(() => {
+        runtime.busy = false
+        // 中止过程中用户已点继续：当前 handleTask 已退出，补一次入队
+        if (runtime.status === 'waiting') {
+          this.enqueue(runtime)
+        }
       })
   }
 
@@ -190,6 +203,7 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
     const { bvid, title } = runtime.task
     if (runtime.status === 'paused') return
 
+    runtime.status = 'downloading'
     runtime.abort = new AbortController()
     this.emit('download:item:start', { bvid, title })
     this.emit('download:item:progress', {
@@ -251,7 +265,18 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
         outputPath: runtime.finalPath
       })
     } catch (error) {
-      if (error instanceof DownloadPausedError || this.isPaused(runtime)) {
+      if (this.isPaused(runtime)) {
+        this.emit('download:item:progress', {
+          bvid,
+          type: 'paused',
+          progress: this.currentProgress(runtime)
+        })
+        return
+      }
+
+      // 暂停触发的 abort/DownloadPausedError 之后用户已 resume，不要标失败
+      if (error instanceof DownloadPausedError || this.isAbortError(error)) {
+        if (this.shouldRetryAfterAbort(runtime)) return
         this.emit('download:item:progress', {
           bvid,
           type: 'paused',
@@ -435,6 +460,10 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
         } catch (error) {
           if (error instanceof DownloadPausedError || this.isPaused(runtime)) {
             await this.syncReceivedFromFile(current)
+            throw error instanceof DownloadPausedError ? error : new DownloadPausedError('任务已暂停')
+          }
+          if (this.isAbortError(error)) {
+            await this.syncReceivedFromFile(current)
             throw error
           }
 
@@ -478,6 +507,17 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
 
   private isPaused(runtime: TaskRuntime): boolean {
     return runtime.status === 'paused'
+  }
+
+  private shouldRetryAfterAbort(runtime: TaskRuntime): boolean {
+    return runtime.status === 'waiting'
+  }
+
+  private isAbortError(error: unknown): boolean {
+    if (!error || typeof error !== 'object') return false
+    const name = 'name' in error ? String(error.name) : ''
+    const code = 'code' in error ? String((error as { code?: unknown }).code) : ''
+    return name === 'AbortError' || code === 'ABORT_ERR'
   }
 
   private streamCandidates(stream: StreamRuntime): string[] {
