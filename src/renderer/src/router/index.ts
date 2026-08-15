@@ -72,6 +72,7 @@ const routes: RouteRecordRaw[] = [
           },
           {
             path: 'download',
+            name: 'download',
             component: Download,
             children: [
               {
@@ -165,6 +166,20 @@ const router = createRouter({
 
 router.beforeEach(async to => {
   const authStore = useAuthStore()
+
+  if (to.name === 'download') {
+    await authStore.ensureReady()
+    return { name: authStore.isAuthenticated ? 'download-task' : 'download-auth' }
+  }
+
+  if (to.name === 'download-auth') {
+    await authStore.ensureReady()
+    if (authStore.isAuthenticated) {
+      return { name: 'download-task' }
+    }
+    return
+  }
+
   if (to.meta.requireAuth && !authStore.isAuthenticated) {
     // 等待启动时的登录态检查完成，避免首次进入下载页被误判为未登录
     await authStore.ensureReady()

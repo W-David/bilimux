@@ -89,6 +89,7 @@ import {
 } from '@lucide/vue'
 import { clearNativeStore, subscribeFetchPreferenceEvent } from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
+import { useAuthStore } from '@renderer/store/auth'
 import { useFavoritesStore } from '@renderer/store/favorites'
 import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
@@ -97,6 +98,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 const store = usePreferenceStore()
 const { fetchPreference, savePreference } = store
+const authStore = useAuthStore()
 const favoritesStore = useFavoritesStore()
 const route = useRoute()
 const router = useRouter()
@@ -139,7 +141,9 @@ const save = (): void => {
 
 const clear = (): void => {
   showResetDialog.value = false
+  authStore.isAuthenticated = false
   clearNativeStore()
+  void authStore.leaveProtectedRoute()
 }
 
 onUnmounted(() => {

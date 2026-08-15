@@ -29,9 +29,9 @@
           <SmartphoneIcon class="size-10 animate-pulse text-green-500" />
         </div>
 
-        <!-- Expired State -->
+        <!-- Expired / Error State -->
         <div
-          v-else-if="status === 'expired'"
+          v-else-if="status === 'expired' || status === 'error'"
           class="absolute inset-0 z-20 flex flex-col cursor-pointer items-center justify-center rounded-xl bg-black/80 text-white backdrop-blur-sm transition-all hover:bg-black/90"
           @click="initQRCode">
           <RefreshCwIcon class="size-8 text-gray-400 transition-transform duration-500 group-hover:rotate-180" />
@@ -78,6 +78,11 @@
         二维码已过期，请刷新
       </div>
       <div
+        v-else-if="status === 'error'"
+        class="text-red-400">
+        获取二维码失败，点击重试
+      </div>
+      <div
         v-else-if="status === 'success'"
         class="text-green-400 font-bold">
         登录成功
@@ -114,7 +119,7 @@ import { useRouter } from 'vue-router'
 import { checkQrCodeLoginStatus, getQrCode } from '../api/network'
 
 // 登录状态类型
-type LoginStatus = 'initial' | 'loading' | 'loaded' | 'scanned' | 'expired' | 'success'
+type LoginStatus = 'initial' | 'loading' | 'loaded' | 'scanned' | 'expired' | 'error' | 'success'
 
 // 扫码状态
 enum QRCodeStatus {
@@ -169,6 +174,7 @@ const initQRCode = async () => {
     } else {
       const message = `获取登录二维码失败(${res.code})`
       logger.error(message)
+      status.value = 'error'
       mittbus.emit('toast:add', {
         severity: 'error',
         message
@@ -176,6 +182,11 @@ const initQRCode = async () => {
     }
   } catch (error) {
     logger.error('Error init QR code:', error)
+    status.value = 'error'
+    mittbus.emit('toast:add', {
+      severity: 'error',
+      message: error instanceof Error ? error.message : '获取登录二维码失败'
+    })
   }
 }
 

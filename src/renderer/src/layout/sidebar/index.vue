@@ -35,7 +35,7 @@ const hItems = ref([
   {
     label: '下载',
     icon: DownloadIcon,
-    to: { name: 'download-task', activeMenu: 'download' }
+    to: { name: 'download', activeMenu: 'download' }
   }
 ])
 

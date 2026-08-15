@@ -21,15 +21,32 @@ export const useAuthStore = defineStore('auth', {
     }
   },
   actions: {
+    /**
+     * 清掉登录态与本地用户缓存，并离开需要登录的页面。
+     * Cookie 刷新接口放到后续波次；这里先明确要求重新扫码。
+     */
+    async invalidateSession(message?: string) {
+      this.isAuthenticated = false
+      this.clearCachedUserData()
+      if (message) {
+        mittbus.emit('toast:add', {
+          severity: 'warn',
+          message
+        })
+      }
+      await this.leaveProtectedRoute()
+    },
+    async leaveProtectedRoute() {
+      const { default: router } = await import('@renderer/router')
+      if (router.currentRoute.value.meta.requireAuth) {
+        await router.replace({ name: 'download-auth' })
+      }
+    },
     async refreshAuth() {
       const biliJct = await getCookie('bili_jct')
       if (!biliJct) {
         logger.error('bili_jct cookie not found')
-        this.clearCachedUserData()
-        mittbus.emit('toast:add', {
-          severity: 'warn',
-          message: '登录状态已失效，请重新扫码登录'
-        })
+        await this.invalidateSession('登录状态已失效，请重新扫码登录')
         return
       }
       const res = await checkAuthStatus({
@@ -38,23 +55,14 @@ export const useAuthStore = defineStore('auth', {
         }
       })
       if (res.code !== 0 || !res.data) {
-        this.clearCachedUserData()
-        mittbus.emit('toast:add', {
-          severity: 'warn',
-          message: '登录状态已失效，请重新扫码登录'
-        })
+        await this.invalidateSession('登录状态已失效，请重新扫码登录')
         return
       }
       const { refresh } = res.data
-      // refresh 为 true 时，需要刷新 cookie
+      // refresh 为 true 时，需要刷新 cookie；完整刷新流程放到后续波次
       if (refresh) {
-        this.isAuthenticated = false
-        this.clearCachedUserData()
-        mittbus.emit('toast:add', {
-          severity: 'warn',
-          message: '登录状态已过期，请重新扫码登录'
-        })
         logger.debug('需要刷新Cookie')
+        await this.invalidateSession('登录状态已过期，请重新扫码登录')
       } else {
         this.isAuthenticated = true
         logger.debug('用户已登录,使用当前Cookie')
@@ -67,8 +75,9 @@ export const useAuthStore = defineStore('auth', {
       if (this.initialized) return Promise.resolve()
       if (!authReadyPromise) {
         authReadyPromise = this.refreshAuth()
-          .catch(error => {
+          .catch(async error => {
             logger.error('登录状态检查失败:', error)
+            await this.invalidateSession('登录状态检查失败，请重新扫码登录')
           })
           .finally(() => {
             this.initialized = true
@@ -91,12 +100,9 @@ export const useAuthStore = defineStore('auth', {
         logger.error('清除主进程登录信息失败:', error)
       } finally {
         this.isAuthenticated = false
-        // 同步清空渲染进程内存里缓存的登录信息并持久化
-        const preferenceStore = usePreferenceStore()
-        preferenceStore.preference['user-info'] = null
-        preferenceStore.preference['favorites-data'] = null
-        preferenceStore.savePreference()
+        this.clearCachedUserData()
         logger.debug('已退出登录，本地登录态已清空')
+        await this.leaveProtectedRoute()
       }
     }
   }

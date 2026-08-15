@@ -167,6 +167,7 @@ export default class Application {
     })
     this.ipcManager.mainIpc.on('reset-preference', () => {
       this.configManager.store.clear()
+      void this.httpClient.logout()
       this.windowManager.sendCommandToAll('fetch-preference')
       logger.debug('preference reseted')
     })
