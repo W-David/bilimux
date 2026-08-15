@@ -14,7 +14,8 @@ import SettingIndex from '@renderer/pages/setting/index.vue'
 import SettingNormal from '@renderer/pages/setting/normal.vue'
 import SettingUser from '@renderer/pages/setting/user.vue'
 import { useAuthStore } from '@renderer/store/auth'
-import { createMemoryHistory, createRouter, type RouteRecordNormalized, type RouteRecordRaw } from 'vue-router'
+import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-router'
+import { findChildIndex } from './utils'
 
 // 转换管理页最后停留的分组，父路由重定向时使用，避免每次进入都被重置到“未完成”
 let lastConvertTabName = 'convert-unconverted'
@@ -161,25 +162,6 @@ const router = createRouter({
   history: createMemoryHistory(),
   routes
 })
-
-/**
- * 按 router 定义顺序查找子记录在父级 children 中的下标，
- * 用于决定页面/分组切换的动画方向，不再依赖 meta.order。
- */
-function findChildIndex(parent: RouteRecordNormalized | undefined, target: RouteRecordNormalized | undefined): number {
-  if (!parent || !target) {
-    return 0
-  }
-  const index = parent.children.findIndex(child => {
-    if (child.name && target.name && child.name === target.name) {
-      return true
-    }
-    // children 里是原始配置记录（相对路径），target 是标准化记录（完整路径）
-    const childPath = child.path.startsWith('/') ? child.path : `${parent.path}/${child.path}`.replace(/\/+/g, '/')
-    return childPath === target.path
-  })
-  return index === -1 ? 0 : index
-}
 
 router.beforeEach(async to => {
   const authStore = useAuthStore()
