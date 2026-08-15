@@ -129,8 +129,9 @@ export async function fetchAllFavorites(
       }
       folders.push(folderData)
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
       logger.warn(`获取收藏夹数据失败: ${folder.title}`, error)
-      folders.push({ ...folder, videos: [] })
+      folders.push({ ...folder, videos: [], fetchError: message })
     }
   }
 

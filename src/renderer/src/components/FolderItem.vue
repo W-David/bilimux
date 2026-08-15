@@ -44,7 +44,8 @@
           <span>
             {{ isPrivateFolder(folder) ? '私密' : '公开' }}
           </span>
-          <span>· {{ folder.media_count }} 个视频</span>
+          <span v-if="folder.fetchError">· 获取失败</span>
+          <span v-else>· {{ folder.media_count }} 个视频</span>
         </div>
       </div>
     </div>

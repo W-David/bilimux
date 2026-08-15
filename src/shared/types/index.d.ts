@@ -73,6 +73,8 @@ type FavoriteResource = {
 // 收藏夹及其内的全部视频
 type FavoriteFolderData = FavoriteFolder & {
   videos: FavoriteResource[]
+  /** 该收藏夹视频列表拉取失败时的错误信息，与「空夹」区分 */
+  fetchError?: string
 }
 
 // 一次性获取到的全部收藏数据

@@ -56,7 +56,8 @@
                 ? 'pointer-events-none opacity-50'
                 : ''
             "
-            @click="convertStore.start()">
+            @click="convertStore.start()"
+            @keydown.enter="convertStore.start()">
             <component
               :is="runButtonState.icon"
               class="size-5"
@@ -65,6 +66,20 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <div
+      v-if="statusBanner"
+      class="flex flex-none items-center justify-between gap-3 border-b border-[#1f1f1f] px-4 py-2 text-sm"
+      :class="statusBanner.className">
+      <span class="min-w-0">{{ statusBanner.text }}</span>
+      <button
+        v-if="statusBanner.action"
+        type="button"
+        class="shrink-0 cursor-pointer text-pink-400 hover:underline"
+        @click="goToConvertSettings">
+        {{ statusBanner.action }}
+      </button>
     </div>
 
     <!-- 分组视图（KeepAlive 缓存） -->
@@ -115,8 +130,26 @@ const runButtonState = computed(() => {
     case 'processing':
       return { icon: Loader2Icon, label: '运行中', spinning: true }
     default:
-      return { icon: PlayIcon, label: 'Run', spinning: false }
+      return { icon: PlayIcon, label: '开始转换', spinning: false }
   }
+})
+
+const statusBanner = computed(() => {
+  if (convertStore.runStatus === 'error' && convertStore.errorMessage) {
+    return {
+      text: convertStore.errorMessage,
+      action: '去设置',
+      className: 'bg-rose-500/10 text-rose-300'
+    }
+  }
+  if (convertStore.runStatus === 'success') {
+    return {
+      text: `本轮完成：成功 ${convertStore.successCount}，失败 ${convertStore.failCount}`,
+      action: '',
+      className: convertStore.failCount > 0 ? 'bg-amber-500/10 text-amber-300' : 'bg-emerald-500/10 text-emerald-300'
+    }
+  }
+  return null
 })
 
 const tabs = [
@@ -151,6 +184,10 @@ const switchTab = (name: string): void => {
     return
   }
   router.push({ name })
+}
+
+const goToConvertSettings = (): void => {
+  router.push({ name: 'prefer-convert' })
 }
 
 const openOutputFolder = async (): Promise<void> => {

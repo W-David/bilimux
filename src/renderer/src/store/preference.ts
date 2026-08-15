@@ -27,20 +27,38 @@ export const usePreferenceStore = defineStore('preference', () => {
     'favorites-data': null
   })
 
-  // open-at-login, auto-hide-window 触发自动保存
-  watch([() => preference['open-at-login'], () => preference['auto-hide-window']], () => {
-    savePreference()
-  })
+  let applyingRemote = false
+  let saveTimer: ReturnType<typeof setTimeout> | null = null
 
   async function fetchPreference(): Promise<UserPreference> {
-    const config = await loadConfigFromNativeStore()
-    const assignPreference = Object.assign(preference, config)
-    return assignPreference
+    applyingRemote = true
+    try {
+      const config = await loadConfigFromNativeStore()
+      Object.assign(preference, config)
+      return preference
+    } finally {
+      applyingRemote = false
+    }
   }
 
   function savePreference(): void {
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+      saveTimer = null
+    }
     saveConfigToNativeStore(toRaw(preference))
   }
+
+  function scheduleSave(): void {
+    if (applyingRemote) return
+    if (saveTimer) clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => {
+      saveTimer = null
+      saveConfigToNativeStore(toRaw(preference))
+    }, 300)
+  }
+
+  watch(preference, scheduleSave, { deep: true, flush: 'sync' })
 
   return { preference, fetchPreference, savePreference }
 })

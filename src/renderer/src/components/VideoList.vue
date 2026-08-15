@@ -16,6 +16,19 @@
 
     <!-- 未选择收藏夹 -->
     <div
+      v-else-if="currentFolder?.fetchError"
+      class="flex flex-1 flex-col items-center justify-center gap-4">
+      <div class="text-sm text-red-400">{{ currentFolder.fetchError }}</div>
+      <Button
+        size="sm"
+        variant="destructive"
+        @click="emit('retry')">
+        <RefreshCwIcon data-icon="inline-start" />
+        重试
+      </Button>
+    </div>
+
+    <div
       v-else-if="!currentFolder"
       class="flex flex-1 items-center justify-center text-sm text-gray-400">
       请选择左侧收藏夹
@@ -46,13 +59,13 @@
 
 <script setup lang="ts">
 import { RefreshCw as RefreshCwIcon } from '@lucide/vue'
-import type { DownloadHistoryRecord, FavoriteFolder, FavoriteResource } from '@shared/types'
+import type { DownloadHistoryRecord, FavoriteFolderData, FavoriteResource } from '@shared/types'
 import VideoItem from './VideoItem.vue'
 
 defineProps<{
   videos: FavoriteResource[]
   errorMessage: string
-  currentFolder: FavoriteFolder | null
+  currentFolder: FavoriteFolderData | null
   historyMap: Map<string, DownloadHistoryRecord>
 }>()
 

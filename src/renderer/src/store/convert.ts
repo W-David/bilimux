@@ -124,8 +124,13 @@ export const useConvertStore = defineStore('convert', () => {
     try {
       await startProcess()
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
       runStatus.value = 'error'
-      errorMessage.value = error instanceof Error ? error.message : String(error)
+      errorMessage.value = message
+      mittbus.emit('toast:add', {
+        severity: 'error',
+        message
+      })
     }
   }
 
@@ -292,6 +297,10 @@ export const useConvertStore = defineStore('convert', () => {
       runStatus.value = 'success'
       successCount.value = count.success
       failCount.value = count.fail
+      mittbus.emit('toast:add', {
+        severity: count.fail > 0 ? 'warn' : 'success',
+        message: `转换完成：成功 ${count.success}，失败 ${count.fail}`
+      })
       // 保留 live 任务，只更新内部状态，保证从扫描到完成的列表顺序不变；
       // 后台加载历史仅用于对账（文件存在性等），不会替换 live 列表
       void loadHistory()
@@ -300,6 +309,10 @@ export const useConvertStore = defineStore('convert', () => {
     subscribeProcessBrokeEvent(({ reason }) => {
       runStatus.value = 'error'
       errorMessage.value = reason
+      mittbus.emit('toast:add', {
+        severity: 'error',
+        message: reason
+      })
     })
   }
 

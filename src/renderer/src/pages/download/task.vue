@@ -39,7 +39,8 @@
         :folders="folders"
         :error-message="errorMessage"
         :current-folder-id="currentFolder?.id ?? null"
-        @select="openFolder"></FolderList>
+        @select="openFolder"
+        @refresh="handleRetry"></FolderList>
 
       <VideoList
         :videos="currentFolder?.videos ?? []"
@@ -62,7 +63,7 @@ import { useFavoritesStore } from '@renderer/store/favorites'
 import { usePreferenceStore } from '@renderer/store/preference'
 import type { DownloadHistoryRecord } from '@shared/types'
 import logger from 'electron-log/renderer'
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 const preferenceStore = usePreferenceStore()
 const favoritesStore = useFavoritesStore()
@@ -122,6 +123,26 @@ watch(
   },
   { immediate: true }
 )
+
+watch(
+  folders,
+  list => {
+    if (list.length === 0) {
+      currentFolder.value = null
+      return
+    }
+    const currentId = currentFolder.value?.id
+    const matched = currentId != null ? list.find(folder => folder.id === currentId) : undefined
+    currentFolder.value = matched ?? list[0]
+  },
+  { immediate: true }
+)
+
+onMounted(() => {
+  if (folders.value.length === 0 && userInfo.value?.mid && !favoritesStore.running) {
+    void loadData()
+  }
+})
 
 /**
  * 打开收藏夹（数据已一次性获取，直接切换展示）

@@ -189,10 +189,10 @@ const handleClearDownloadHistory = async (): Promise<void> => {
 
 const selectDownloadOutputDir = async (): Promise<void> => {
   const newPath = await openFileDialog({
-    title: 'Select Directory',
+    title: '选择目录',
     properties: ['openDirectory', 'createDirectory'],
     defaultPath: preference.value['download-config'].outputDir,
-    buttonLabel: 'Select'
+    buttonLabel: '选择'
   })
   if (newPath) {
     preference.value['download-config'].outputDir = newPath

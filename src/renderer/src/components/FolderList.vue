@@ -3,8 +3,14 @@
     <div class="flex-1 overflow-y-auto p-3">
       <div
         v-if="folders.length === 0 && !errorMessage"
-        class="py-8 text-center text-xs text-gray-400">
-        暂无收藏夹
+        class="flex flex-col items-center gap-3 py-8 text-center text-xs text-gray-400">
+        <span>暂无收藏夹</span>
+        <Button
+          size="sm"
+          variant="outline"
+          @click="emit('refresh')">
+          刷新
+        </Button>
       </div>
 
       <FolderItem
@@ -29,5 +35,6 @@ defineProps<{
 
 const emit = defineEmits<{
   (e: 'select', folder: FavoriteFolderData): void
+  (e: 'refresh'): void
 }>()
 </script>

@@ -119,10 +119,10 @@ const replaceExistingFiles = computed({
 
 const selectCachePath = async (): Promise<void> => {
   const newPath = await openFileDialog({
-    title: 'Select Directory',
+    title: '选择目录',
     properties: ['openDirectory', 'createDirectory'],
     defaultPath: preference.value['convert-config'].cachePath,
-    buttonLabel: 'Select'
+    buttonLabel: '选择'
   })
   if (newPath) {
     preference.value['convert-config'].cachePath = newPath
@@ -131,10 +131,10 @@ const selectCachePath = async (): Promise<void> => {
 
 const selectOutputDir = async (): Promise<void> => {
   const newPath = await openFileDialog({
-    title: 'Select Directory',
+    title: '选择目录',
     properties: ['openDirectory', 'createDirectory'],
     defaultPath: preference.value['convert-config'].outputDir,
-    buttonLabel: 'Select'
+    buttonLabel: '选择'
   })
   if (newPath) {
     preference.value['convert-config'].outputDir = newPath

@@ -120,10 +120,6 @@ const switchTab = (name: string): void => {
 const subscribe = subscribeFetchPreferenceEvent(async () => {
   try {
     await fetchPreference()
-    mittbus.emit('toast:add', {
-      severity: 'success',
-      message: '已更新配置'
-    })
   } catch (error) {
     logger.error(error)
     mittbus.emit('toast:add', {
@@ -133,8 +129,12 @@ const subscribe = subscribeFetchPreferenceEvent(async () => {
   }
 })
 
-const save = async (): Promise<void> => {
+const save = (): void => {
   savePreference()
+  mittbus.emit('toast:add', {
+    severity: 'success',
+    message: '设置已保存'
+  })
 }
 
 const clear = (): void => {

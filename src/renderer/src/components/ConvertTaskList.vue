@@ -7,6 +7,13 @@
         :is="emptyIcon"
         class="size-10" />
       <span class="text-sm">{{ emptyText }}</span>
+      <Button
+        v-if="emptyActionText"
+        size="sm"
+        variant="outline"
+        @click="emit('empty-action')">
+        {{ emptyActionText }}
+      </Button>
     </div>
 
     <div
@@ -31,12 +38,18 @@ withDefaults(
     items: ConvertTask[]
     emptyText?: string
     emptyIcon?: Component
+    emptyActionText?: string
   }>(),
   {
     emptyText: '暂无任务',
-    emptyIcon: InboxIcon
+    emptyIcon: InboxIcon,
+    emptyActionText: ''
   }
 )
+
+const emit = defineEmits<{
+  (e: 'empty-action'): void
+}>()
 </script>
 
 <style scoped></style>
