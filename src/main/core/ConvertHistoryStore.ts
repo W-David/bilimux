@@ -34,7 +34,6 @@ type EndArgs = {
 
 export default class ConvertHistoryStore {
   private db: DatabaseSync
-  private conflictTarget: 'bvid' | 'run_id, bvid'
 
   constructor() {
     const dbPath = path.join(app.getPath('userData'), 'converts.db')
@@ -60,13 +59,10 @@ export default class ConvertHistoryStore {
       )
       `)
     // 旧库迁移：补充 run_seq 列（同一运行内按扫描顺序排序用）
-    const columns = this.db.prepare(`PRAGMA table_info(convert_history)`).all() as { name: string; pk: number }[]
+    const columns = this.db.prepare(`PRAGMA table_info(convert_history)`).all() as { name: string }[]
     if (!columns.some(column => column.name === 'run_seq')) {
       this.db.exec(`ALTER TABLE convert_history ADD COLUMN run_seq INTEGER NOT NULL DEFAULT 0`)
     }
-    const runPk = columns.find(column => column.name === 'run_id')?.pk ?? 0
-    const bvidPk = columns.find(column => column.name === 'bvid')?.pk ?? 0
-    this.conflictTarget = runPk > 0 && bvidPk > 0 ? 'run_id, bvid' : 'bvid'
     this.reconcile()
   }
 
@@ -80,7 +76,7 @@ export default class ConvertHistoryStore {
         `INSERT INTO convert_history
            (run_id, run_seq, bvid, type, title, uname, group_title, source_dir, output_path, file_size, status, error_message, duration_ms, started_at, completed_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'processing', '', NULL, ?, NULL, ?)
-         ON CONFLICT(${this.conflictTarget}) DO UPDATE SET
+         ON CONFLICT(bvid) DO UPDATE SET
            run_id = excluded.run_id,
            run_seq = excluded.run_seq,
            type = excluded.type,
