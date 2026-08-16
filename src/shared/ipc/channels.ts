@@ -7,6 +7,7 @@ export const INVOKE_CHANNELS = [
   'open-log-file',
   'clear-log-file',
   'start:process',
+  'convert:prescan',
   'check-for-update',
   'download-update',
   'quit-and-install',
@@ -48,7 +49,8 @@ export const RECEIVE_CHANNELS = [
   'update:not-available',
   'update:error',
   'update:progress',
-  'update:downloaded'
+  'update:downloaded',
+  'convert:prescan:done'
 ] as const
 
 export type InvokeChannel = (typeof INVOKE_CHANNELS)[number]

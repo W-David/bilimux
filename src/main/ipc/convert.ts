@@ -6,6 +6,10 @@ export function registerConvertIpc(app: Application): void {
     return app.composEngine.run()
   })
 
+  app.ipcManager.mainIpc.handle('convert:prescan', async () => {
+    return app.composEngine.prescan()
+  })
+
   app.ipcManager.mainIpc.handle('check-engine', async () => {
     return app.composEngine.checkEngine()
   })

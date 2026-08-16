@@ -238,7 +238,14 @@ type DownloadHistoryRecord = {
 }
 
 // 转换历史状态
-type ConvertHistoryStatus = 'processing' | 'completed' | 'failed' | 'skipped' | 'interrupted' | 'missing'
+type ConvertHistoryStatus = 'processing' | 'completed' | 'failed' | 'skipped' | 'interrupted' | 'missing' | 'scanned'
+
+type ConvertPrescanResult = {
+  pending: number
+  inserted: number
+  cacheOk: boolean
+  message?: string
+}
 
 // 转换历史记录
 type ConvertHistoryRecord = {
@@ -404,6 +411,7 @@ export type {
   ConfigOptions,
   ConvertHistoryRecord,
   ConvertHistoryStatus,
+  ConvertPrescanResult,
   DownloadCodecPref,
   DownloadEventMap,
   DownloadHistoryRecord,

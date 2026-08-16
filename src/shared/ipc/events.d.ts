@@ -5,6 +5,7 @@ import type {
   BiliResponseType,
   ComposEventMap,
   ConvertHistoryRecord,
+  ConvertPrescanResult,
   DownloadEventMap,
   DownloadHistoryRecord,
   DownloadTaskKey,
@@ -27,6 +28,7 @@ type IpcMainHandleEvents = {
   'open-log-file': () => string
   'clear-log-file': () => boolean
   'start:process': () => void
+  'convert:prescan': () => ConvertPrescanResult
   'check-for-update': () => UpdateCheckResult | null
   'download-update': () => string[]
   'quit-and-install': () => void
@@ -65,6 +67,7 @@ type IpcRendererEvents = ComposEventMap &
     'update:error': [string]
     'update:progress': [ProgressInfo]
     'update:downloaded': []
+    'convert:prescan:done': [ConvertPrescanResult]
   }
 
 // 支持泛型函数的 RendererEmitterInvokeFn 类型

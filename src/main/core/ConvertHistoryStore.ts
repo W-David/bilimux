@@ -167,6 +167,68 @@ export default class ConvertHistoryStore {
     this.db.exec('DELETE FROM convert_history')
   }
 
+  public getFinishedBvids(): Set<string> {
+    const rows = this.db
+      .prepare(`SELECT bvid FROM convert_history WHERE status IN ('completed', 'skipped')`)
+      .all() as unknown as { bvid: string }[]
+    return new Set(rows.map(row => row.bvid))
+  }
+
+  /**
+   * 预扫描入库：新行写成 scanned；已是 scanned 的更新目录信息；完成/失败等不改状态
+   */
+  public markScanned(bv: VideoTaskInfo, runSeq = 0): boolean {
+    const now = Date.now()
+    const result = this.db
+      .prepare(
+        `INSERT INTO convert_history
+           (run_id, run_seq, bvid, type, title, uname, group_title, source_dir, output_path, file_size, status, error_message, duration_ms, started_at, completed_at, updated_at)
+         VALUES ('prescan', ?, ?, ?, ?, ?, ?, ?, NULL, 0, 'scanned', '', NULL, NULL, NULL, ?)
+         ON CONFLICT(bvid) DO UPDATE SET
+           run_seq = excluded.run_seq,
+           type = excluded.type,
+           title = excluded.title,
+           uname = excluded.uname,
+           group_title = excluded.group_title,
+           source_dir = excluded.source_dir,
+           updated_at = excluded.updated_at
+         WHERE convert_history.status = 'scanned'`
+      )
+      .run(runSeq, bv.bvid, bv.type, bv.title, bv.uname, bv.groupTitle, bv.fileInfo.dirPath, now)
+    return result.changes > 0
+  }
+
+  public removeStaleScanned(keepBvids: string[]): void {
+    if (keepBvids.length === 0) {
+      this.db.exec(`DELETE FROM convert_history WHERE status = 'scanned'`)
+      return
+    }
+    const placeholders = keepBvids.map(() => '?').join(', ')
+    this.db
+      .prepare(`DELETE FROM convert_history WHERE status = 'scanned' AND bvid NOT IN (${placeholders})`)
+      .run(...keepBvids)
+  }
+
+  public listPendingConvert(): { bvid: string; sourceDir: string; status: ConvertHistoryStatus }[] {
+    return this.db
+      .prepare(
+        `SELECT bvid, source_dir AS sourceDir, status FROM convert_history
+         WHERE status IN ('scanned', 'failed', 'interrupted', 'missing')
+         ORDER BY run_seq ASC, rowid ASC`
+      )
+      .all() as unknown as { bvid: string; sourceDir: string; status: ConvertHistoryStatus }[]
+  }
+
+  public countPendingConvert(): number {
+    const row = this.db
+      .prepare(
+        `SELECT COUNT(*) AS count FROM convert_history
+         WHERE status IN ('scanned', 'failed', 'interrupted', 'missing')`
+      )
+      .get() as { count: number }
+    return row.count
+  }
+
   public getOutputPath(bvid: string): string | null {
     const row = this.db.prepare(`SELECT output_path FROM convert_history WHERE bvid = ?`).get(bvid) as
       | { output_path: string | null }
@@ -202,7 +264,7 @@ export default class ConvertHistoryStore {
       .run(now, now)
 
     const rows = this.db
-      .prepare(`SELECT rowid AS id, output_path FROM convert_history WHERE status = 'completed'`)
+      .prepare(`SELECT rowid AS id, output_path FROM convert_history WHERE status IN ('completed', 'skipped')`)
       .all() as unknown as Pick<HistoryRow & { id: number }, 'id' | 'output_path'>[]
 
     for (const row of rows) {
@@ -220,7 +282,7 @@ export default class ConvertHistoryStore {
     let status = row.status
     if (row.output_path) {
       fileExists = existence.get(row.output_path) ?? false
-      if (status === 'completed' && !fileExists) {
+      if ((status === 'completed' || status === 'skipped') && !fileExists) {
         status = 'missing'
       }
     }

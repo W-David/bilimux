@@ -49,7 +49,7 @@ export default class Application {
 
     this.processQueue = new ProcessQueue({ concurrency: 1 })
 
-    this.composEngine = new ComposEngine(this.processQueue, this.configManager)
+    this.composEngine = new ComposEngine(this.processQueue, this.configManager, this.convertHistoryStore)
 
     this.initComposEngine()
 
@@ -70,6 +70,18 @@ export default class Application {
     registerIpcHandlers(this)
 
     logger.info('Application 启动完成')
+  }
+
+  /**
+   * 窗口就绪后后台预扫描（含对账），不阻塞启动
+   */
+  public async prescanOnStartup(): Promise<void> {
+    try {
+      const result = await this.composEngine.prescan()
+      this.windowManager.sendCommandToAll('convert:prescan:done', result)
+    } catch (error) {
+      logger.error('启动预扫描失败', error)
+    }
   }
 
   setupLogger(): void {

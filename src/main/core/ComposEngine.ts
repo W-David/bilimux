@@ -1,4 +1,11 @@
-import { ComposEventMap, CompositionOptions, ConfigOptions, EngineResponse, VideoTaskInfo } from '@shared/types'
+import {
+  ComposEventMap,
+  CompositionOptions,
+  ConfigOptions,
+  ConvertPrescanResult,
+  EngineResponse,
+  VideoTaskInfo
+} from '@shared/types'
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -12,6 +19,7 @@ import {
 } from '../config/constants'
 import { createDirIfNotExist, getEngineBinPath, isExist, isValidFile, mapLimit, sanitizeFileName } from '../utils'
 import ConfigManager from './ConfigManager'
+import ConvertHistoryStore from './ConvertHistoryStore'
 import Engine from './Engine'
 import logger from './Logger'
 import ProcessQueue from './ProcessQueue'
@@ -25,20 +33,95 @@ export type ConvertTaskResult = {
 export class ComposEngine extends EventEmitter<ComposEventMap> {
   private configManager: ConfigManager
   private processQueue: ProcessQueue<ConvertTaskResult>
+  private historyStore: ConvertHistoryStore
   private isRunning = false
+  private isPrescanning = false
 
-  constructor(processQueue: ProcessQueue<ConvertTaskResult>, configManager: ConfigManager) {
+  constructor(
+    processQueue: ProcessQueue<ConvertTaskResult>,
+    configManager: ConfigManager,
+    historyStore: ConvertHistoryStore
+  ) {
     super()
     this.configManager = configManager
     this.processQueue = processQueue
+    this.historyStore = historyStore
   }
 
   /**
-   * 执行主流程
+   * 预扫描：成品对账 + 扫描缓存并写入 scanned
+   */
+  public async prescan(): Promise<ConvertPrescanResult> {
+    if (this.isPrescanning || this.isRunning) {
+      return {
+        pending: this.historyStore.countPendingConvert(),
+        inserted: 0,
+        cacheOk: true,
+        message: '已有预扫描或转换正在进行'
+      }
+    }
+
+    this.isPrescanning = true
+    try {
+      this.historyStore.reconcile()
+
+      const config = this.configManager.store.get('convert-config')
+      const cachePath = config.cachePath
+      const cacheErrMessage = await isValidFile(cachePath, fs.constants.R_OK)
+      if (cacheErrMessage) {
+        logger.warn(`预扫描跳过缓存目录: ${cacheErrMessage}`)
+        return {
+          pending: this.historyStore.countPendingConvert(),
+          inserted: 0,
+          cacheOk: false,
+          message: '无效的缓存目录，请在设置中选择 B 站客户端缓存路径'
+        }
+      }
+
+      const rawBVS = await this.generateBVS(cachePath)
+      const [validBVS] = await this.pickupBVS(rawBVS)
+      const finished = this.historyStore.getFinishedBvids()
+      const keepBvids: string[] = []
+      let inserted = 0
+
+      validBVS.forEach((bv, index) => {
+        if (!bv.bvid || finished.has(bv.bvid)) return
+        keepBvids.push(bv.bvid)
+        if (this.historyStore.markScanned(bv, index)) inserted += 1
+      })
+
+      this.historyStore.removeStaleScanned(keepBvids)
+
+      return {
+        pending: this.historyStore.countPendingConvert(),
+        inserted,
+        cacheOk: true
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      logger.error(`预扫描失败: ${message}`)
+      return {
+        pending: this.historyStore.countPendingConvert(),
+        inserted: 0,
+        cacheOk: false,
+        message
+      }
+    } finally {
+      this.isPrescanning = false
+    }
+  }
+
+  /**
+   * 转换库中待处理任务（预扫描 / 失败 / 中断 / 丢失）
    */
   public async run(): Promise<void> {
     if (this.isRunning) {
       logger.warn('已在合成中，忽略重复请求')
+      return
+    }
+
+    if (this.isPrescanning) {
+      this.emit('process:broke', { reason: '预扫描尚未结束，请稍后再转换' })
       return
     }
 
@@ -47,10 +130,9 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       this.emit('process:start')
 
       const config = this.configManager.store.get('convert-config')
-      const { outputDir, cachePath, genConfig } = config
+      const { outputDir, genConfig } = config
       const gpacBinPath = getEngineBinPath(this.configManager.context.platform)
 
-      // 检查 GPAC 可执行文件
       const gpacErrMessage = await isValidFile(gpacBinPath, fs.constants.X_OK)
       const isValidEngine = await this.checkEngine()
       if (gpacErrMessage || !isValidEngine) {
@@ -61,48 +143,30 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
         return
       }
 
-      // 检查缓存目录
-      const cacheErrMessage = await isValidFile(cachePath, fs.constants.R_OK)
-      if (cacheErrMessage) {
-        logger.error(cacheErrMessage)
-        this.emit('process:broke', {
-          reason: '无效的缓存目录'
-        })
-        return
-      }
+      const pending = this.historyStore.listPendingConvert()
+      const rebuilt = await mapLimit(pending, 4, async item => {
+        if (!item.sourceDir) return null
+        return this.getVideoTaskInfo(item.sourceDir)
+      })
+      const validBVS = rebuilt.filter((info): info is VideoTaskInfo =>
+        Boolean(info?.bvid && info.fileInfo.videoM4sPath)
+      )
 
-      // 生成BVS配置
-      const rawBVS = await this.generateBVS(cachePath)
-
-      // 生成空的BVS配置
-      if (rawBVS.length === 0) {
-        this.emit('process:broke', {
-          reason: `缓存目录下未扫描到有效的文件`
-        })
-        return
-      }
-
-      // BVS文件源信息检查
-      const [validBVS, _] = await this.pickupBVS(rawBVS)
       if (validBVS.length === 0) {
         this.emit('process:broke', {
-          reason: '没有可处理的缓存文件'
+          reason: '没有待转换的任务，请先预扫描'
         })
         return
       }
 
-      // 写入 conf 文件
       if (genConfig) {
-        // 确保输出目录存在
         await createDirIfNotExist(outputDir)
         const bvsBuffer = Buffer.from(JSON.stringify(validBVS, null, 2), 'utf-8')
         const confFilePath = path.join(outputDir, CONF_FILE_NAME)
         await fs.writeFile(confFilePath, bvsBuffer)
-        const message = `已写入 conf 文件: ${confFilePath}`
-        logger.debug(message)
+        logger.debug(`已写入 conf 文件: ${confFilePath}`)
       }
 
-      // 合成队列处理
       await this.syntheticTask(validBVS, config)
     } catch (error) {
       const message = `合成失败: ${error instanceof Error ? error.message : String(error)}`

@@ -33,6 +33,7 @@ export default class Launcher {
       // 首次启动打开主窗口；macOS 的 activate 事件会复用同一窗口
       this.application.windowManager.openWindow('main')
       this.application.windowManager.initTray()
+      void this.application.prescanOnStartup()
       app.on('activate', () => {
         globalThis.application.windowManager.openWindow('main')
       })

@@ -72,7 +72,8 @@ const STATUS_TEXT: Record<string, string> = {
   skipped: '已跳过',
   interrupted: '转换中断',
   missing: '文件丢失',
-  waiting: '等待中'
+  waiting: '等待中',
+  scanned: '预扫描'
 }
 
 const typeText = (type?: string): string => {

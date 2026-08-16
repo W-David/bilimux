@@ -1,8 +1,10 @@
 import {
   clearConvertHistories,
   getConvertHistories,
+  prescanConvert,
   removeConvertHistory,
   startProcess,
+  subscribeConvertPrescanDone,
   subscribeProcessBrokeEvent,
   subscribeProcessItemEndEvent,
   subscribeProcessItemProgressEvent,
@@ -26,10 +28,11 @@ const HISTORY_STATUS_MAP: Record<ConvertHistoryRecord['status'], ConvertTask['st
   skipped: 'skipped',
   interrupted: 'interrupted',
   missing: 'missing',
-  processing: 'waiting'
+  processing: 'waiting',
+  scanned: 'scanned'
 }
 
-const UNCONVERTED_HISTORY_STATUS = new Set(['failed', 'interrupted', 'missing'])
+const UNCONVERTED_HISTORY_STATUS = new Set(['failed', 'interrupted', 'missing', 'scanned'])
 let listenersRegistered = false
 // 历史加载版本号：清空历史时递增，阻止清空前的异步加载结果把旧数据写回内存
 let historyVersion = 0
@@ -80,6 +83,7 @@ export const useConvertStore = defineStore('convert', () => {
     const live = Array.from(tasks.value.values()).filter(
       task =>
         task.status === 'waiting' ||
+        task.status === 'scanned' ||
         task.status === 'fail' ||
         task.status === 'interrupted' ||
         task.status === 'missing'
@@ -114,8 +118,45 @@ export const useConvertStore = defineStore('convert', () => {
     entire: entireList.value.length
   }))
 
+  const prescan = async (): Promise<void> => {
+    if (runStatus.value === 'scanning' || runStatus.value === 'processing') return
+    runStatus.value = 'scanning'
+    mittbus.emit('toast:add', {
+      severity: 'info',
+      message: '正在预扫描…'
+    })
+    try {
+      const result = await prescanConvert()
+      historyVersion += 1
+      await loadHistory()
+      if (!result.cacheOk) {
+        runStatus.value = 'error'
+        errorMessage.value = result.message || '预扫描失败'
+        mittbus.emit('toast:add', {
+          severity: 'error',
+          message: result.message || '预扫描失败'
+        })
+        return
+      }
+      runStatus.value = 'idle'
+      mittbus.emit('toast:add', {
+        severity: 'success',
+        message: `预扫描完成，待转换 ${result.pending} 条`
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      runStatus.value = 'error'
+      errorMessage.value = message
+      mittbus.emit('toast:add', {
+        severity: 'error',
+        message
+      })
+    }
+  }
+
   /** 开始一次转换 */
   const start = async (): Promise<void> => {
+    if (runStatus.value === 'scanning' || runStatus.value === 'processing') return
     tasks.value = new Map()
     successCount.value = 0
     failCount.value = 0
@@ -313,6 +354,10 @@ export const useConvertStore = defineStore('convert', () => {
         message: reason
       })
     })
+
+    subscribeConvertPrescanDone(() => {
+      void loadHistory()
+    })
   }
 
   return {
@@ -326,6 +371,7 @@ export const useConvertStore = defineStore('convert', () => {
     completedList,
     entireList,
     counts,
+    prescan,
     start,
     reset,
     loadHistory,

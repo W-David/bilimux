@@ -51,11 +51,19 @@
             role="button"
             tabindex="0"
             class="flex h-8 cursor-pointer select-none items-center justify-center gap-2 rounded-2xl bg-gray-400/15 px-3 font-bold text-gray-400 ring-1 ring-gray-300/20 transition-all duration-300 hover:bg-pink-400/25 hover:text-pink-400 hover:ring-pink-300/20"
-            :class="
-              convertStore.runStatus === 'scanning' || convertStore.runStatus === 'processing'
-                ? 'pointer-events-none opacity-50'
-                : ''
-            "
+            :class="busy ? 'pointer-events-none opacity-50' : ''"
+            @click="convertStore.prescan()"
+            @keydown.enter="convertStore.prescan()">
+            <SearchIcon
+              class="size-5"
+              :class="{ 'animate-spin': convertStore.runStatus === 'scanning' }" />
+            <span>{{ convertStore.runStatus === 'scanning' ? '预扫描中' : '预扫描' }}</span>
+          </div>
+          <div
+            role="button"
+            tabindex="0"
+            class="flex h-8 cursor-pointer select-none items-center justify-center gap-2 rounded-2xl bg-gray-400/15 px-3 font-bold text-gray-400 ring-1 ring-gray-300/20 transition-all duration-300 hover:bg-pink-400/25 hover:text-pink-400 hover:ring-pink-300/20"
+            :class="busy ? 'pointer-events-none opacity-50' : ''"
             @click="convertStore.start()"
             @keydown.enter="convertStore.start()">
             <component
@@ -108,11 +116,11 @@ const preferenceStore = usePreferenceStore()
 const route = useRoute()
 const router = useRouter()
 
+const busy = computed(() => convertStore.runStatus === 'scanning' || convertStore.runStatus === 'processing')
+
 /** 运行按钮状态回显 */
 const runButtonState = computed(() => {
   switch (convertStore.runStatus) {
-    case 'scanning':
-      return { icon: SearchIcon, label: '扫描中', spinning: false }
     case 'processing':
       return { icon: Loader2Icon, label: '运行中', spinning: true }
     default:

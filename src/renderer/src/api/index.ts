@@ -149,6 +149,10 @@ export const startProcess: RendererEmitterInvokeFn<'start:process'> = () => {
   return emitter.invoke('start:process')
 }
 
+export const prescanConvert: RendererEmitterInvokeFn<'convert:prescan'> = () => {
+  return emitter.invoke('convert:prescan')
+}
+
 /**
  * 打开指定路径
  */
@@ -266,6 +270,10 @@ export const subscribeDownloadItemEndEvent: RendererHandlerFn<'download:item:end
  */
 export const subscribeFetchPreferenceEvent: RendererHandlerFn<'fetch-preference'> = listener => {
   return ipc.on('fetch-preference', () => listener())
+}
+
+export const subscribeConvertPrescanDone: RendererHandlerFn<'convert:prescan:done'> = listener => {
+  return ipc.on('convert:prescan:done', (_, args) => listener(args))
 }
 
 /**

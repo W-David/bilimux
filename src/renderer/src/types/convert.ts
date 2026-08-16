@@ -1,6 +1,6 @@
 import type { ProgressStatus } from '@shared/types'
 
-export type ConvertTaskStatus = ProgressStatus | 'skipped' | 'interrupted' | 'missing'
+export type ConvertTaskStatus = ProgressStatus | 'skipped' | 'interrupted' | 'missing' | 'scanned'
 
 export interface ConvertTask {
   id: string

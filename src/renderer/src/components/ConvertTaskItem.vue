@@ -15,70 +15,81 @@
         </div>
       </div>
 
-      <!-- 操作按钮（胶囊玻璃组） -->
+      <!-- 操作按钮（胶囊玻璃组）；预扫描只保留状态圆点 -->
       <div
         class="flex items-center gap-1 rounded-full border border-white/5 bg-white/6 py-1.5 px-2 shadow-inner shadow-black/20 backdrop-blur-md">
-        <!-- 删除（历史任务或已生成产物的任务，否则置灰不可用） -->
-        <AlertDialog>
-          <AlertDialogTrigger as-child>
-            <button
-              type="button"
-              aria-label="删除任务"
-              :disabled="!canDelete"
-              class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent">
-              <Trash2Icon class="size-4 text-red-400 transition-colors hover:text-red-300" />
-            </button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>删除转换任务？</AlertDialogTitle>
-              <AlertDialogDescription>将删除生成的视频文件并移除该任务记录，此操作不可恢复。</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>取消</AlertDialogCancel>
-              <AlertDialogAction @click="handleDelete">删除</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <template v-if="isScanned">
+          <div
+            class="size-6 rounded-full shrink-0 flex items-center justify-center"
+            :class="badgeClass">
+            <component
+              :is="statusIcon"
+              class="size-3" />
+          </div>
+        </template>
+        <template v-else>
+          <!-- 删除（历史任务或已生成产物的任务，否则置灰不可用） -->
+          <AlertDialog>
+            <AlertDialogTrigger as-child>
+              <button
+                type="button"
+                aria-label="删除任务"
+                :disabled="!canDelete"
+                class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent">
+                <Trash2Icon class="size-4 text-red-400 transition-colors hover:text-red-300" />
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>删除转换任务？</AlertDialogTitle>
+                <AlertDialogDescription>将删除生成的视频文件并移除该任务记录，此操作不可恢复。</AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>取消</AlertDialogCancel>
+                <AlertDialogAction @click="handleDelete">删除</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
-        <!-- 打开文件所在位置 -->
-        <button
-          type="button"
-          aria-label="打开文件所在位置"
-          :disabled="!outputTarget"
-          class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
-          @click="openFileLocation">
-          <FolderOpenIcon class="size-4 text-gray-300 transition-colors hover:text-white" />
-        </button>
+          <!-- 打开文件所在位置 -->
+          <button
+            type="button"
+            aria-label="打开文件所在位置"
+            :disabled="!outputTarget"
+            class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+            @click="openFileLocation">
+            <FolderOpenIcon class="size-4 text-gray-300 transition-colors hover:text-white" />
+          </button>
 
-        <!-- 文件详情 -->
-        <button
-          type="button"
-          aria-label="文件详情"
-          class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10"
-          @click="detailsOpen = true">
-          <InfoIcon class="size-4 text-gray-300 transition-colors hover:text-white" />
-        </button>
+          <!-- 文件详情 -->
+          <button
+            type="button"
+            aria-label="文件详情"
+            class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10"
+            @click="detailsOpen = true">
+            <InfoIcon class="size-4 text-gray-300 transition-colors hover:text-white" />
+          </button>
 
-        <!-- 播放（可播放/转换成功时显示） -->
-        <button
-          v-if="isPlayable"
-          type="button"
-          aria-label="打开文件"
-          class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10"
-          @click="openTaskFile">
-          <CirclePlayIcon class="size-4 text-gray-400 transition-colors hover:text-green-400" />
-        </button>
+          <!-- 播放（可播放/转换成功时显示） -->
+          <button
+            v-if="isPlayable"
+            type="button"
+            aria-label="打开文件"
+            class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10"
+            @click="openTaskFile">
+            <CirclePlayIcon class="size-4 text-gray-400 transition-colors hover:text-green-400" />
+          </button>
 
-        <!-- 状态图标回显转换过程 -->
-        <div
-          v-else
-          class="size-6 rounded-full shrink-0 flex items-center justify-center"
-          :class="badgeClass">
-          <component
-            :is="statusIcon"
-            class="size-3" />
-        </div>
+          <!-- 状态图标回显转换过程 -->
+          <div
+            v-else
+            class="size-6 rounded-full shrink-0 flex items-center justify-center"
+            :class="badgeClass">
+            <component
+              :is="statusIcon"
+              class="size-3" />
+          </div>
+        </template>
       </div>
     </div>
 
@@ -103,6 +114,7 @@ import {
   Import as ImportIcon,
   Info as InfoIcon,
   PencilLine as PencilLineIcon,
+  Search as SearchIcon,
   SkipForward as SkipForwardIcon,
   Trash2 as Trash2Icon
 } from '@lucide/vue'
@@ -127,6 +139,7 @@ const outputTarget = computed(() => props.task.outputPath || props.task.filePath
 
 /** 播放按钮可用：成功或跳过 */
 const isPlayable = computed(() => props.task.status === 'success' || props.task.status === 'skipped')
+const isScanned = computed(() => props.task.status === 'scanned')
 
 // const statusTextMap: Record<string, string> = {
 //   importing: '导入中',
@@ -151,7 +164,8 @@ const badgeClass = computed(() => ({
   'bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20': props.task.status === 'skipped',
   'bg-slate-500/10 text-slate-300 ring-1 ring-slate-500/20': props.task.status === 'interrupted',
   'bg-red-400/10 text-red-300 ring-1 ring-red-400/30': props.task.status === 'missing',
-  'bg-gray-500/10 text-gray-400 ring-1 ring-gray-500/20': props.task.status === 'waiting',
+  'bg-gray-500/10 text-gray-400 ring-1 ring-gray-500/20':
+    props.task.status === 'waiting' || props.task.status === 'scanned',
   'animate-pulse':
     props.task.status === 'preprocess' || props.task.status === 'importing' || props.task.status === 'writing'
 }))
@@ -176,6 +190,8 @@ const statusIcon = computed(() => {
       return FileQuestionIcon
     case 'waiting':
       return HourglassIcon
+    case 'scanned':
+      return SearchIcon
     default:
       return HourglassIcon
   }
