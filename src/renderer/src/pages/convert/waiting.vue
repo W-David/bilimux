@@ -1,7 +1,7 @@
 <template>
   <ConvertTaskList
-    :items="convertStore.entireList"
-    empty-text="暂无转换记录"
+    :items="convertStore.waitingList"
+    empty-text="暂无待转换任务"
     empty-action-text="预扫描"
     :empty-icon="HistoryIcon"
     @empty-action="convertStore.prescan()" />

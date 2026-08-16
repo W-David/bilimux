@@ -2,7 +2,7 @@ import Layout from '@renderer/layout/index.vue'
 import Main from '@renderer/layout/Main.vue'
 import About from '@renderer/pages/About.vue'
 import ConvertComplete from '@renderer/pages/convert/complete.vue'
-import ConvertEntire from '@renderer/pages/convert/entire.vue'
+import ConvertWaiting from '@renderer/pages/convert/waiting.vue'
 import ConvertIndex from '@renderer/pages/convert/index.vue'
 import ConvertUnconverted from '@renderer/pages/convert/unconverted.vue'
 import Auth from '@renderer/pages/download/auth.vue'
@@ -42,9 +42,9 @@ const routes: RouteRecordRaw[] = [
             },
             children: [
               {
-                path: 'entire',
-                name: 'convert-entire',
-                component: ConvertEntire,
+                path: 'waiting',
+                name: 'convert-waiting',
+                component: ConvertWaiting,
                 meta: {
                   switchTransition: true,
                   activeMenu: 'convert'

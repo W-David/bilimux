@@ -112,10 +112,26 @@ export const useConvertStore = defineStore('convert', () => {
     return [...live, ...historyTasks]
   })
 
+  const isFinishedTask = (status: ConvertTask['status']): boolean => status === 'success' || status === 'skipped'
+
+  /** 待转换：非完成态（完成 / 跳过除外） */
+  const waitingList = computed<ConvertTask[]>(() => {
+    const live = Array.from(tasks.value.values())
+      .filter(task => !isFinishedTask(task.status))
+      .map(task => ({ ...task, id: `live:${task.id}` }))
+    const historyTasks = history.value
+      .filter(
+        record => !liveBvids.value.has(record.bvid) && record.status !== 'completed' && record.status !== 'skipped'
+      )
+      .map(toTask)
+    return [...live, ...historyTasks]
+  })
+
   const counts = computed(() => ({
     unconverted: unconvertedList.value.length,
     completed: completedList.value.length,
-    entire: entireList.value.length
+    entire: entireList.value.length,
+    waiting: waitingList.value.length
   }))
 
   const prescan = async (): Promise<void> => {
@@ -370,6 +386,7 @@ export const useConvertStore = defineStore('convert', () => {
     unconvertedList,
     completedList,
     entireList,
+    waitingList,
     counts,
     prescan,
     start,

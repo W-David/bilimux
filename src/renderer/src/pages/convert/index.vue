@@ -130,10 +130,10 @@ const runButtonState = computed(() => {
 
 const tabs = [
   {
-    name: 'convert-entire',
-    label: '全部任务',
+    name: 'convert-waiting',
+    label: '待转换',
     icon: ListIcon,
-    countKey: 'entire',
+    countKey: 'waiting',
     activeClass: 'bg-violet-500 !text-white',
     inactiveClass: ''
   },
