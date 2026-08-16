@@ -54,7 +54,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
   public async prescan(): Promise<ConvertPrescanResult> {
     if (this.isPrescanning || this.isRunning) {
       return {
-        pending: this.historyStore.countPendingConvert(),
+        pending: this.historyStore.countWaitingConvert(),
         inserted: 0,
         cacheOk: true,
         message: '已有缓存扫描或转换正在进行'
@@ -71,7 +71,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       if (cacheErrMessage) {
         logger.warn(`缓存扫描跳过缓存目录: ${cacheErrMessage}`)
         return {
-          pending: this.historyStore.countPendingConvert(),
+          pending: this.historyStore.countWaitingConvert(),
           inserted: 0,
           cacheOk: false,
           message: '无效的缓存目录，请在设置中选择 B 站客户端缓存路径'
@@ -79,7 +79,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       }
 
       const rawBVS = await this.generateBVS(cachePath)
-      const [validBVS] = await this.pickupBVS(rawBVS)
+      const [validBVS] = await this.pickupBVS(rawBVS, { silent: true })
       const finished = this.historyStore.getFinishedBvids()
       const keepBvids: string[] = []
       let inserted = 0
@@ -93,7 +93,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       this.historyStore.removeStaleScanned(keepBvids)
 
       return {
-        pending: this.historyStore.countPendingConvert(),
+        pending: this.historyStore.countWaitingConvert(),
         inserted,
         cacheOk: true
       }
@@ -101,7 +101,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       const message = error instanceof Error ? error.message : String(error)
       logger.error(`缓存扫描失败: ${message}`)
       return {
-        pending: this.historyStore.countPendingConvert(),
+        pending: this.historyStore.countWaitingConvert(),
         inserted: 0,
         cacheOk: false,
         message
@@ -325,7 +325,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
    * @param bvs bvs列表
    * @returns [validBVS, invalidBVS]
    */
-  private async pickupBVS(bvs: VideoTaskInfo[]) {
+  private async pickupBVS(bvs: VideoTaskInfo[], options?: { silent?: boolean }) {
     if (bvs.length === 0) {
       return [[], []]
     }
@@ -336,11 +336,13 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       if (bv.status !== 'completed') {
         const message = `未缓存完成,跳过合成: ${bv.fileInfo.fileName}`
         logger.warn(message)
-        this.emit('process:item:progress', {
-          bvid: bv.bvid,
-          type: 'preprocess',
-          progress: 0
-        })
+        if (!options?.silent) {
+          this.emit('process:item:progress', {
+            bvid: bv.bvid,
+            type: 'preprocess',
+            progress: 0
+          })
+        }
         return false
       }
 
@@ -349,11 +351,13 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       if (videoValidError) {
         const message = `${videoValidError}: ${videoM4sPath}, 跳过处理`
         logger.warn(message)
-        this.emit('process:item:progress', {
-          bvid: bv.bvid,
-          type: 'preprocess',
-          progress: 0
-        })
+        if (!options?.silent) {
+          this.emit('process:item:progress', {
+            bvid: bv.bvid,
+            type: 'preprocess',
+            progress: 0
+          })
+        }
         return false
       }
 
@@ -362,11 +366,13 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       if (audioValidError) {
         const message = `${audioValidError}, 跳过: ${audioM4sPath}`
         logger.warn(message)
-        this.emit('process:item:progress', {
-          bvid: bv.bvid,
-          type: 'preprocess',
-          progress: 0
-        })
+        if (!options?.silent) {
+          this.emit('process:item:progress', {
+            bvid: bv.bvid,
+            type: 'preprocess',
+            progress: 0
+          })
+        }
         return false
       }
 

@@ -229,6 +229,13 @@ export default class ConvertHistoryStore {
     return row.count
   }
 
+  public countWaitingConvert(): number {
+    const row = this.db
+      .prepare(`SELECT COUNT(*) AS count FROM convert_history WHERE status IN ('scanned', 'missing')`)
+      .get() as { count: number }
+    return row.count
+  }
+
   public getOutputPath(bvid: string): string | null {
     const row = this.db.prepare(`SELECT output_path FROM convert_history WHERE bvid = ?`).get(bvid) as
       | { output_path: string | null }
