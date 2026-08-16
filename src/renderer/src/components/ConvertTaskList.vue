@@ -22,7 +22,8 @@
       <ConvertTaskItem
         v-for="item in items"
         :key="item.id"
-        :task="item" />
+        :task="item"
+        :actions="actions" />
     </div>
   </div>
 </template>
@@ -39,11 +40,13 @@ withDefaults(
     emptyText?: string
     emptyIcon?: Component
     emptyActionText?: string
+    actions?: 'status' | 'info' | 'all'
   }>(),
   {
     emptyText: '暂无任务',
     emptyIcon: InboxIcon,
-    emptyActionText: ''
+    emptyActionText: '',
+    actions: 'all'
   }
 )
 

@@ -2,7 +2,8 @@
   <ConvertTaskList
     :items="convertStore.completedList"
     empty-text="暂无已完成的任务"
-    :empty-icon="CircleCheckIcon" />
+    :empty-icon="CircleCheckIcon"
+    actions="all" />
 </template>
 
 <script setup lang="ts">

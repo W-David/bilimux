@@ -4,6 +4,7 @@
     empty-text="暂无待转换任务"
     empty-action-text="缓存扫描"
     :empty-icon="HistoryIcon"
+    actions="status"
     @empty-action="convertStore.prescan()" />
 </template>
 
