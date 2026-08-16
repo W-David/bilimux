@@ -73,7 +73,7 @@ const STATUS_TEXT: Record<string, string> = {
   interrupted: '转换中断',
   missing: '文件丢失',
   waiting: '等待中',
-  scanned: '预扫描'
+  scanned: '缓存扫描'
 }
 
 const typeText = (type?: string): string => {

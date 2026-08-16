@@ -49,7 +49,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
   }
 
   /**
-   * 预扫描：成品对账 + 扫描缓存并写入 scanned
+   * 缓存扫描：成品对账 + 扫描缓存并写入 scanned
    */
   public async prescan(): Promise<ConvertPrescanResult> {
     if (this.isPrescanning || this.isRunning) {
@@ -57,7 +57,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
         pending: this.historyStore.countPendingConvert(),
         inserted: 0,
         cacheOk: true,
-        message: '已有预扫描或转换正在进行'
+        message: '已有缓存扫描或转换正在进行'
       }
     }
 
@@ -69,7 +69,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       const cachePath = config.cachePath
       const cacheErrMessage = await isValidFile(cachePath, fs.constants.R_OK)
       if (cacheErrMessage) {
-        logger.warn(`预扫描跳过缓存目录: ${cacheErrMessage}`)
+        logger.warn(`缓存扫描跳过缓存目录: ${cacheErrMessage}`)
         return {
           pending: this.historyStore.countPendingConvert(),
           inserted: 0,
@@ -99,7 +99,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      logger.error(`预扫描失败: ${message}`)
+      logger.error(`缓存扫描失败: ${message}`)
       return {
         pending: this.historyStore.countPendingConvert(),
         inserted: 0,
@@ -112,7 +112,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
   }
 
   /**
-   * 转换库中待处理任务（预扫描 / 失败 / 中断 / 丢失）
+   * 转换库中待处理任务（缓存扫描 / 失败 / 中断 / 丢失）
    */
   public async run(): Promise<void> {
     if (this.isRunning) {
@@ -121,7 +121,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
     }
 
     if (this.isPrescanning) {
-      this.emit('process:broke', { reason: '预扫描尚未结束，请稍后再转换' })
+      this.emit('process:broke', { reason: '缓存扫描尚未结束，请稍后再转换' })
       return
     }
 
@@ -154,7 +154,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
 
       if (validBVS.length === 0) {
         this.emit('process:broke', {
-          reason: '没有待转换的任务，请先预扫描'
+          reason: '没有待转换的任务，请先缓存扫描'
         })
         return
       }

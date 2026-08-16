@@ -137,27 +137,23 @@ export const useConvertStore = defineStore('convert', () => {
   const prescan = async (): Promise<void> => {
     if (runStatus.value === 'scanning' || runStatus.value === 'processing') return
     runStatus.value = 'scanning'
-    mittbus.emit('toast:add', {
-      severity: 'info',
-      message: '正在预扫描…'
-    })
     try {
       const result = await prescanConvert()
       historyVersion += 1
       await loadHistory()
       if (!result.cacheOk) {
         runStatus.value = 'error'
-        errorMessage.value = result.message || '预扫描失败'
+        errorMessage.value = result.message || '缓存扫描失败'
         mittbus.emit('toast:add', {
           severity: 'error',
-          message: result.message || '预扫描失败'
+          message: result.message || '缓存扫描失败'
         })
         return
       }
       runStatus.value = 'idle'
       mittbus.emit('toast:add', {
         severity: 'success',
-        message: `预扫描完成，待转换 ${result.pending} 条`
+        message: `缓存扫描完成，待转换 ${result.pending} 条`
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)

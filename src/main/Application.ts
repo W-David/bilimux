@@ -73,14 +73,14 @@ export default class Application {
   }
 
   /**
-   * 窗口就绪后后台预扫描（含对账），不阻塞启动
+   * 窗口就绪后后台缓存扫描（含对账），不阻塞启动
    */
   public async prescanOnStartup(): Promise<void> {
     try {
       const result = await this.composEngine.prescan()
       this.windowManager.sendCommandToAll('convert:prescan:done', result)
     } catch (error) {
-      logger.error('启动预扫描失败', error)
+      logger.error('启动缓存扫描失败', error)
     }
   }
 

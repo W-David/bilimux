@@ -175,7 +175,7 @@ export default class ConvertHistoryStore {
   }
 
   /**
-   * 预扫描入库：新行写成 scanned；已是 scanned 的更新目录信息；完成/失败等不改状态
+   * 缓存扫描入库：新行写成 scanned；已是 scanned 的更新目录信息；完成/失败等不改状态
    */
   public markScanned(bv: VideoTaskInfo, runSeq = 0): boolean {
     const now = Date.now()

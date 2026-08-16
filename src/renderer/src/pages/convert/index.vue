@@ -57,7 +57,7 @@
             <SearchIcon
               class="size-5"
               :class="{ 'animate-spin': convertStore.runStatus === 'scanning' }" />
-            <span>{{ convertStore.runStatus === 'scanning' ? '预扫描中' : '预扫描' }}</span>
+            <span>{{ convertStore.runStatus === 'scanning' ? '缓存扫描中' : '缓存扫描' }}</span>
           </div>
           <div
             role="button"

@@ -15,7 +15,7 @@
         </div>
       </div>
 
-      <!-- 操作按钮（胶囊玻璃组）；预扫描只保留状态圆点 -->
+      <!-- 操作按钮（胶囊玻璃组）；缓存扫描项只保留状态圆点 -->
       <div
         class="flex items-center gap-1 rounded-full border border-white/5 bg-white/6 py-1.5 px-2 shadow-inner shadow-black/20 backdrop-blur-md">
         <template v-if="isScanned">
