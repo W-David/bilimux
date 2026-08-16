@@ -32,7 +32,7 @@ const HISTORY_STATUS_MAP: Record<ConvertHistoryRecord['status'], ConvertTask['st
   scanned: 'scanned'
 }
 
-const UNCONVERTED_HISTORY_STATUS = new Set(['failed', 'interrupted', 'missing', 'scanned'])
+const UNCONVERTED_HISTORY_STATUS = new Set(['failed', 'interrupted'])
 let listenersRegistered = false
 // 历史加载版本号：清空历史时递增，阻止清空前的异步加载结果把旧数据写回内存
 let historyVersion = 0
@@ -78,15 +78,10 @@ export const useConvertStore = defineStore('convert', () => {
     }
   }
 
-  /** 未完成：实时等待/失败/中断/丢失 + 历史失败/跳过/中断/丢失 */
+  /** 未完成：仅转换失败或被中断 */
   const unconvertedList = computed<ConvertTask[]>(() => {
     const live = Array.from(tasks.value.values()).filter(
-      task =>
-        task.status === 'waiting' ||
-        task.status === 'scanned' ||
-        task.status === 'fail' ||
-        task.status === 'interrupted' ||
-        task.status === 'missing'
+      task => task.status === 'fail' || task.status === 'interrupted'
     )
     const historyTasks = history.value
       .filter(record => !liveBvids.value.has(record.bvid) && UNCONVERTED_HISTORY_STATUS.has(record.status))
