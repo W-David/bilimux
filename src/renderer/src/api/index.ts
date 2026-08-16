@@ -32,8 +32,8 @@ export const getConvertHistories: RendererEmitterInvokeFn<'convert:history:list'
 /**
  * 删除单条转换历史（记录 + 产物文件）
  */
-export const removeConvertHistory: RendererEmitterInvokeFn<'convert:history:remove'> = id => {
-  return emitter.invoke('convert:history:remove', id)
+export const removeConvertHistory: RendererEmitterInvokeFn<'convert:history:remove'> = bvid => {
+  return emitter.invoke('convert:history:remove', bvid)
 }
 
 /**
@@ -147,18 +147,6 @@ export const openFileDialog: RendererEmitterInvokeFn<'open-file-dialog'> = (...o
  */
 export const startProcess: RendererEmitterInvokeFn<'start:process'> = () => {
   return emitter.invoke('start:process')
-}
-
-export const scanConvert: RendererEmitterInvokeFn<'convert:scan'> = () => {
-  return emitter.invoke('convert:scan')
-}
-
-export const startConvert: RendererEmitterInvokeFn<'convert:start'> = bvids => {
-  return emitter.invoke('convert:start', bvids)
-}
-
-export const cancelConvert: RendererEmitterInvokeFn<'convert:cancel'> = () => {
-  return emitter.invoke('convert:cancel')
 }
 
 /**

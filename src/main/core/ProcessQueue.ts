@@ -63,19 +63,6 @@ export default class ProcessQueue<T> extends EventEmitter<QueueEventMap> {
   }
 
   /**
-   * 丢掉尚未开始的任务
-   */
-  public clear(reason = '已取消'): void {
-    const pending = this.queue.splice(0)
-    for (const task of pending) {
-      task.reject(new Error(reason))
-    }
-    if (this.activeCount === 0 && this.queue.length === 0) {
-      this.emit('drain')
-    }
-  }
-
-  /**
    * 设置并发数
    */
   public setConcurrency(count: number) {

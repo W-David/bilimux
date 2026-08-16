@@ -357,8 +357,6 @@ type ConfigOptions = {
   forceTransform: boolean
   forceComposition: boolean
   genConfig: boolean
-  /** 并行转换任务数（1-8） */
-  concurrent: number
 }
 
 // 下载配置

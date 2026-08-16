@@ -22,10 +22,7 @@
       <ConvertTaskItem
         v-for="item in items"
         :key="item.id"
-        :task="item"
-        :selectable="selectable"
-        :selected="selected?.has(item.bvid)"
-        @toggle="bvid => emit('toggle', bvid)" />
+        :task="item" />
     </div>
   </div>
 </template>
@@ -42,21 +39,16 @@ withDefaults(
     emptyText?: string
     emptyIcon?: Component
     emptyActionText?: string
-    selectable?: boolean
-    selected?: Set<string>
   }>(),
   {
     emptyText: '暂无任务',
     emptyIcon: InboxIcon,
-    emptyActionText: '',
-    selectable: false,
-    selected: undefined
+    emptyActionText: ''
   }
 )
 
 const emit = defineEmits<{
   (e: 'empty-action'): void
-  (e: 'toggle', bvid: string): void
 }>()
 </script>
 

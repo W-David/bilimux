@@ -6,18 +6,6 @@ export function registerConvertIpc(app: Application): void {
     return app.composEngine.run()
   })
 
-  app.ipcManager.mainIpc.handle('convert:scan', async () => {
-    return app.composEngine.scan()
-  })
-
-  app.ipcManager.mainIpc.handle('convert:start', async (_, bvids: string[]) => {
-    return app.composEngine.start(bvids)
-  })
-
-  app.ipcManager.mainIpc.handle('convert:cancel', () => {
-    app.composEngine.cancel()
-  })
-
   app.ipcManager.mainIpc.handle('check-engine', async () => {
     return app.composEngine.checkEngine()
   })
@@ -26,13 +14,13 @@ export function registerConvertIpc(app: Application): void {
     return app.convertHistoryStore.list()
   })
 
-  app.ipcManager.mainIpc.handle('convert:history:remove', (_, id: number) => {
-    const record = app.convertHistoryStore.getOutputPathById(id)
+  app.ipcManager.mainIpc.handle('convert:history:remove', (_, bvid: string) => {
+    const record = app.convertHistoryStore.getOutputPath(bvid)
     if (record) {
       const roots = getAllowedUserRoots(app.configManager, app.context.platform)
       assertAllowedPath(record, roots, '转换产物路径')
     }
-    app.convertHistoryStore.removeById(id)
+    app.convertHistoryStore.remove(bvid)
   })
 
   app.ipcManager.mainIpc.handle('convert:history:clear', () => {

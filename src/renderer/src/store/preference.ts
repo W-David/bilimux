@@ -13,8 +13,7 @@ export const usePreferenceStore = defineStore('preference', () => {
       gpacBinPath: '',
       forceTransform: false,
       forceComposition: false,
-      genConfig: false,
-      concurrent: 1
+      genConfig: false
     },
     'download-config': {
       outputDir: '',

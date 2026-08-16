@@ -1,10 +1,8 @@
 import {
-  cancelConvert,
   clearConvertHistories,
   getConvertHistories,
   removeConvertHistory,
-  scanConvert,
-  startConvert,
+  startProcess,
   subscribeProcessBrokeEvent,
   subscribeProcessItemEndEvent,
   subscribeProcessItemProgressEvent,
@@ -20,7 +18,7 @@ import logger from 'electron-log/renderer'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-export type ConvertRunStatus = 'idle' | 'scanning' | 'preview' | 'processing' | 'success' | 'error'
+export type ConvertRunStatus = 'idle' | 'scanning' | 'processing' | 'success' | 'error'
 
 const HISTORY_STATUS_MAP: Record<ConvertHistoryRecord['status'], ConvertTask['status']> = {
   completed: 'success',
@@ -46,7 +44,6 @@ export const useConvertStore = defineStore('convert', () => {
   const errorMessage = ref('')
   const successCount = ref(0)
   const failCount = ref(0)
-  const selectedBvids = ref<Set<string>>(new Set())
 
   const liveBvids = computed(() => new Set(tasks.value.keys()))
 
@@ -117,72 +114,19 @@ export const useConvertStore = defineStore('convert', () => {
     entire: entireList.value.length
   }))
 
-  const toggleSelected = (bvid: string): void => {
-    const next = new Set(selectedBvids.value)
-    if (next.has(bvid)) next.delete(bvid)
-    else next.add(bvid)
-    selectedBvids.value = next
-  }
-
-  const selectAllScanned = (): void => {
-    selectedBvids.value = new Set(tasks.value.keys())
-  }
-
-  /** 扫描缓存，进入预览 */
-  const scan = async (): Promise<void> => {
-    historyVersion += 1
+  /** 开始一次转换 */
+  const start = async (): Promise<void> => {
     tasks.value = new Map()
-    selectedBvids.value = new Set()
     successCount.value = 0
     failCount.value = 0
     errorMessage.value = ''
     runStatus.value = 'scanning'
     try {
-      await scanConvert()
+      await startProcess()
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       runStatus.value = 'error'
       errorMessage.value = message
-      mittbus.emit('toast:add', {
-        severity: 'error',
-        message
-      })
-    }
-  }
-
-  /** 开始转换选中项 */
-  const start = async (): Promise<void> => {
-    historyVersion += 1
-    const bvids = [...selectedBvids.value]
-    if (bvids.length === 0) {
-      mittbus.emit('toast:add', {
-        severity: 'warn',
-        message: '请先勾选要转换的视频'
-      })
-      return
-    }
-    successCount.value = 0
-    failCount.value = 0
-    errorMessage.value = ''
-    runStatus.value = 'processing'
-    try {
-      await startConvert(bvids)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      runStatus.value = 'error'
-      errorMessage.value = message
-      mittbus.emit('toast:add', {
-        severity: 'error',
-        message
-      })
-    }
-  }
-
-  const cancel = async (): Promise<void> => {
-    try {
-      await cancelConvert()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
       mittbus.emit('toast:add', {
         severity: 'error',
         message
@@ -244,11 +188,9 @@ export const useConvertStore = defineStore('convert', () => {
   const removeItem = async (task: ConvertTask): Promise<void> => {
     const isHistory = task.id.startsWith('history:')
     try {
+      await removeConvertHistory(task.bvid)
       if (isHistory) {
-        const id = Number(task.id.slice('history:'.length))
-        if (!Number.isFinite(id)) throw new Error('无效的历史记录')
-        await removeConvertHistory(id)
-        history.value = history.value.filter(record => record.id !== id)
+        history.value = history.value.filter(record => record.bvid !== task.bvid)
       } else {
         tasks.value.delete(task.bvid)
         tasks.value = new Map(tasks.value)
@@ -271,11 +213,11 @@ export const useConvertStore = defineStore('convert', () => {
     listenersRegistered = true
 
     subscribeProcessStartEvent(() => {
-      runStatus.value = 'processing'
+      runStatus.value = 'scanning'
     })
 
     subscribeProcessReadyEvent(({ bvs }) => {
-      runStatus.value = 'preview'
+      runStatus.value = 'processing'
       const next = new Map<string, ConvertTask>()
       bvs.forEach(bv => {
         next.set(bv.bvid, {
@@ -298,7 +240,6 @@ export const useConvertStore = defineStore('convert', () => {
         })
       })
       tasks.value = next
-      selectedBvids.value = new Set(bvs.map(bv => bv.bvid))
     })
 
     subscribeProcessItemStartEvent(({ bv, outputPath }) => {
@@ -381,16 +322,11 @@ export const useConvertStore = defineStore('convert', () => {
     errorMessage,
     successCount,
     failCount,
-    selectedBvids,
     unconvertedList,
     completedList,
     entireList,
     counts,
-    scan,
     start,
-    cancel,
-    toggleSelected,
-    selectAllScanned,
     reset,
     loadHistory,
     clearHistory,

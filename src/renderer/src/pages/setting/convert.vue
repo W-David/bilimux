@@ -58,27 +58,6 @@
     </div>
 
     <div class="flex items-center justify-between">
-      <label class="font-normal">并行转换任务数</label>
-      <Select
-        :model-value="concurrentValue"
-        @update:model-value="onConcurrentChange">
-        <SelectTrigger class="w-15">
-          <SelectValue placeholder="选择并行任务数" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            <SelectItem
-              v-for="option in CONCURRENT_OPTIONS"
-              :key="option"
-              :value="String(option)">
-              {{ option }}
-            </SelectItem>
-          </SelectGroup>
-        </SelectContent>
-      </Select>
-    </div>
-
-    <div class="flex items-center justify-between">
       <label class="font-normal">清空转换历史</label>
       <Button
         size="sm"
@@ -127,19 +106,6 @@ const { preference } = storeToRefs(store)
 const isValidEngine = ref(true)
 const clearingHistory = ref(false)
 const showClearDialog = ref(false)
-const CONCURRENT_OPTIONS = [1, 2, 4, 8] as const
-
-const concurrentValue = computed(() => {
-  const current = preference.value['convert-config'].concurrent
-  return String(CONCURRENT_OPTIONS.some(option => option === current) ? current : CONCURRENT_OPTIONS[0])
-})
-
-const onConcurrentChange = (value: string | number): void => {
-  const concurrent = CONCURRENT_OPTIONS.find(option => option === Number(value))
-  if (concurrent) {
-    preference.value['convert-config'].concurrent = concurrent
-  }
-}
 
 /** 替换重名文件：同时控制 m4s 转换覆写与最终视频覆写两个开关 */
 const replaceExistingFiles = computed({
