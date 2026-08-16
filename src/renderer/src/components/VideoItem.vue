@@ -1,16 +1,9 @@
 <template>
-  <div class="card-border rounded-2xl p-3">
-    <div class="flex items-center gap-3">
-      <button
-        v-if="selectable"
-        type="button"
-        class="flex size-5 shrink-0 items-center justify-center rounded border border-white/20 text-[10px] text-pink-400"
-        :class="selected ? 'bg-pink-400/30' : 'bg-transparent'"
-        :disabled="video.attr !== 0"
-        @click.stop="emit('toggle', video.bvid)">
-        <span v-if="selected">✓</span>
-      </button>
-      <div class="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg bg-gray-900">
+  <div
+    ref="rootRef"
+    class="card-border rounded-2xl p-3">
+    <div class="relative flex items-center justify-between gap-3">
+      <div class="relative h-18 w-28 shrink-0 overflow-hidden rounded-lg bg-gray-900 shadow shadow-black/20">
         <img
           v-if="video.cover"
           :src="safeCover(video.cover)"
@@ -22,161 +15,180 @@
           class="h-full w-full flex items-center justify-center text-xl text-gray-600">
           <TvIcon class="size-6" />
         </div>
+        <div
+          v-if="selectable"
+          class="absolute top-1 left-1 rounded bg-black/80 shadow-sm shadow-black/20">
+          <button
+            type="button"
+            class="flex size-5 shrink-0 items-center justify-center rounded border border-white/20 text-[10px] text-pink-400"
+            :class="selected ? 'bg-pink-400/30' : partialSelected ? 'bg-pink-400/15' : 'bg-transparent'"
+            :disabled="video.attr !== 0"
+            :aria-checked="selected ? 'true' : partialSelected ? 'mixed' : 'false'"
+            role="checkbox"
+            @click.stop="onToggleVideo">
+            <span v-if="selected">✓</span>
+            <span v-else-if="partialSelected">–</span>
+          </button>
+        </div>
         <span class="absolute bottom-1 right-1 rounded-sm bg-black/60 px-1 py-0.5 text-[10px] text-[#f6f6f6]">
           {{ formatDuration(video.duration) }}
         </span>
+        <span
+          v-if="isMultiPage"
+          class="absolute top-1 right-1 rounded-sm bg-black/60 px-1 py-0.5 text-[10px] text-gray-50">
+          {{ resolvedPageCount }}P
+        </span>
       </div>
 
-      <div class="min-w-0 flex-1">
-        <div class="mb-4 flex items-center gap-2">
+      <div class="min-w-0 flex-1 flex flex-col justify-between gap-2">
+        <div class="mb-4 flex items-center">
           <div class="truncate text-sm text-[#f6f6f6] font-medium">{{ video.title }}</div>
-          <span
-            v-if="isMultiPage"
-            class="shrink-0 rounded-sm bg-pink-400/20 px-1.5 py-0.5 text-[10px] text-pink-400">
-            {{ resolvedPageCount }}P
-          </span>
-          <span
-            v-if="isMultiPage && completedCount > 0"
-            class="shrink-0 text-[10px] text-gray-400">
-            {{ completedCount }}/{{ resolvedPageCount }}
-          </span>
         </div>
-        <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center justify-between">
           <div class="min-w-0 flex items-center gap-1 text-xs text-gray-400">
             <span
               class="h-4 w-6 flex shrink-0 items-center justify-center rounded-sm bg-pink-400/20 text-[9px] text-pink-400 font-bold leading-none">
               UP
             </span>
             <span class="truncate">{{ video.upper.name }}</span>
+            <span
+              v-if="review && selectedSummary"
+              class="shrink-0 text-[10px] text-pink-400/80">
+              · {{ selectedSummary }}
+            </span>
           </div>
+        </div>
+      </div>
 
-          <div class="flex shrink-0 items-center gap-2">
-            <template v-if="video.attr !== 0">
-              <span class="text-xs text-gray-500">已失效</span>
-            </template>
-            <button
-              v-else-if="isMultiPage"
-              type="button"
-              class="relative h-8 min-w-20 flex cursor-pointer select-none items-center justify-center overflow-hidden rounded-full px-2 text-xs text-pink-400 transition-all duration-200 card-glassy hover:ring-1 hover:ring-pink-400/20 disabled:opacity-60"
-              :disabled="pagesLoading"
-              @click.stop="openPageDialog">
-              <Spinner
-                v-if="pagesLoading"
-                class="size-4" />
-              <span v-else>选择分P</span>
-            </button>
-            <DownloadStatus
-              v-else-if="singlePage"
-              :video="video"
-              :page="singlePage"
-              :pages-total="1"
-              :folder-name="folderName"
-              :history="historyFor(singlePage.cid)"></DownloadStatus>
-            <button
-              v-else-if="legacyPlayable"
-              type="button"
-              class="relative h-8 min-w-20 flex cursor-pointer select-none items-center justify-center overflow-hidden rounded-full px-2 text-xs text-green-400 transition-all duration-200 card-glassy hover:ring-1 hover:ring-green-400/20"
-              @click.stop="playLegacy">
-              播放
-            </button>
-            <button
-              v-else
-              type="button"
-              class="relative h-8 min-w-20 flex cursor-pointer select-none items-center justify-center overflow-hidden rounded-full px-2 text-xs text-pink-400 transition-all duration-200 card-glassy hover:ring-1 hover:ring-pink-400/20 disabled:opacity-60"
-              :disabled="pagesLoading"
-              @click.stop="onSingleDownload">
-              <Spinner
-                v-if="pagesLoading"
-                class="size-4" />
-              <span v-else>下载</span>
-            </button>
+      <div
+        v-if="!hidePrimaryAction"
+        class="absolute right-0 bottom-0">
+        <template v-if="video.attr !== 0">
+          <div class="flex h-8 w-20 items-center justify-center rounded-full bg-gray-600/20 text-xs text-gray-200">
+            已失效
           </div>
+        </template>
+        <DownloadStatus
+          v-else-if="reviewSinglePage"
+          :video="video"
+          :page="reviewSinglePage"
+          :pages-total="resolvedPageCount"
+          :folder-name="folderName"
+          :history="historyFor(reviewSinglePage.cid)"></DownloadStatus>
+        <Spinner
+          v-else-if="review && pagesLoading"
+          class="size-4 text-pink-400" />
+        <button
+          v-else-if="isMultiPage"
+          type="button"
+          :disabled="pagesLoading"
+          class="relative h-8 min-w-20 flex cursor-pointer select-none items-center justify-center gap-1 overflow-hidden rounded-full px-2 text-xs text-pink-400 transition-all duration-200 card-glassy hover:ring-1 hover:ring-pink-400/20 disabled:opacity-60"
+          @click.stop="toggleAccordion">
+          <ChevronUpIcon
+            v-if="expanded"
+            class="size-4" />
+          <ChevronDownIcon
+            v-else
+            class="size-4" />
+          <span>{{ expanded ? '收起' : '展开' }}</span>
+        </button>
+        <DownloadStatus
+          v-else-if="singlePage"
+          :video="video"
+          :page="singlePage"
+          :pages-total="1"
+          :folder-name="folderName"
+          :history="historyFor(singlePage.cid)"></DownloadStatus>
+        <button
+          v-else-if="legacyPlayable"
+          type="button"
+          class="relative h-8 min-w-20 flex cursor-pointer select-none items-center justify-center overflow-hidden rounded-full px-2 text-xs text-green-400 transition-all duration-200 card-glassy hover:ring-1 hover:ring-green-400/20"
+          @click.stop="playLegacy">
+          播放
+        </button>
+        <button
+          v-else
+          type="button"
+          class="relative h-8 min-w-20 flex cursor-pointer select-none items-center justify-center overflow-hidden rounded-full px-2 text-xs text-pink-400 transition-all duration-200 card-glassy hover:ring-1 hover:ring-pink-400/20 disabled:opacity-60"
+          :disabled="pagesLoading"
+          @click.stop="onSingleDownload">
+          <Spinner
+            v-if="pagesLoading"
+            class="size-4" />
+          <span v-else>下载</span>
+        </button>
+      </div>
+    </div>
+
+    <div
+      v-if="review && reviewPages.length > 1"
+      class="mt-3 flex flex-col gap-2 border-t border-white/5 pt-3">
+      <div
+        v-for="page in reviewPages"
+        :key="page.cid"
+        class="flex min-w-0 items-center justify-between gap-3">
+        <span class="min-w-0 flex-1 truncate text-xs text-gray-400">P{{ page.page }} {{ page.part }}</span>
+        <DownloadStatus
+          :video="video"
+          :page="page"
+          :pages-total="resolvedPageCount"
+          :folder-name="folderName"
+          :history="historyFor(page.cid)"></DownloadStatus>
+      </div>
+    </div>
+
+    <div
+      v-else-if="!review && expanded"
+      class="mt-3 flex flex-col gap-2 border-t border-white/5 pt-3">
+      <div
+        v-if="selectable"
+        class="flex items-center justify-between gap-2">
+        <span class="text-xs text-gray-500">{{ resolvedPageCount }}P</span>
+      </div>
+
+      <div
+        v-if="!pages?.length"
+        class="py-2 text-center text-xs text-gray-500">
+        {{ pagesLoading ? '正在获取分P…' : '尚未获取分P列表' }}
+      </div>
+      <div
+        v-else
+        class="flex flex-col gap-2">
+        <div
+          v-for="page in pages"
+          :key="page.cid"
+          class="flex min-w-0 items-center justify-between gap-3">
+          <button
+            v-if="selectable"
+            type="button"
+            class="flex min-w-0 flex-1 items-center gap-2 text-left"
+            @click.stop="onToggleCid(page.cid)">
+            <span
+              class="flex size-5 shrink-0 items-center justify-center rounded border border-white/20 text-[10px] text-pink-400"
+              :class="isCidChecked(page.cid) ? 'bg-pink-400/30' : 'bg-transparent'">
+              <span v-if="isCidChecked(page.cid)">✓</span>
+            </span>
+            <span class="min-w-0 flex-1 truncate text-xs text-gray-400">P{{ page.page }} {{ page.part }}</span>
+          </button>
+          <span
+            v-else
+            class="min-w-0 flex-1 truncate text-xs text-gray-400">
+            P{{ page.page }} {{ page.part }}
+          </span>
+          <DownloadStatus
+            :video="video"
+            :page="page"
+            :pages-total="resolvedPageCount"
+            :folder-name="folderName"
+            :history="historyFor(page.cid)"></DownloadStatus>
         </div>
       </div>
     </div>
   </div>
-
-  <Dialog v-model:open="dialogOpen">
-    <DialogContent
-      class="flex w-full min-w-0 max-w-[min(32rem,calc(100vw-2rem))] flex-col overflow-hidden bg-[#121212] p-4 sm:max-w-[min(32rem,calc(100vw-2rem))]"
-      @open-auto-focus.prevent>
-      <DialogTitle class="sr-only">选择分P</DialogTitle>
-      <DialogDescription class="sr-only">{{ video.title }}</DialogDescription>
-
-      <div class="card-border min-w-0 overflow-hidden rounded-2xl p-3">
-        <div class="flex min-w-0 items-center gap-3">
-          <div class="relative h-16 w-28 shrink-0 overflow-hidden rounded-lg bg-gray-900">
-            <img
-              v-if="video.cover"
-              :src="safeCover(video.cover)"
-              referrerpolicy="no-referrer"
-              class="h-full w-full object-cover"
-              alt="" />
-            <div
-              v-else
-              class="h-full w-full flex items-center justify-center text-xl text-gray-600">
-              <TvIcon class="size-6" />
-            </div>
-            <span class="absolute bottom-1 right-1 rounded-sm bg-black/60 px-1 py-0.5 text-[10px] text-[#f6f6f6]">
-              {{ formatDuration(video.duration) }}
-            </span>
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="mb-4 flex items-center gap-2">
-              <div class="truncate text-sm text-[#f6f6f6] font-medium">{{ video.title }}</div>
-              <span class="shrink-0 rounded-sm bg-pink-400/20 px-1.5 py-0.5 text-[10px] text-pink-400">
-                {{ resolvedPageCount }}P
-              </span>
-            </div>
-            <div class="min-w-0 flex items-center gap-1 text-xs text-gray-400">
-              <span
-                class="h-4 w-6 flex shrink-0 items-center justify-center rounded-sm bg-pink-400/20 text-[9px] text-pink-400 font-bold leading-none">
-                UP
-              </span>
-              <span class="truncate">{{ video.upper.name }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="relative h-8 w-full flex cursor-pointer select-none items-center justify-center overflow-hidden rounded-full px-2 text-xs text-pink-400 transition-all duration-200 card-glassy hover:ring-1 hover:ring-pink-400/20 disabled:opacity-60"
-        :disabled="pagesLoading || !pages?.length"
-        @click="downloadAllPages">
-        <Spinner
-          v-if="pagesLoading"
-          class="size-4" />
-        <span v-else>选择全部下载</span>
-      </button>
-
-      <div class="flex min-w-0 max-h-[min(50vh,24rem)] flex-col gap-2 overflow-x-hidden overflow-y-auto">
-        <div
-          v-if="!pages?.length"
-          class="py-4 text-center text-xs text-gray-500">
-          {{ pagesLoading ? '正在获取分P…' : '尚未获取分P列表' }}
-        </div>
-        <template v-else>
-          <div
-            v-for="page in pages"
-            :key="page.cid"
-            class="flex min-w-0 items-center justify-between gap-3">
-            <div class="min-w-0 flex-1 truncate text-xs text-gray-400">P{{ page.page }} {{ page.part }}</div>
-            <DownloadStatus
-              :video="video"
-              :page="page"
-              :pages-total="resolvedPageCount"
-              :folder-name="folderName"
-              :history="historyFor(page.cid)"></DownloadStatus>
-          </div>
-        </template>
-      </div>
-    </DialogContent>
-  </Dialog>
 </template>
 
 <script setup lang="ts">
-import { Tv as TvIcon } from '@lucide/vue'
+import { ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon, Tv as TvIcon } from '@lucide/vue'
 import { openPath, startDownloadVideo } from '@renderer/api'
 import DownloadStatus from '@renderer/components/DownloadStatus.vue'
 import { mittbus } from '@renderer/ipc'
@@ -184,35 +196,42 @@ import { useDownloadStore } from '@renderer/store/download'
 import { formatDuration, safeCover } from '@renderer/utils/media'
 import type { BiliVideoPage, DownloadHistoryRecord, FavoriteResource } from '@shared/types'
 import { storeToRefs } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const props = withDefaults(
   defineProps<{
     video: FavoriteResource
     folderName: string
+    folderId?: number
     histories?: DownloadHistoryRecord[]
-    selectable?: boolean
-    selected?: boolean
+    review?: boolean
   }>(),
   {
+    folderId: 0,
     histories: undefined,
-    selectable: false,
-    selected: false
+    review: false
   }
 )
 
 const emit = defineEmits<{
-  (e: 'toggle', bvid: string): void
+  (e: 'resize', height: number): void
 }>()
 
 const downloadStore = useDownloadStore()
-const { pagesByBvid, pagesLoading: pagesLoadingMap } = storeToRefs(downloadStore)
+const { pagesByBvid, pagesLoading: pagesLoadingMap, expandedBvid, multiSelectMode } = storeToRefs(downloadStore)
 
-const dialogOpen = ref(false)
+const rootRef = ref<HTMLElement | null>(null)
+let resizeObserver: ResizeObserver | null = null
+
 const pages = computed(() => pagesByBvid.value[props.video.bvid] ?? null)
 const pagesLoading = computed(() => Boolean(pagesLoadingMap.value[props.video.bvid]))
+const expanded = computed(() => !props.review && expandedBvid.value === props.video.bvid)
+const selectable = computed(() => !props.review && multiSelectMode.value && props.video.attr === 0)
+const selected = computed(
+  () => downloadStore.isSelected(props.video.bvid) && !downloadStore.isPartiallySelected(props.video.bvid)
+)
+const partialSelected = computed(() => downloadStore.isPartiallySelected(props.video.bvid))
 
-/** 收藏夹 medias.page 是分 P 总数；有 pagelist 后以接口为准 */
 const favoritePageCount = computed(() => {
   const count = Number(props.video.page)
   return Number.isFinite(count) && count > 1 ? Math.trunc(count) : 1
@@ -225,8 +244,26 @@ const historySuggestsMulti = computed(() => {
 })
 const isMultiPage = computed(() => resolvedPageCount.value > 1 || historySuggestsMulti.value)
 const singlePage = computed<BiliVideoPage | null>(() => (pages.value?.length === 1 ? pages.value[0] : null))
+const allCids = computed(() => pages.value?.map(page => page.cid) ?? [])
+
+const selectionEntry = computed(() => downloadStore.getSelection(props.video.bvid))
+const reviewPages = computed(() => {
+  if (!pages.value) return []
+  const entry = selectionEntry.value
+  if (!entry || entry.cids == null) return pages.value
+  return pages.value.filter(page => entry.cids!.includes(page.cid))
+})
+const reviewSinglePage = computed(() => (props.review && reviewPages.value.length === 1 ? reviewPages.value[0] : null))
+const hidePrimaryAction = computed(() => props.review && reviewPages.value.length > 1)
 
 const firstCid = computed(() => pages.value?.[0]?.cid)
+
+const selectedSummary = computed(() => {
+  const entry = selectionEntry.value
+  if (!entry || !isMultiPage.value) return ''
+  if (entry.cids == null) return `全部 ${resolvedPageCount.value}P`
+  return `已选 ${entry.cids.length}/${resolvedPageCount.value}P`
+})
 
 const historyFor = (cid: number): DownloadHistoryRecord | null => {
   const matched = histories.value.find(item => item.cid === cid)
@@ -236,13 +273,6 @@ const historyFor = (cid: number): DownloadHistoryRecord | null => {
   }
   return null
 }
-
-const completedCount = computed(
-  () =>
-    histories.value.filter(
-      item => (item.status === 'completed' || item.status === 'missing') && item.outputPath && item.fileExists
-    ).length
-)
 
 const legacyCompleted = computed(() =>
   histories.value.find(
@@ -298,7 +328,7 @@ const onSingleDownload = async (): Promise<void> => {
   try {
     const list = await ensurePages()
     if (list.length > 1) {
-      dialogOpen.value = true
+      downloadStore.setExpanded(props.video.bvid)
       return
     }
     const page = list[0]
@@ -309,27 +339,55 @@ const onSingleDownload = async (): Promise<void> => {
   }
 }
 
-const openPageDialog = async (): Promise<void> => {
-  dialogOpen.value = true
+const toggleAccordion = async (): Promise<void> => {
+  if (expanded.value) {
+    downloadStore.setExpanded(null)
+    return
+  }
+  downloadStore.setExpanded(props.video.bvid)
   try {
     const list = await ensurePages()
     if (list.length <= 1) {
-      dialogOpen.value = false
+      downloadStore.setExpanded(null)
     }
   } catch (error) {
-    dialogOpen.value = false
+    downloadStore.setExpanded(null)
     toastError(error)
   }
 }
 
-const downloadAllPages = async (): Promise<void> => {
-  try {
-    const list = await ensurePages()
-    for (const page of list) {
-      startPage(page, list.length)
-    }
-  } catch (error) {
-    toastError(error)
-  }
+const onToggleVideo = (): void => {
+  downloadStore.toggleVideo(props.video, props.folderName, props.folderId)
 }
+
+const isCidChecked = (cid: number): boolean => downloadStore.isCidSelected(props.video.bvid, cid)
+
+const onToggleCid = (cid: number): void => {
+  downloadStore.toggleCid(props.video, props.folderName, props.folderId, cid, allCids.value)
+}
+
+const reportHeight = (): void => {
+  const height = rootRef.value?.offsetHeight
+  if (height) emit('resize', height)
+}
+
+onMounted(() => {
+  if (props.review) {
+    void ensurePages().catch(toastError)
+  }
+  if (props.review || typeof ResizeObserver === 'undefined' || !rootRef.value) {
+    reportHeight()
+    return
+  }
+  resizeObserver = new ResizeObserver(() => reportHeight())
+  resizeObserver.observe(rootRef.value)
+  reportHeight()
+})
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
+})
+
+watch([expanded, pages, pagesLoading, selectable], () => reportHeight())
 </script>

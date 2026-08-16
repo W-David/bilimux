@@ -6,7 +6,7 @@
       <DialogOverlay
         class="data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
       <DialogContent
-        class="data-open:animate-in data-open:slide-in-from-right data-closed:animate-out data-closed:slide-out-to-right border-white/10 bg-[#0d0d0d]/95 shadow-black/40 fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-[420px] flex-col border-l p-0 shadow-2xl outline-none duration-300 backdrop-blur-2xl">
+        class="data-open:animate-in data-open:slide-in-from-right data-closed:animate-out data-closed:slide-out-to-right border-white/10 bg-[#0d0d0d]/95 shadow-black/40 fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-105 flex-col border-l p-0 shadow-2xl outline-none duration-300 backdrop-blur-2xl">
         <header class="flex items-center justify-between border-b border-white/10 px-5 py-4">
           <DialogTitle class="text-sm font-semibold text-gray-100">文件详情</DialogTitle>
           <DialogClose as-child>
@@ -20,16 +20,16 @@
         </header>
 
         <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
-          <table class="w-full text-xs">
+          <table class="w-full">
             <tbody>
               <tr
                 v-for="row in rows"
                 :key="row.label"
                 class="border-b border-white/5 last:border-0">
-                <td class="w-24 py-2 pr-3 align-top whitespace-nowrap text-gray-500">
+                <td class="w-24 py-2 pr-3 align-top whitespace-nowrap text-gray-500 text-xs">
                   {{ row.label }}
                 </td>
-                <td class="py-2 text-right break-all text-gray-300">
+                <td class="py-2 text-right break-all text-gray-300 text-[10px]">
                   {{ row.value }}
                 </td>
               </tr>
@@ -43,10 +43,10 @@
 
 <script setup lang="ts">
 import { XIcon } from '@lucide/vue'
+import type { ConvertTask } from '@renderer/types/convert'
 import { formatDurationMs, formatFileSize } from '@renderer/utils/media'
 import { DialogClose, DialogContent, DialogOverlay, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
 import { computed } from 'vue'
-import type { ConvertTask } from '@renderer/types/convert'
 
 const props = defineProps<{
   task: ConvertTask | null
@@ -95,10 +95,9 @@ const rows = computed(() => {
   return [
     { label: '标题', value: task.title || '—' },
     { label: 'BVID', value: task.bvid || '—' },
-    { label: '文件名', value: task.fileName || '—' },
     { label: '视频类型', value: typeText(task.type) },
+    { label: '文件名', value: task.fileName || '—' },
     { label: '状态', value: STATUS_TEXT[task.status] || task.status },
-    { label: '进度', value: task.progress != null ? `${task.progress}%` : '—' },
     { label: 'UP 主', value: task.uname || '—' },
     { label: '收藏夹', value: task.groupTitle || '—' },
     { label: '源目录', value: task.sourceDir || '—' },
@@ -109,10 +108,8 @@ const rows = computed(() => {
     { label: '文件存在', value: task.fileExists == null ? '未知' : task.fileExists ? '是' : '否' },
     { label: '开始时间', value: formatDateTime(task.startedAt) },
     { label: '完成时间', value: formatDateTime(task.completedAt) },
-    { label: '更新时间', value: formatDateTime(task.updatedAt) },
-    { label: '错误信息', value: task.message || '—' },
-    { label: '运行 ID', value: task.runId || '—' }
-  ]
+    { label: '更新时间', value: formatDateTime(task.updatedAt) }
+  ].filter(i => !!i)
 })
 </script>
 

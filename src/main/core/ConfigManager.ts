@@ -1,3 +1,4 @@
+import { clampConcurrent } from '@shared/concurrent'
 import { clampDownloadCodec, clampDownloadQn } from '@shared/download'
 import { ConfigOptions, DownloadConfigOptions, UserStore } from '@shared/types'
 import Store from 'electron-store'
@@ -44,7 +45,8 @@ export default class ConfigManager {
       gpacBinPath,
       forceTransform: false,
       forceComposition: false,
-      genConfig: false
+      genConfig: false,
+      concurrent: 1
     }
 
     const defaultDownloadConfig: Required<DownloadConfigOptions> = {
@@ -84,6 +86,18 @@ export default class ConfigManager {
       logger.info('[Config] 已迁移视频转换输出目录:', path.join(oldOutputDir, CONVERT_DIR_NAME))
     }
 
+    const latestConvertForConcurrent = this.store.get('convert-config')
+    if (latestConvertForConcurrent) {
+      const nextConcurrent = clampConcurrent(latestConvertForConcurrent.concurrent)
+      if (latestConvertForConcurrent.concurrent !== nextConcurrent) {
+        this.store.set('convert-config', {
+          ...latestConvertForConcurrent,
+          concurrent: nextConcurrent
+        })
+        logger.info('[Config] 已补齐并行转换数:', nextConcurrent)
+      }
+    }
+
     // 初始化下载配置（老版本没有该配置项）
     const downloadConfig = this.store.get('download-config')
     if (!downloadConfig) {
@@ -97,7 +111,7 @@ export default class ConfigManager {
     } else {
       const nextDownloadConfig = {
         ...downloadConfig,
-        concurrent: typeof downloadConfig.concurrent === 'number' ? downloadConfig.concurrent : 1,
+        concurrent: clampConcurrent(downloadConfig.concurrent),
         qn: clampDownloadQn(downloadConfig.qn),
         codec: clampDownloadCodec(downloadConfig.codec)
       }

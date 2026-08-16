@@ -1,5 +1,5 @@
 import { getVideoPageList } from '@renderer/api/network'
-import type { BiliVideoPage } from '@shared/types'
+import type { BiliVideoPage, FavoriteResource } from '@shared/types'
 
 const BV_RE = /BV[0-9A-Za-z]{10}/i
 
@@ -38,4 +38,13 @@ export async function fetchVideoPages(bvid: string): Promise<BiliVideoPage[]> {
   }
 
   return pages
+}
+
+/** 按标题 / UP 主过滤收藏视频；输入 BV 号时不过滤，交给搜索提交去拉稿件 */
+export function filterFavoriteVideos(videos: FavoriteResource[], query: string): FavoriteResource[] {
+  const keyword = query.trim().toLowerCase()
+  if (!keyword || parseBvid(keyword)) return videos
+  return videos.filter(
+    video => video.title.toLowerCase().includes(keyword) || video.upper.name.toLowerCase().includes(keyword)
+  )
 }

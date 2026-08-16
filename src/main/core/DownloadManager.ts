@@ -1,3 +1,4 @@
+import { clampConcurrent } from '@shared/concurrent'
 import {
   clampDownloadCodec,
   clampDownloadQn,
@@ -113,11 +114,10 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
   }
 
   /**
-   * 设置并行下载任务数（限制 1-16）
+   * 设置并行下载任务数（1/2/4/8）
    */
   public setConcurrency(count: number): void {
-    const safe = Math.min(16, Math.max(1, Math.trunc(Number(count)) || 1))
-    this.queue.setConcurrency(safe)
+    this.queue.setConcurrency(clampConcurrent(count))
   }
 
   /**

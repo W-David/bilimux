@@ -1,26 +1,13 @@
 <template>
-  <div class="mx-auto h-full w-full flex flex-col gap-4 pt-4 text-sm">
-    <!-- 标题 -->
-    <div class="px-6">
-      <div class="text-base font-black">设置</div>
-    </div>
+  <div class="mx-auto h-full w-full flex flex-col gap-4 text-sm">
+    <Header></Header>
 
     <!-- 自绘切换按钮 -->
     <div class="flex items-center gap-3 px-6">
-      <div
+      <RouteButton
         v-for="tab in tabs"
-        :key="tab.name"
-        type="button"
-        :class="[
-          'relative flex h-9 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-black/5 bg-[#121212] px-5 text-sm shadow-sm shadow-black/50 transition-all duration-300 text-zinc-400 hover:bg-[#202020] hover:text-white',
-          route.name === tab.name ? 'border-pink-500/30 bg-pink-500/20 text-pink-400' : ''
-        ]"
-        @click="switchTab(tab.name)">
-        <component
-          :is="tab.icon"
-          class="size-4" />
-        <span>{{ tab.label }}</span>
-      </div>
+        :key="String(tab.name)"
+        :to="String(tab.name)" />
     </div>
 
     <!-- 分组视图（KeepAlive 缓存） -->
@@ -80,44 +67,27 @@
 </template>
 
 <script setup lang="ts">
-import {
-  Download as DownloadIcon,
-  Film as FilmIcon,
-  Save as SaveIcon,
-  Settings as SettingsIcon,
-  User as UserIcon
-} from '@lucide/vue'
+import { Save as SaveIcon } from '@lucide/vue'
 import { clearNativeStore, subscribeFetchPreferenceEvent } from '@renderer/api'
+import Header from '@renderer/components/Header.vue'
 import { mittbus } from '@renderer/ipc'
+import { getChildTabs } from '@renderer/router/utils'
 import { useAuthStore } from '@renderer/store/auth'
 import { useFavoritesStore } from '@renderer/store/favorites'
 import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
-import { onUnmounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onUnmounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
 const store = usePreferenceStore()
 const { fetchPreference, savePreference } = store
 const authStore = useAuthStore()
 const favoritesStore = useFavoritesStore()
 const route = useRoute()
-const router = useRouter()
 
 const showResetDialog = ref(false)
 
-const tabs = [
-  { name: 'prefer-normal', label: '常规设置', icon: SettingsIcon },
-  { name: 'prefer-user', label: '用户设置', icon: UserIcon },
-  { name: 'prefer-convert', label: '视频转换', icon: FilmIcon },
-  { name: 'prefer-download', label: '视频下载', icon: DownloadIcon }
-]
-
-const switchTab = (name: string): void => {
-  if (route.name === name) {
-    return
-  }
-  router.push({ name })
-}
+const tabs = computed(() => getChildTabs(route.matched.find(record => record.name === 'prefer')))
 
 const subscribe = subscribeFetchPreferenceEvent(async () => {
   try {

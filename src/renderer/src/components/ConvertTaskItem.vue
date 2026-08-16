@@ -21,7 +21,7 @@
         :class="badgeClass">
         <component
           :is="statusIcon"
-          class="size-5" />
+          class="size-4" />
       </div>
 
       <button
@@ -30,7 +30,7 @@
         aria-label="文件详情"
         class="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-300 transition-colors duration-200 hover:bg-white/10 hover:text-white"
         @click="detailsOpen = true">
-        <InfoIcon class="size-5" />
+        <InfoIcon class="size-4" />
       </button>
 
       <div
@@ -103,7 +103,6 @@
 </template>
 
 <script setup lang="ts">
-import type { ConvertTask } from '@renderer/types/convert'
 import {
   CircleAlert as CircleAlertIcon,
   CircleCheck as CircleCheckIcon,
@@ -116,13 +115,13 @@ import {
   Import as ImportIcon,
   Info as InfoIcon,
   PencilLine as PencilLineIcon,
-  Search as SearchIcon,
   SkipForward as SkipForwardIcon,
   Trash2 as Trash2Icon
 } from '@lucide/vue'
 import { openFolder, openPath } from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
 import { useConvertStore } from '@renderer/store/convert'
+import type { ConvertTask } from '@renderer/types/convert'
 import { computed, ref } from 'vue'
 import FileDetailsDrawer from './FileDetailsDrawer.vue'
 
@@ -198,7 +197,7 @@ const statusIcon = computed(() => {
     case 'waiting':
       return HourglassIcon
     case 'scanned':
-      return SearchIcon
+      return HourglassIcon
     default:
       return HourglassIcon
   }

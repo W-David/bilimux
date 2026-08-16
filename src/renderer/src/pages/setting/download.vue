@@ -143,6 +143,7 @@ import { mittbus } from '@renderer/ipc'
 import { useDownloadStore } from '@renderer/store/download'
 import { useFavoritesStore } from '@renderer/store/favorites'
 import { usePreferenceStore } from '@renderer/store/preference'
+import { clampConcurrent, CONCURRENT_OPTIONS } from '@shared/concurrent'
 import { clampDownloadCodec, clampDownloadQn, DOWNLOAD_CODEC_OPTIONS, DOWNLOAD_QN_OPTIONS } from '@shared/download'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
@@ -152,8 +153,6 @@ const favoritesStore = useFavoritesStore()
 const store = usePreferenceStore()
 const { preference } = storeToRefs(store)
 const { savePreference } = store
-
-const CONCURRENT_OPTIONS = [1, 2, 4, 8, 16] as const
 
 const clearingDownloadHistory = ref(false)
 const showClearDialog = ref(false)
@@ -186,23 +185,14 @@ const refreshFavoritesCache = async (): Promise<void> => {
   }
 }
 
-const concurrentValue = computed(() => {
-  const current = preference.value['download-config'].concurrent
-  return String(CONCURRENT_OPTIONS.some(option => option === current) ? current : CONCURRENT_OPTIONS[0])
-})
+const concurrentValue = computed(() => String(clampConcurrent(preference.value['download-config'].concurrent)))
 
 const qnValue = computed(() => String(clampDownloadQn(preference.value['download-config'].qn)))
 
 const codecValue = computed(() => clampDownloadCodec(preference.value['download-config'].codec))
 
-/**
- * 并行下载任务数变更：仅允许 1/2/4/8/16
- */
 const onConcurrentChange = (value: string | number): void => {
-  const concurrent = CONCURRENT_OPTIONS.find(option => option === Number(value))
-  if (concurrent) {
-    preference.value['download-config'].concurrent = concurrent
-  }
+  preference.value['download-config'].concurrent = clampConcurrent(value)
 }
 
 const onQnChange = (value: string | number): void => {

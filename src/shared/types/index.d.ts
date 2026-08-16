@@ -364,12 +364,14 @@ type ConfigOptions = {
   forceTransform: boolean
   forceComposition: boolean
   genConfig: boolean
+  /** 并行转换任务数（1/2/4/8） */
+  concurrent: number
 }
 
 // 下载配置
 type DownloadConfigOptions = {
   outputDir: string
-  /** 并行下载任务数（1-16） */
+  /** 并行下载任务数（1/2/4/8） */
   concurrent: number
   /** 目标清晰度 qn，实际取不超过该值的最高可用流 */
   qn: number

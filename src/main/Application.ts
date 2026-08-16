@@ -1,5 +1,6 @@
 import { LogLevel } from 'electron-log'
-import type { DownloadConfigOptions } from '@shared/types'
+import { clampConcurrent } from '@shared/concurrent'
+import type { ConfigOptions, DownloadConfigOptions } from '@shared/types'
 import AutoLauncher from './core/AutoLauncher'
 import { ComposEngine, ConvertTaskResult } from './core/ComposEngine'
 import ConfigManager from './core/ConfigManager'
@@ -47,7 +48,9 @@ export default class Application {
     this.downloadHistoryStore = new DownloadHistoryStore()
     this.convertHistoryStore = new ConvertHistoryStore()
 
-    this.processQueue = new ProcessQueue({ concurrency: 1 })
+    this.processQueue = new ProcessQueue({
+      concurrency: clampConcurrent(this.configManager.getStore()['convert-config'].concurrent)
+    })
 
     this.composEngine = new ComposEngine(this.processQueue, this.configManager, this.convertHistoryStore)
 
@@ -158,6 +161,10 @@ export default class Application {
     })
     this.configManager.onChangedListener('bind-close-to-hide', val => {
       this.windowManager.setCloseToHide(Boolean(val))
+    })
+    this.configManager.onChangedListener('convert-config', val => {
+      const convertConfig = val as ConfigOptions
+      this.processQueue.setConcurrency(clampConcurrent(convertConfig.concurrent))
     })
     this.configManager.onChangedListener('download-config', val => {
       const downloadConfig = val as DownloadConfigOptions

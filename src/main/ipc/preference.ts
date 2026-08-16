@@ -1,3 +1,4 @@
+import { clampConcurrent } from '@shared/concurrent'
 import { clampDownloadCodec, clampDownloadQn } from '@shared/download'
 import type { UserStore } from '@shared/types'
 import type Application from '../Application'
@@ -15,10 +16,6 @@ const PREFERENCE_KEYS = [
   'log-level'
 ] as const
 
-function clampConcurrent(value: unknown): number {
-  return Math.min(16, Math.max(1, Math.trunc(Number(value)) || 1))
-}
-
 function mergePreference(app: Application, incoming: UserStore): UserStore {
   const current = app.configManager.getStore()
   const engineBinPath = getEngineBinPath(app.context.platform)
@@ -31,7 +28,8 @@ function mergePreference(app: Application, incoming: UserStore): UserStore {
     'convert-config': {
       ...current['convert-config'],
       ...(convertIncoming ?? {}),
-      gpacBinPath: engineBinPath
+      gpacBinPath: engineBinPath,
+      concurrent: clampConcurrent(convertIncoming?.concurrent ?? current['convert-config'].concurrent)
     },
     'download-config': {
       ...current['download-config'],

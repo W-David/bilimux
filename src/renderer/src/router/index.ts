@@ -1,10 +1,20 @@
+import {
+  CircleCheck as CircleCheckIcon,
+  CircleX as CircleXIcon,
+  Download as DownloadIcon,
+  Film as FilmIcon,
+  Info as InfoIcon,
+  List as ListIcon,
+  Settings as SettingsIcon,
+  User as UserIcon
+} from '@lucide/vue'
 import Layout from '@renderer/layout/index.vue'
 import Main from '@renderer/layout/Main.vue'
 import About from '@renderer/pages/About.vue'
 import ConvertComplete from '@renderer/pages/convert/complete.vue'
-import ConvertWaiting from '@renderer/pages/convert/waiting.vue'
 import ConvertIndex from '@renderer/pages/convert/index.vue'
 import ConvertUnconverted from '@renderer/pages/convert/unconverted.vue'
+import ConvertWaiting from '@renderer/pages/convert/waiting.vue'
 import Auth from '@renderer/pages/download/auth.vue'
 import Download from '@renderer/pages/download/index.vue'
 import Task from '@renderer/pages/download/task.vue'
@@ -15,7 +25,7 @@ import SettingNormal from '@renderer/pages/setting/normal.vue'
 import SettingUser from '@renderer/pages/setting/user.vue'
 import { useAuthStore } from '@renderer/store/auth'
 import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-router'
-import { findChildIndex } from './utils'
+import { findChildIndex, sectionRecord } from './utils'
 
 // 转换管理页最后停留的分组，父路由重定向时使用，避免每次进入都被重置到“未完成”
 let lastConvertTabName = 'convert-unconverted'
@@ -38,7 +48,8 @@ const routes: RouteRecordRaw[] = [
             component: ConvertIndex,
             redirect: () => ({ name: lastConvertTabName }),
             meta: {
-              activeMenu: 'convert'
+              switchTransition: true,
+              menu: { label: '转换管理', icon: ListIcon, description: '客户端缓存视频转 MP4' }
             },
             children: [
               {
@@ -46,8 +57,7 @@ const routes: RouteRecordRaw[] = [
                 name: 'convert-waiting',
                 component: ConvertWaiting,
                 meta: {
-                  switchTransition: true,
-                  activeMenu: 'convert'
+                  tab: { label: '待转换', icon: ListIcon }
                 }
               },
               {
@@ -55,8 +65,7 @@ const routes: RouteRecordRaw[] = [
                 name: 'convert-complete',
                 component: ConvertComplete,
                 meta: {
-                  switchTransition: true,
-                  activeMenu: 'convert'
+                  tab: { label: '已完成', icon: CircleCheckIcon }
                 }
               },
               {
@@ -64,8 +73,7 @@ const routes: RouteRecordRaw[] = [
                 name: 'convert-unconverted',
                 component: ConvertUnconverted,
                 meta: {
-                  switchTransition: true,
-                  activeMenu: 'convert'
+                  tab: { label: '未完成', icon: CircleXIcon }
                 }
               }
             ]
@@ -74,33 +82,32 @@ const routes: RouteRecordRaw[] = [
             path: 'download',
             name: 'download',
             component: Download,
+            meta: {
+              menu: { label: '下载', icon: DownloadIcon, description: '收藏夹视频下载' }
+            },
             children: [
               {
                 path: 'auth',
                 name: 'download-auth',
-                component: Auth,
-                meta: {
-                  activeMenu: 'download'
-                }
+                component: Auth
               },
               {
                 path: 'task',
                 name: 'download-task',
                 component: Task,
                 meta: {
-                  requireAuth: true,
-                  activeMenu: 'download'
+                  requireAuth: true
                 }
               }
-            ],
-            meta: {
-              activeMenu: 'download'
-            }
+            ]
           },
           {
             path: 'about',
             name: 'about',
-            component: About
+            component: About,
+            meta: {
+              menu: { label: '关于', icon: InfoIcon }
+            }
           },
           {
             path: 'prefer',
@@ -108,7 +115,8 @@ const routes: RouteRecordRaw[] = [
             component: SettingIndex,
             redirect: () => ({ name: lastSettingTabName }),
             meta: {
-              activeMenu: 'prefer'
+              switchTransition: true,
+              menu: { label: '设置', icon: SettingsIcon, description: '设置' }
             },
             children: [
               {
@@ -116,8 +124,7 @@ const routes: RouteRecordRaw[] = [
                 name: 'prefer-normal',
                 component: SettingNormal,
                 meta: {
-                  switchTransition: true,
-                  activeMenu: 'prefer'
+                  tab: { label: '常规设置', icon: SettingsIcon }
                 }
               },
               {
@@ -125,8 +132,7 @@ const routes: RouteRecordRaw[] = [
                 name: 'prefer-user',
                 component: SettingUser,
                 meta: {
-                  switchTransition: true,
-                  activeMenu: 'prefer'
+                  tab: { label: '用户设置', icon: UserIcon }
                 }
               },
               {
@@ -134,8 +140,7 @@ const routes: RouteRecordRaw[] = [
                 name: 'prefer-convert',
                 component: SettingConvert,
                 meta: {
-                  switchTransition: true,
-                  activeMenu: 'prefer'
+                  tab: { label: '视频转换', icon: FilmIcon }
                 }
               },
               {
@@ -143,8 +148,7 @@ const routes: RouteRecordRaw[] = [
                 name: 'prefer-download',
                 component: SettingDownload,
                 meta: {
-                  switchTransition: true,
-                  activeMenu: 'prefer'
+                  tab: { label: '视频下载', icon: DownloadIcon }
                 }
               }
             ]
@@ -193,9 +197,10 @@ router.beforeEach(async to => {
 router.afterEach((to, from) => {
   // 记录最后一次停留的转换/设置分组，供父路由重定向回到原分组
   if (to.meta.switchTransition && typeof to.name === 'string') {
-    if (to.meta.activeMenu === 'prefer') {
+    const section = sectionRecord(to)
+    if (section?.name === 'prefer') {
       lastSettingTabName = to.name
-    } else {
+    } else if (section?.name === 'convert') {
       lastConvertTabName = to.name
     }
   }
@@ -206,19 +211,21 @@ router.afterEach((to, from) => {
   }
 
   // 菜单级顺序：Main.children 里页面记录的下标
-  const toPageIndex = findChildIndex(to.matched[1], to.matched[2])
-  const fromPageIndex = findChildIndex(from.matched[1], from.matched[2])
+  const toSection = sectionRecord(to)
+  const fromSection = sectionRecord(from)
+  const toPageIndex = findChildIndex(to.matched[1], toSection)
+  const fromPageIndex = findChildIndex(from.matched[1], fromSection)
 
-  if (from.meta.switchTransition && to.meta.switchTransition) {
-    // 只有同一个分组（设置页 ↔ 设置页 / 转换管理 ↔ 转换管理）才使用左右滑动
-    if (to.meta.activeMenu && to.meta.activeMenu === from.meta.activeMenu) {
-      // 分组内顺序：分组容器 children 里子页记录的下标
-      const toGroupIndex = findChildIndex(to.matched[2], to.matched[3])
-      const fromGroupIndex = findChildIndex(from.matched[2], from.matched[3])
-      to.meta.transition = toGroupIndex >= fromGroupIndex ? 'slide-left' : 'slide-right'
-    } else {
-      to.meta.transition = toPageIndex >= fromPageIndex ? 'slide-up' : 'slide-down'
-    }
+  if (
+    from.meta.switchTransition &&
+    to.meta.switchTransition &&
+    toSection?.name &&
+    toSection.name === fromSection?.name
+  ) {
+    // 同一栏目内的子页：按栏目 children 下标左右滑动
+    const toGroupIndex = findChildIndex(toSection, to.matched[3])
+    const fromGroupIndex = findChildIndex(fromSection, from.matched[3])
+    to.meta.transition = toGroupIndex >= fromGroupIndex ? 'slide-left' : 'slide-right'
   } else {
     to.meta.transition = toPageIndex >= fromPageIndex ? 'slide-up' : 'slide-down'
   }

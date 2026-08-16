@@ -1,20 +1,29 @@
 <template>
   <div class="h-full w-full flex flex-col overflow-hidden">
-    <!-- 顶部 Header -->
-    <div class="flex flex-none items-center justify-between border-b border-[#1f1f1f] border-solid p-4 pt-8">
-      <UserCard :user="userInfo" />
-      <div class="flex flex-none items-center gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          @click="openDownloadFolder">
-          <FolderOpenIcon data-icon="inline-start" />
-          下载目录
-        </Button>
+    <Header>
+      <Button
+        size="sm"
+        variant="outline"
+        @click="openDownloadFolder">
+        <FolderOpenIcon data-icon="inline-start" />
+        下载目录
+      </Button>
+    </Header>
+    <div class="flex flex-none items-center justify-start gap-2 border-b border-[#1f1f1f] border-solid p-4 pt-8">
+      <div class="flex min-w-0 items-center gap-2">
+        <SelectModeSwitch
+          :model-value="downloadStore.multiSelectMode"
+          @update:model-value="downloadStore.setMultiSelectMode" />
+        <button
+          v-if="showReviewAction"
+          type="button"
+          class="relative h-8 min-w-24 flex cursor-pointer select-none items-center justify-center overflow-hidden rounded-full px-3 text-xs text-pink-400 card-glassy hover:ring-1 hover:ring-pink-400/20"
+          @click="openReview">
+          查看所选项
+        </button>
       </div>
     </div>
 
-    <!-- 获取收藏夹中：骨架屏 -->
     <div
       v-if="favoritesStore.running"
       class="min-h-0 flex flex-1 overflow-hidden">
@@ -49,16 +58,69 @@
         :history-map="historyMap"
         @retry="handleRetry"></VideoList>
     </div>
+
+    <Dialog v-model:open="confirmOpen">
+      <DialogContent
+        class="flex w-full min-w-0 max-w-[min(36rem,calc(100vw-2rem))] flex-col overflow-hidden bg-[#121212] p-4 sm:max-w-[min(36rem,calc(100vw-2rem))]"
+        @open-auto-focus.prevent>
+        <DialogHeader>
+          <DialogTitle>查看所选项</DialogTitle>
+          <DialogDescription>
+            已选择 {{ downloadStore.selectedCount }} 个视频，可查看下载进度或确认下载
+          </DialogDescription>
+        </DialogHeader>
+
+        <div class="flex max-h-[min(50vh,28rem)] min-h-0 flex-col gap-3 overflow-y-auto">
+          <VideoItem
+            v-for="entry in downloadStore.selectedList"
+            :key="entry.video.bvid"
+            :video="entry.video"
+            :folder-name="entry.folderName"
+            :folder-id="entry.folderId"
+            :histories="historyMap.get(entry.video.bvid)"
+            review></VideoItem>
+        </div>
+
+        <DialogFooter class="bg-transparent">
+          <Button
+            variant="outline"
+            size="sm"
+            :disabled="downloading"
+            @click="confirmOpen = false">
+            取消
+          </Button>
+          <Button
+            size="sm"
+            :disabled="downloading || downloadStore.selectedCount === 0"
+            @click="confirmDownloadAll">
+            <Spinner
+              v-if="downloading"
+              data-icon="inline-start" />
+            确认下载
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { FolderOpen as FolderOpenIcon } from '@lucide/vue'
-import { getDownloadHistories, getDownloadHistory, openPath, subscribeDownloadItemEndEvent } from '@renderer/api'
+import {
+  getDownloadHistories,
+  getDownloadHistory,
+  openPath,
+  startDownloadVideo,
+  subscribeDownloadItemEndEvent
+} from '@renderer/api'
 import FolderList from '@renderer/components/FolderList.vue'
+import Header from '@renderer/components/Header.vue'
+import SelectModeSwitch from '@renderer/components/SelectModeSwitch.vue'
+import VideoItem from '@renderer/components/VideoItem.vue'
 import VideoList from '@renderer/components/VideoList.vue'
 import { mittbus } from '@renderer/ipc'
 import { type FavoriteFolderData } from '@renderer/services/favorites'
+import { useDownloadStore, type DownloadSelectionEntry } from '@renderer/store/download'
 import { useFavoritesStore } from '@renderer/store/favorites'
 import { usePreferenceStore } from '@renderer/store/preference'
 import type { DownloadHistoryRecord } from '@shared/types'
@@ -77,6 +139,7 @@ function groupHistories(records: DownloadHistoryRecord[]): Map<string, DownloadH
 
 const preferenceStore = usePreferenceStore()
 const favoritesStore = useFavoritesStore()
+const downloadStore = useDownloadStore()
 
 const folders = computed(() => preferenceStore.preference['favorites-data']?.folders ?? [])
 const currentFolder = ref<FavoriteFolderData | null>(null)
@@ -84,12 +147,12 @@ const userInfo = computed(() => preferenceStore.preference['user-info'] ?? null)
 const errorMessage = ref('')
 const refreshing = ref(false)
 const historyMap = ref<Map<string, DownloadHistoryRecord[]>>(new Map())
-// 收藏夹数据版本号：丢弃过期的下载历史查询结果，避免旧数据覆盖新数据
+const downloading = ref(false)
+const confirmOpen = ref(false)
 let historyLoadVersion = 0
 
-/**
- * 一次性获取当前用户的所有收藏夹及每个收藏夹内的全部视频
- */
+const showReviewAction = computed(() => downloadStore.multiSelectMode && downloadStore.selectedCount > 0)
+
 const loadData = async (): Promise<void> => {
   if (refreshing.value || favoritesStore.running) return
   refreshing.value = true
@@ -105,9 +168,6 @@ const loadData = async (): Promise<void> => {
   }
 }
 
-/**
- * 查询所有视频的下载历史，用于回显下载状态
- */
 const loadHistories = async (): Promise<void> => {
   const version = ++historyLoadVersion
   const bvids = folders.value.flatMap(folder => folder.videos.map(video => video.bvid))
@@ -124,8 +184,6 @@ const loadHistories = async (): Promise<void> => {
   }
 }
 
-// 收藏夹数据变化（登录获取完成、手动刷新、清空缓存）时重新加载下载历史，
-// 避免挂载时只加载一次导致 historyMap 与新数据不匹配
 watch(
   () => preferenceStore.preference['favorites-data'],
   () => {
@@ -148,22 +206,23 @@ watch(
   { immediate: true }
 )
 
+watch(
+  () => downloadStore.multiSelectMode,
+  on => {
+    if (!on) confirmOpen.value = false
+  }
+)
+
 onMounted(() => {
   if (folders.value.length === 0 && userInfo.value?.mid && !favoritesStore.running) {
     void loadData()
   }
 })
 
-/**
- * 打开收藏夹（数据已一次性获取，直接切换展示）
- */
 const openFolder = (folder: FavoriteFolderData): void => {
   currentFolder.value = folder
 }
 
-/**
- * 错误状态重试：重新获取全部数据
- */
 const handleRetry = (): void => {
   loadData()
 }
@@ -176,6 +235,58 @@ const openDownloadFolder = async (): Promise<void> => {
       severity: 'error',
       message: errMessage
     })
+  }
+}
+
+const openReview = (): void => {
+  confirmOpen.value = true
+  for (const entry of downloadStore.selectedList) {
+    void downloadStore.loadPages(entry.video.bvid)
+  }
+}
+
+const enqueueEntry = async (entry: DownloadSelectionEntry): Promise<void> => {
+  const pages = await downloadStore.loadPages(entry.video.bvid)
+  const targets = entry.cids == null ? pages : pages.filter(page => entry.cids!.includes(page.cid))
+  for (const page of targets) {
+    const item = downloadStore.getItem(entry.video.bvid, page.cid)
+    if (['success', 'downloading', 'waiting', 'preprocess', 'importing', 'writing'].includes(item.status)) {
+      continue
+    }
+    startDownloadVideo({
+      bvid: entry.video.bvid,
+      cid: page.cid,
+      page: page.page,
+      pages: pages.length,
+      part: page.part,
+      title: entry.video.title,
+      uname: entry.video.upper.name,
+      folderName: entry.folderName,
+      coverUrl: entry.video.cover
+    })
+    item.status = 'waiting'
+  }
+}
+
+const confirmDownloadAll = async (): Promise<void> => {
+  const targets = downloadStore.selectedList.slice()
+  if (targets.length === 0) return
+  downloading.value = true
+  try {
+    for (const entry of targets) {
+      await enqueueEntry(entry)
+    }
+    mittbus.emit('toast:add', {
+      severity: 'success',
+      message: `已加入下载：${targets.length} 个视频`
+    })
+  } catch (error) {
+    mittbus.emit('toast:add', {
+      severity: 'error',
+      message: error instanceof Error ? error.message : String(error)
+    })
+  } finally {
+    downloading.value = false
   }
 }
 
