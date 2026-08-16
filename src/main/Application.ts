@@ -85,12 +85,16 @@ export default class Application {
     this.composEngine.on('process:item:start', data => {
       this.windowManager.sendCommandToAll('process:item:start', data)
       if (this.currentConvertRunId) {
-        this.convertHistoryStore.markStarted(
-          this.currentConvertRunId,
-          data.bv,
-          data.outputPath,
-          this.currentConvertOrder.get(data.bv.bvid) ?? 0
-        )
+        try {
+          this.convertHistoryStore.markStarted(
+            this.currentConvertRunId,
+            data.bv,
+            data.outputPath,
+            this.currentConvertOrder.get(data.bv.bvid) ?? 0
+          )
+        } catch (error) {
+          logger.error('写入转换历史失败', error)
+        }
       }
     })
     this.composEngine.on('process:item:progress', data => {
@@ -99,13 +103,17 @@ export default class Application {
     this.composEngine.on('process:item:end', data => {
       this.windowManager.sendCommandToAll('process:item:end', data)
       if (this.currentConvertRunId) {
-        this.convertHistoryStore.markEnded(this.currentConvertRunId, data.bvid, {
-          success: data.success,
-          message: data.message,
-          outputPath: data.outputPath,
-          durationMs: data.durationMs,
-          skipped: data.skipped
-        })
+        try {
+          this.convertHistoryStore.markEnded(this.currentConvertRunId, data.bvid, {
+            success: data.success,
+            message: data.message,
+            outputPath: data.outputPath,
+            durationMs: data.durationMs,
+            skipped: data.skipped
+          })
+        } catch (error) {
+          logger.error('更新转换历史失败', error)
+        }
       }
     })
 

@@ -46,8 +46,8 @@ export default class ProcessQueue<T> extends EventEmitter<QueueEventMap> {
       if (task) {
         this.activeCount++
 
-        task
-          .fn()
+        Promise.resolve()
+          .then(() => task.fn())
           .then(task.resolve)
           .catch(task.reject)
           .finally(() => {
