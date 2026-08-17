@@ -1,6 +1,5 @@
 import {
   CircleCheck as CircleCheckIcon,
-  CircleX as CircleXIcon,
   Download as DownloadIcon,
   Film as FilmIcon,
   Info as InfoIcon,
@@ -13,7 +12,6 @@ import Main from '@renderer/layout/Main.vue'
 import About from '@renderer/pages/About.vue'
 import ConvertComplete from '@renderer/pages/convert/complete.vue'
 import ConvertIndex from '@renderer/pages/convert/index.vue'
-import ConvertUnconverted from '@renderer/pages/convert/unconverted.vue'
 import ConvertWaiting from '@renderer/pages/convert/waiting.vue'
 import Auth from '@renderer/pages/download/auth.vue'
 import Download from '@renderer/pages/download/index.vue'
@@ -27,8 +25,8 @@ import { useAuthStore } from '@renderer/store/auth'
 import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-router'
 import { findChildIndex, sectionRecord } from './utils'
 
-// 转换管理页最后停留的分组，父路由重定向时使用，避免每次进入都被重置到“未完成”
-let lastConvertTabName = 'convert-unconverted'
+// 转换管理页最后停留的分组，父路由重定向时使用
+let lastConvertTabName = 'convert-complete'
 // 设置页最后停留的分组，父路由重定向时使用
 let lastSettingTabName = 'prefer-normal'
 
@@ -71,10 +69,7 @@ const routes: RouteRecordRaw[] = [
               {
                 path: 'unconverted',
                 name: 'convert-unconverted',
-                component: ConvertUnconverted,
-                meta: {
-                  tab: { label: '未完成', icon: CircleXIcon }
-                }
+                redirect: { name: 'convert-complete' }
               }
             ]
           },
