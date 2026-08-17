@@ -15,6 +15,7 @@
           class="h-full w-full flex items-center justify-center text-xl text-gray-600">
           <TvIcon class="size-6" />
         </div>
+        <!-- 多选勾选：先隐藏
         <div
           v-if="selectable"
           class="absolute top-1 left-1 rounded bg-black/80 shadow-sm shadow-black/20">
@@ -30,6 +31,7 @@
             <span v-else-if="partialSelected">–</span>
           </button>
         </div>
+        -->
         <span class="absolute bottom-1 right-1 rounded-sm bg-black/60 px-1 py-0.5 text-[10px] text-[#f6f6f6]">
           {{ formatDuration(video.duration) }}
         </span>
@@ -51,23 +53,24 @@
               UP
             </span>
             <span class="truncate">{{ video.upper.name }}</span>
+            <!--
             <span
               v-if="review && selectedSummary"
               class="shrink-0 text-[10px] text-pink-400/80">
               · {{ selectedSummary }}
             </span>
+            -->
           </div>
         </div>
       </div>
 
-      <div
-        v-if="!hidePrimaryAction"
-        class="absolute right-0 bottom-0">
+      <div class="absolute right-0 bottom-0">
         <template v-if="video.attr !== 0">
           <div class="flex h-8 w-20 items-center justify-center rounded-full bg-gray-600/20 text-xs text-gray-200">
             已失效
           </div>
         </template>
+        <!-- 多选确认卡
         <DownloadStatus
           v-else-if="reviewSinglePage"
           :video="video"
@@ -78,6 +81,7 @@
         <Spinner
           v-else-if="review && pagesLoading"
           class="size-4 text-pink-400" />
+        -->
         <button
           v-else-if="isMultiPage"
           type="button"
@@ -100,7 +104,7 @@
           :folder-name="folderName"
           :history="historyFor(singlePage.cid)"></DownloadStatus>
         <button
-          v-else-if="legacyPlayable"
+          v-else-if="!pendingOnly && legacyPlayable"
           type="button"
           class="relative h-8 min-w-20 flex cursor-pointer select-none items-center justify-center overflow-hidden rounded-full px-2 text-xs text-green-400 transition-all duration-200 card-glassy hover:ring-1 hover:ring-green-400/20"
           @click.stop="playLegacy">
@@ -120,61 +124,47 @@
       </div>
     </div>
 
+    <!-- 多选确认卡分 P
     <div
       v-if="review && reviewPages.length > 1"
       class="mt-3 flex flex-col gap-2 border-t border-white/5 pt-3">
-      <div
-        v-for="page in reviewPages"
-        :key="page.cid"
-        class="flex min-w-0 items-center justify-between gap-3">
-        <span class="min-w-0 flex-1 truncate text-xs text-gray-400">P{{ page.page }} {{ page.part }}</span>
-        <DownloadStatus
-          :video="video"
-          :page="page"
-          :pages-total="resolvedPageCount"
-          :folder-name="folderName"
-          :history="historyFor(page.cid)"></DownloadStatus>
-      </div>
+      ...
     </div>
+    -->
 
     <div
-      v-else-if="!review && expanded"
+      v-if="!review && expanded"
       class="mt-3 flex flex-col gap-2 border-t border-white/5 pt-3">
+      <!-- 多选分 P 勾选
       <div
         v-if="selectable"
         class="flex items-center justify-between gap-2">
         <span class="text-xs text-gray-500">{{ resolvedPageCount }}P</span>
       </div>
+      -->
 
       <div
-        v-if="!pages?.length"
+        v-if="!visiblePages?.length"
         class="py-2 text-center text-xs text-gray-500">
         {{ pagesLoading ? '正在获取分P…' : '尚未获取分P列表' }}
       </div>
       <div
         v-else
         class="flex flex-col gap-2">
+        <div class="flex min-w-0 items-center justify-between gap-3">
+          <span class="min-w-0 flex-1 truncate text-xs text-gray-400">全部 {{ visiblePages.length }}P</span>
+          <button
+            type="button"
+            class="relative h-8 min-w-20 flex cursor-pointer select-none items-center justify-center overflow-hidden rounded-full px-2 text-xs text-pink-400 transition-all duration-200 card-glassy hover:ring-1 hover:ring-pink-400/20"
+            @click.stop="downloadAllParts">
+            全部下载
+          </button>
+        </div>
         <div
-          v-for="page in pages"
+          v-for="page in visiblePages"
           :key="page.cid"
           class="flex min-w-0 items-center justify-between gap-3">
-          <button
-            v-if="selectable"
-            type="button"
-            class="flex min-w-0 flex-1 items-center gap-2 text-left"
-            @click.stop="onToggleCid(page.cid)">
-            <span
-              class="flex size-5 shrink-0 items-center justify-center rounded border border-white/20 text-[10px] text-pink-400"
-              :class="isCidChecked(page.cid) ? 'bg-pink-400/30' : 'bg-transparent'">
-              <span v-if="isCidChecked(page.cid)">✓</span>
-            </span>
-            <span class="min-w-0 flex-1 truncate text-xs text-gray-400">P{{ page.page }} {{ page.part }}</span>
-          </button>
-          <span
-            v-else
-            class="min-w-0 flex-1 truncate text-xs text-gray-400">
-            P{{ page.page }} {{ page.part }}
-          </span>
+          <span class="min-w-0 flex-1 truncate text-xs text-gray-400">P{{ page.page }} {{ page.part }}</span>
           <DownloadStatus
             :video="video"
             :page="page"
@@ -189,7 +179,7 @@
 
 <script setup lang="ts">
 import { ChevronDown as ChevronDownIcon, ChevronUp as ChevronUpIcon, Tv as TvIcon } from '@lucide/vue'
-import { openPath, startDownloadVideo } from '@renderer/api'
+import { openPath } from '@renderer/api'
 import DownloadStatus from '@renderer/components/DownloadStatus.vue'
 import { mittbus } from '@renderer/ipc'
 import { useDownloadStore } from '@renderer/store/download'
@@ -205,11 +195,13 @@ const props = withDefaults(
     folderId?: number
     histories?: DownloadHistoryRecord[]
     review?: boolean
+    pendingOnly?: boolean
   }>(),
   {
     folderId: 0,
     histories: undefined,
-    review: false
+    review: false,
+    pendingOnly: false
   }
 )
 
@@ -218,19 +210,20 @@ const emit = defineEmits<{
 }>()
 
 const downloadStore = useDownloadStore()
-const { pagesByBvid, pagesLoading: pagesLoadingMap, expandedBvid, multiSelectMode } = storeToRefs(downloadStore)
+const { pagesByBvid, pagesLoading: pagesLoadingMap, expandedBvid } = storeToRefs(downloadStore)
 
 const rootRef = ref<HTMLElement | null>(null)
 let resizeObserver: ResizeObserver | null = null
 
 const pages = computed(() => pagesByBvid.value[props.video.bvid] ?? null)
+const visiblePages = computed(() => {
+  const list = pages.value
+  if (!list) return null
+  if (!props.pendingOnly) return list
+  return downloadStore.pendingPagesFor(props.video.bvid, list)
+})
 const pagesLoading = computed(() => Boolean(pagesLoadingMap.value[props.video.bvid]))
 const expanded = computed(() => !props.review && expandedBvid.value === props.video.bvid)
-const selectable = computed(() => !props.review && multiSelectMode.value && props.video.attr === 0)
-const selected = computed(
-  () => downloadStore.isSelected(props.video.bvid) && !downloadStore.isPartiallySelected(props.video.bvid)
-)
-const partialSelected = computed(() => downloadStore.isPartiallySelected(props.video.bvid))
 
 const favoritePageCount = computed(() => {
   const count = Number(props.video.page)
@@ -242,28 +235,19 @@ const historySuggestsMulti = computed(() => {
   const cids = new Set(histories.value.map(item => item.cid).filter(cid => cid !== 0))
   return cids.size > 1 || histories.value.some(item => item.page > 1)
 })
-const isMultiPage = computed(() => resolvedPageCount.value > 1 || historySuggestsMulti.value)
-const singlePage = computed<BiliVideoPage | null>(() => (pages.value?.length === 1 ? pages.value[0] : null))
-const allCids = computed(() => pages.value?.map(page => page.cid) ?? [])
-
-const selectionEntry = computed(() => downloadStore.getSelection(props.video.bvid))
-const reviewPages = computed(() => {
-  if (!pages.value) return []
-  const entry = selectionEntry.value
-  if (!entry || entry.cids == null) return pages.value
-  return pages.value.filter(page => entry.cids!.includes(page.cid))
+const isMultiPage = computed(() => {
+  if (props.pendingOnly) {
+    if (visiblePages.value) return visiblePages.value.length > 1
+    return favoritePageCount.value > 1
+  }
+  return resolvedPageCount.value > 1 || historySuggestsMulti.value
 })
-const reviewSinglePage = computed(() => (props.review && reviewPages.value.length === 1 ? reviewPages.value[0] : null))
-const hidePrimaryAction = computed(() => props.review && reviewPages.value.length > 1)
+const singlePage = computed<BiliVideoPage | null>(() => {
+  if (visiblePages.value?.length === 1) return visiblePages.value[0]
+  return pages.value?.length === 1 ? pages.value[0] : null
+})
 
 const firstCid = computed(() => pages.value?.[0]?.cid)
-
-const selectedSummary = computed(() => {
-  const entry = selectionEntry.value
-  if (!entry || !isMultiPage.value) return ''
-  if (entry.cids == null) return `全部 ${resolvedPageCount.value}P`
-  return `已选 ${entry.cids.length}/${resolvedPageCount.value}P`
-})
 
 const historyFor = (cid: number): DownloadHistoryRecord | null => {
   const matched = histories.value.find(item => item.cid === cid)
@@ -305,35 +289,31 @@ const ensurePages = async (): Promise<BiliVideoPage[]> => {
   return downloadStore.loadPages(props.video.bvid)
 }
 
-const startPage = (page: BiliVideoPage, pagesTotal: number): void => {
-  const item = downloadStore.getItem(props.video.bvid, page.cid)
-  if (['success', 'downloading', 'waiting', 'preprocess', 'importing', 'writing'].includes(item.status)) {
-    return
+const resolveVisiblePages = (list: BiliVideoPage[]): BiliVideoPage[] => {
+  if (!props.pendingOnly) return list
+  return downloadStore.pendingPagesFor(props.video.bvid, list)
+}
+
+const downloadAllParts = (): void => {
+  const pending = visiblePages.value
+  if (!pending?.length) return
+  const total = pages.value?.length || resolvedPageCount.value
+  for (const page of pending) {
+    downloadStore.enqueuePart(props.video, props.folderName, page, total)
   }
-  startDownloadVideo({
-    bvid: props.video.bvid,
-    cid: page.cid,
-    page: page.page,
-    pages: pagesTotal,
-    part: page.part,
-    title: props.video.title,
-    uname: props.video.upper.name,
-    folderName: props.folderName,
-    coverUrl: props.video.cover
-  })
-  item.status = 'waiting'
 }
 
 const onSingleDownload = async (): Promise<void> => {
   try {
     const list = await ensurePages()
-    if (list.length > 1) {
+    const pending = resolveVisiblePages(list)
+    if (pending.length > 1) {
       downloadStore.setExpanded(props.video.bvid)
       return
     }
-    const page = list[0]
+    const page = pending[0]
     if (!page) return
-    startPage(page, 1)
+    downloadStore.enqueuePart(props.video, props.folderName, page, list.length)
   } catch (error) {
     toastError(error)
   }
@@ -347,23 +327,13 @@ const toggleAccordion = async (): Promise<void> => {
   downloadStore.setExpanded(props.video.bvid)
   try {
     const list = await ensurePages()
-    if (list.length <= 1) {
+    if (resolveVisiblePages(list).length <= 1) {
       downloadStore.setExpanded(null)
     }
   } catch (error) {
     downloadStore.setExpanded(null)
     toastError(error)
   }
-}
-
-const onToggleVideo = (): void => {
-  downloadStore.toggleVideo(props.video, props.folderName, props.folderId)
-}
-
-const isCidChecked = (cid: number): boolean => downloadStore.isCidSelected(props.video.bvid, cid)
-
-const onToggleCid = (cid: number): void => {
-  downloadStore.toggleCid(props.video, props.folderName, props.folderId, cid, allCids.value)
 }
 
 const reportHeight = (): void => {
@@ -389,5 +359,5 @@ onBeforeUnmount(() => {
   resizeObserver = null
 })
 
-watch([expanded, pages, pagesLoading, selectable], () => reportHeight())
+watch([expanded, pages, visiblePages, pagesLoading], () => reportHeight())
 </script>

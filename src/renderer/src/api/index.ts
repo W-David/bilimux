@@ -93,6 +93,13 @@ export const getDownloadHistories: RendererEmitterInvokeFn<'download:history:lis
 }
 
 /**
+ * 删除单集下载记录与产物
+ */
+export const removeDownloadHistory: RendererEmitterInvokeFn<'download:history:remove'> = key => {
+  return emitter.invoke('download:history:remove', key)
+}
+
+/**
  * 查询单个下载历史
  */
 export const getDownloadHistory: RendererEmitterInvokeFn<'download:history:get'> = key => {

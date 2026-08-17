@@ -23,6 +23,7 @@ export const INVOKE_CHANNELS = [
   'download:cancel',
   'download:history:list',
   'download:history:get',
+  'download:history:remove',
   'download:history:clear',
   'persist-cookie',
   'http-get-video-metadata',

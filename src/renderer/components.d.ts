@@ -48,6 +48,8 @@ declare module 'vue' {
     DialogScrollContent: typeof import('./src/components/ui/dialog/DialogScrollContent.vue')['default']
     DialogTitle: typeof import('./src/components/ui/dialog/DialogTitle.vue')['default']
     DialogTrigger: typeof import('./src/components/ui/dialog/DialogTrigger.vue')['default']
+    DownloadFileDetailsDrawer: typeof import('./src/components/DownloadFileDetailsDrawer.vue')['default']
+    DownloadPartItem: typeof import('./src/components/DownloadPartItem.vue')['default']
     DownloadStatus: typeof import('./src/components/DownloadStatus.vue')['default']
     FavoritesProgressToast: typeof import('./src/components/FavoritesProgressToast.vue')['default']
     Field: typeof import('./src/components/ui/field/Field.vue')['default']

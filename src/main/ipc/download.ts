@@ -17,12 +17,19 @@ export function registerDownloadIpc(app: Application): void {
     app.downloadManager.cancel(key)
   })
 
-  app.ipcManager.mainIpc.handle('download:history:list', (_, bvids: string[]) => {
+  app.ipcManager.mainIpc.handle('download:history:list', (_, bvids?: string[]) => {
+    if (bvids == null) {
+      return app.downloadHistoryStore.listAll()
+    }
     return app.downloadHistoryStore.getMany(bvids)
   })
 
   app.ipcManager.mainIpc.handle('download:history:get', (_, key) => {
     return app.downloadHistoryStore.getByKey(key)
+  })
+
+  app.ipcManager.mainIpc.handle('download:history:remove', (_, key) => {
+    app.downloadHistoryStore.remove(key)
   })
 
   app.ipcManager.mainIpc.handle('download:history:clear', () => {

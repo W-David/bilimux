@@ -35,6 +35,7 @@
     <div
       v-else
       class="min-h-0 flex flex-1 flex-col">
+      <!-- 多选：全选当前收藏夹
       <div
         v-if="downloadStore.multiSelectMode"
         class="flex flex-none items-center border-b border-[#1f1f1f] px-3 py-2">
@@ -46,10 +47,11 @@
           {{ allSelected ? '取消全选当前收藏夹' : '全选当前收藏夹' }}
         </button>
       </div>
+      -->
       <div
         v-if="videos.length === 0"
         class="flex flex-1 items-center justify-center text-sm text-gray-400">
-        该收藏夹暂无视频
+        {{ emptyText }}
       </div>
       <div
         v-else
@@ -69,6 +71,7 @@
                 :folder-name="currentFolder.title"
                 :folder-id="currentFolder.id"
                 :histories="historyMap.get(video.bvid)"
+                pending-only
                 @resize="height => onItemResize(video.bvid, height)"></VideoItem>
             </div>
           </div>
@@ -85,12 +88,18 @@ import type { DownloadHistoryRecord, FavoriteFolderData, FavoriteResource } from
 import { computed, reactive, ref, watch } from 'vue'
 import VideoItem from './VideoItem.vue'
 
-const props = defineProps<{
-  videos: FavoriteResource[]
-  errorMessage: string
-  currentFolder: FavoriteFolderData | null
-  historyMap: Map<string, DownloadHistoryRecord[]>
-}>()
+const props = withDefaults(
+  defineProps<{
+    videos: FavoriteResource[]
+    errorMessage: string
+    currentFolder: FavoriteFolderData | null
+    historyMap: Map<string, DownloadHistoryRecord[]>
+    emptyText?: string
+  }>(),
+  {
+    emptyText: '该收藏夹暂无待下载视频'
+  }
+)
 
 const emit = defineEmits<{
   (e: 'retry'): void
@@ -106,20 +115,12 @@ const viewportHeight = ref(600)
 const heightMap = reactive<Record<string, number>>({})
 const downloadStore = useDownloadStore()
 
-const selectableVideos = computed(() => props.videos.filter(video => video.attr === 0))
-const allSelected = computed(
-  () => selectableVideos.value.length > 0 && selectableVideos.value.every(video => downloadStore.isSelected(video.bvid))
-)
-
-const toggleSelectAll = (): void => {
-  const folder = props.currentFolder
-  if (!folder) return
-  if (allSelected.value) {
-    downloadStore.deselectVideos(selectableVideos.value.map(video => video.bvid))
-    return
-  }
-  downloadStore.selectVideos(selectableVideos.value, folder.title, folder.id)
-}
+// 多选全选：先隐藏
+// const selectableVideos = computed(() => props.videos.filter(video => video.attr === 0))
+// const allSelected = computed(
+//   () => selectableVideos.value.length > 0 && selectableVideos.value.every(video => downloadStore.isSelected(video.bvid))
+// )
+// const toggleSelectAll = (): void => { ... }
 
 const heightOf = (video: FavoriteResource): number => heightMap[video.bvid] ?? ITEM_HEIGHT
 

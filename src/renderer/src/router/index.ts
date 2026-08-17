@@ -4,6 +4,7 @@ import {
   Film as FilmIcon,
   Info as InfoIcon,
   List as ListIcon,
+  Loader as LoaderIcon,
   Settings as SettingsIcon,
   User as UserIcon
 } from '@lucide/vue'
@@ -13,9 +14,11 @@ import About from '@renderer/pages/About.vue'
 import ConvertComplete from '@renderer/pages/convert/complete.vue'
 import ConvertIndex from '@renderer/pages/convert/index.vue'
 import ConvertWaiting from '@renderer/pages/convert/waiting.vue'
+import DownloadActive from '@renderer/pages/download/active.vue'
 import Auth from '@renderer/pages/download/auth.vue'
+import DownloadComplete from '@renderer/pages/download/complete.vue'
 import Download from '@renderer/pages/download/index.vue'
-import Task from '@renderer/pages/download/task.vue'
+import DownloadWaiting from '@renderer/pages/download/waiting.vue'
 import SettingConvert from '@renderer/pages/setting/convert.vue'
 import SettingDownload from '@renderer/pages/setting/download.vue'
 import SettingIndex from '@renderer/pages/setting/index.vue'
@@ -27,6 +30,8 @@ import { findChildIndex, sectionRecord } from './utils'
 
 // 转换管理页最后停留的分组，父路由重定向时使用
 let lastConvertTabName = 'convert-complete'
+// 下载页最后停留的分组，父路由重定向时使用
+let lastDownloadTabName = 'download-waiting'
 // 设置页最后停留的分组，父路由重定向时使用
 let lastSettingTabName = 'prefer-normal'
 
@@ -78,6 +83,7 @@ const routes: RouteRecordRaw[] = [
             name: 'download',
             component: Download,
             meta: {
+              switchTransition: true,
               menu: { label: '下载', icon: DownloadIcon, description: '收藏夹视频下载' }
             },
             children: [
@@ -87,12 +93,36 @@ const routes: RouteRecordRaw[] = [
                 component: Auth
               },
               {
+                path: 'waiting',
+                name: 'download-waiting',
+                component: DownloadWaiting,
+                meta: {
+                  requireAuth: true,
+                  tab: { label: '待下载', icon: DownloadIcon }
+                }
+              },
+              {
+                path: 'active',
+                name: 'download-active',
+                component: DownloadActive,
+                meta: {
+                  requireAuth: true,
+                  tab: { label: '下载中', icon: LoaderIcon }
+                }
+              },
+              {
+                path: 'complete',
+                name: 'download-complete',
+                component: DownloadComplete,
+                meta: {
+                  requireAuth: true,
+                  tab: { label: '已完成', icon: CircleCheckIcon }
+                }
+              },
+              {
                 path: 'task',
                 name: 'download-task',
-                component: Task,
-                meta: {
-                  requireAuth: true
-                }
+                redirect: { name: 'download-waiting' }
               }
             ]
           },
@@ -168,13 +198,13 @@ router.beforeEach(async to => {
 
   if (to.name === 'download') {
     await authStore.ensureReady()
-    return { name: authStore.isAuthenticated ? 'download-task' : 'download-auth' }
+    return { name: authStore.isAuthenticated ? lastDownloadTabName : 'download-auth' }
   }
 
   if (to.name === 'download-auth') {
     await authStore.ensureReady()
     if (authStore.isAuthenticated) {
-      return { name: 'download-task' }
+      return { name: lastDownloadTabName }
     }
     return
   }
@@ -197,6 +227,8 @@ router.afterEach((to, from) => {
       lastSettingTabName = to.name
     } else if (section?.name === 'convert') {
       lastConvertTabName = to.name
+    } else if (section?.name === 'download' && to.meta.tab) {
+      lastDownloadTabName = to.name
     }
   }
 

@@ -169,8 +169,21 @@ export default class DownloadHistoryStore {
       )
       .all(...bvids) as unknown as HistoryRow[]
 
-    const existence = await checkFilesExist(rows.map(row => row.output_path).filter((p): p is string => Boolean(p)))
-    return rows.map(row => this.toRecord(row, existence))
+    return this.toRecords(rows)
+  }
+
+  /**
+   * 列出全部下载历史
+   */
+  public async listAll(): Promise<DownloadHistoryRecord[]> {
+    const rows = this.db
+      .prepare(
+        `SELECT bvid, cid, page, part, title, folder_name, output_path, file_size, status, downloaded_at, updated_at
+         FROM download_history
+         ORDER BY updated_at DESC`
+      )
+      .all() as unknown as HistoryRow[]
+    return this.toRecords(rows)
   }
 
   /**
@@ -190,10 +203,32 @@ export default class DownloadHistoryStore {
   }
 
   /**
+   * 删除单集记录，并删除对应产物文件
+   */
+  public remove(key: DownloadTaskKey): void {
+    const row = this.db
+      .prepare(`SELECT output_path FROM download_history WHERE bvid = ? AND cid = ?`)
+      .get(key.bvid, key.cid) as { output_path: string | null } | undefined
+    if (row?.output_path) {
+      try {
+        fs.rmSync(row.output_path, { force: true })
+      } catch {
+        // 文件可能已被移动/删除
+      }
+    }
+    this.db.prepare(`DELETE FROM download_history WHERE bvid = ? AND cid = ?`).run(key.bvid, key.cid)
+  }
+
+  /**
    * 清空全部下载历史
    */
   public clear(): void {
     this.db.exec('DELETE FROM download_history')
+  }
+
+  private async toRecords(rows: HistoryRow[]): Promise<DownloadHistoryRecord[]> {
+    const existence = await checkFilesExist(rows.map(row => row.output_path).filter((p): p is string => Boolean(p)))
+    return rows.map(row => this.toRecord(row, existence))
   }
 
   /**

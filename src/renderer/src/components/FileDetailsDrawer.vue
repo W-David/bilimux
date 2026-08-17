@@ -105,7 +105,6 @@ const rows = computed(() => {
     { label: '输出文件', value: task.outputPath || '—' },
     { label: '文件大小', value: formatFileSize(task.fileSize) || '—' },
     { label: '转换耗时', value: formatDurationMs(task.durationMs) || '—' },
-    { label: '文件存在', value: task.fileExists == null ? '未知' : task.fileExists ? '是' : '否' },
     { label: '开始时间', value: formatDateTime(task.startedAt) },
     { label: '完成时间', value: formatDateTime(task.completedAt) },
     { label: '更新时间', value: formatDateTime(task.updatedAt) }

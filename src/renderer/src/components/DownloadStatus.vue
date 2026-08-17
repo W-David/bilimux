@@ -48,13 +48,7 @@ import {
   Settings as SettingsIcon,
   X as XIcon
 } from '@lucide/vue'
-import {
-  cancelDownloadVideo,
-  openPath,
-  pauseDownloadVideo,
-  resumeDownloadVideo,
-  startDownloadVideo
-} from '@renderer/api'
+import { cancelDownloadVideo, openPath, pauseDownloadVideo, resumeDownloadVideo } from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
 import { useDownloadStore } from '@renderer/store/download'
 import type { BiliVideoPage, DownloadHistoryRecord, FavoriteResource } from '@shared/types'
@@ -142,18 +136,6 @@ const label = computed(() => {
   }
 })
 
-const buildTask = () => ({
-  bvid: props.video.bvid,
-  cid: props.page.cid,
-  page: props.page.page,
-  pages: props.pagesTotal,
-  part: props.page.part,
-  title: props.video.title,
-  uname: props.video.upper.name,
-  folderName: props.folderName,
-  coverUrl: props.video.cover
-})
-
 const handleClick = (): void => {
   if (status.value === 'success') {
     play()
@@ -173,13 +155,7 @@ const handleClick = (): void => {
 
   if (isProgressing.value) return
 
-  const previous = status.value
-  startDownloadVideo(buildTask())
-
-  item.value.status = 'waiting'
-  if (previous !== 'fail') {
-    item.value.progress = 0
-  }
+  downloadStore.enqueuePart(props.video, props.folderName, props.page, props.pagesTotal)
 }
 
 const handleCancel = (): void => {
