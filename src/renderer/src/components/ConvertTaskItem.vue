@@ -36,27 +36,19 @@
       <div
         v-else
         class="flex items-center gap-1 rounded-full border border-white/5 bg-white/6 py-1.5 px-2 shadow-inner shadow-black/20 backdrop-blur-md">
-        <AlertDialog>
-          <AlertDialogTrigger as-child>
-            <button
-              type="button"
-              aria-label="删除任务"
-              :disabled="!canDelete"
-              class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent">
-              <Trash2Icon class="size-4 text-red-400 transition-colors hover:text-red-300" />
-            </button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>删除转换任务？</AlertDialogTitle>
-              <AlertDialogDescription>将删除生成的视频文件并移除该任务记录，此操作不可恢复。</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>取消</AlertDialogCancel>
-              <AlertDialogAction @click="handleDelete">删除</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <DeleteTaskDialog
+          title="删除转换任务？"
+          description="默认只移除该任务记录。勾选后才会删除生成的视频文件。"
+          file-option-label="同时删除视频文件"
+          @confirm="handleDelete">
+          <button
+            type="button"
+            aria-label="删除任务"
+            :disabled="!canDelete"
+            class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent">
+            <Trash2Icon class="size-4 text-red-400 transition-colors hover:text-red-300" />
+          </button>
+        </DeleteTaskDialog>
 
         <button
           type="button"
@@ -204,10 +196,10 @@ const statusIcon = computed(() => {
 })
 
 /**
- * 删除任务：记录 + 产物文件 + UI 同步
+ * 删除任务：默认只删记录，勾选后同时删除产物文件
  */
-const handleDelete = async (): Promise<void> => {
-  await convertStore.removeItem(props.task)
+const handleDelete = async (deleteFile: boolean): Promise<void> => {
+  await convertStore.removeItem(props.task, deleteFile)
 }
 
 /**

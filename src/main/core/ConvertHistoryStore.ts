@@ -244,15 +244,17 @@ export default class ConvertHistoryStore {
   }
 
   /**
-   * 删除单条转换记录，并删除数据库中记录的产物文件
+   * 删除单条转换记录；deleteFile 为 true 时同时删除产物文件
    */
-  public remove(bvid: string): void {
-    const target = this.getOutputPath(bvid)
-    if (target) {
-      try {
-        fs.rmSync(target, { force: true })
-      } catch {
-        // 文件可能已被移动/删除，忽略即可
+  public remove(bvid: string, deleteFile = false): void {
+    if (deleteFile) {
+      const target = this.getOutputPath(bvid)
+      if (target) {
+        try {
+          fs.rmSync(target, { force: true })
+        } catch {
+          // 文件可能已被移动/删除，忽略即可
+        }
       }
     }
     this.db.prepare(`DELETE FROM convert_history WHERE bvid = ?`).run(bvid)

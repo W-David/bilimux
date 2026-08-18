@@ -180,7 +180,7 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
   }
 
   /**
-   * 取消任务：中止下载、合并阶段杀掉 MP4Box，并删除临时目录
+   * 取消任务：中止下载、合并阶段杀掉 MP4Box，删除临时目录与记录
    */
   public cancel(key: DownloadTaskKey): void {
     const runtime = this.getRuntime(key)
@@ -574,13 +574,14 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
     await fs.rm(runtime.finalPath, { force: true }).catch(() => undefined)
     runtime.streams = {}
     runtime.playUrlFetched = false
-    this.historyStore.markCancelled(this.taskKey(runtime))
+    this.historyStore.remove(this.taskKey(runtime), true)
     this.emit('download:item:end', {
       bvid: runtime.task.bvid,
       cid: runtime.task.cid,
       title: runtime.task.title,
       success: false,
-      message: '已取消'
+      message: '已取消',
+      cancelled: true
     })
   }
 

@@ -202,18 +202,25 @@ export default class DownloadHistoryStore {
     return this.toRecord(row, existence)
   }
 
-  /**
-   * 删除单集记录，并删除对应产物文件
-   */
-  public remove(key: DownloadTaskKey): void {
+  public getOutputPath(key: DownloadTaskKey): string | null {
     const row = this.db
       .prepare(`SELECT output_path FROM download_history WHERE bvid = ? AND cid = ?`)
       .get(key.bvid, key.cid) as { output_path: string | null } | undefined
-    if (row?.output_path) {
-      try {
-        fs.rmSync(row.output_path, { force: true })
-      } catch {
-        // 文件可能已被移动/删除
+    return row?.output_path ?? null
+  }
+
+  /**
+   * 删除单集记录；deleteFile 为 true 时同时删除产物文件
+   */
+  public remove(key: DownloadTaskKey, deleteFile = false): void {
+    if (deleteFile) {
+      const target = this.getOutputPath(key)
+      if (target) {
+        try {
+          fs.rmSync(target, { force: true })
+        } catch {
+          // 文件可能已被移动/删除
+        }
       }
     }
     this.db.prepare(`DELETE FROM download_history WHERE bvid = ? AND cid = ?`).run(key.bvid, key.cid)

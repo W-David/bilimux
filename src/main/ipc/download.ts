@@ -1,4 +1,5 @@
 import type Application from '../Application'
+import { assertAllowedPath, getAllowedUserRoots } from '../utils/allowed-path'
 
 export function registerDownloadIpc(app: Application): void {
   app.ipcManager.mainIpc.handle('download:video', (_, task) => {
@@ -28,8 +29,16 @@ export function registerDownloadIpc(app: Application): void {
     return app.downloadHistoryStore.getByKey(key)
   })
 
-  app.ipcManager.mainIpc.handle('download:history:remove', (_, key) => {
-    app.downloadHistoryStore.remove(key)
+  app.ipcManager.mainIpc.handle('download:history:remove', (_, key, deleteFile?: boolean) => {
+    const shouldDeleteFile = Boolean(deleteFile)
+    if (shouldDeleteFile) {
+      const outputPath = app.downloadHistoryStore.getOutputPath(key)
+      if (outputPath) {
+        const roots = getAllowedUserRoots(app.configManager, app.context.platform)
+        assertAllowedPath(outputPath, roots, '下载产物路径')
+      }
+    }
+    app.downloadHistoryStore.remove(key, shouldDeleteFile)
   })
 
   app.ipcManager.mainIpc.handle('download:history:clear', () => {

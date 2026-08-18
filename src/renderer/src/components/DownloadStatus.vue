@@ -27,14 +27,19 @@
       </Tooltip>
     </TooltipProvider>
 
-    <button
+    <DeleteTaskDialog
       v-if="canCancel"
-      type="button"
-      class="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors card-glassy hover:text-red-400"
-      aria-label="取消下载"
-      @click.stop="handleCancel">
-      <XIcon class="size-3.5" />
-    </button>
+      title="删除下载中的任务？"
+      description="将中止下载，删除缓存文件并移除该任务记录，此操作不可恢复。"
+      @confirm="handleCancel">
+      <button
+        type="button"
+        class="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors card-glassy hover:text-red-400"
+        aria-label="删除下载任务"
+        @click.stop>
+        <XIcon class="size-3.5" />
+      </button>
+    </DeleteTaskDialog>
   </div>
 </template>
 
@@ -160,8 +165,6 @@ const handleClick = (): void => {
 
 const handleCancel = (): void => {
   cancelDownloadVideo(taskKey.value)
-  item.value.status = 'fail'
-  item.value.message = '已取消'
 }
 
 const play = async (): Promise<void> => {

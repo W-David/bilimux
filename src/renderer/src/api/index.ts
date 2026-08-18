@@ -30,10 +30,10 @@ export const getConvertHistories: RendererEmitterInvokeFn<'convert:history:list'
 }
 
 /**
- * 删除单条转换历史（记录 + 产物文件）
+ * 删除单条转换历史；deleteFile 为 true 时同时删除产物文件
  */
-export const removeConvertHistory: RendererEmitterInvokeFn<'convert:history:remove'> = bvid => {
-  return emitter.invoke('convert:history:remove', bvid)
+export const removeConvertHistory: RendererEmitterInvokeFn<'convert:history:remove'> = (bvid, deleteFile) => {
+  return emitter.invoke('convert:history:remove', bvid, deleteFile)
 }
 
 /**
@@ -79,7 +79,7 @@ export const resumeDownloadVideo: RendererEmitterInvokeFn<'download:resume'> = k
 }
 
 /**
- * 取消下载视频（删除临时文件，合并中会杀掉 MP4Box）
+ * 取消下载视频（删除临时文件和任务记录，合并中会杀掉 MP4Box）
  */
 export const cancelDownloadVideo: RendererEmitterInvokeFn<'download:cancel'> = key => {
   return emitter.invoke('download:cancel', key)
@@ -93,10 +93,10 @@ export const getDownloadHistories: RendererEmitterInvokeFn<'download:history:lis
 }
 
 /**
- * 删除单集下载记录与产物
+ * 删除单集下载记录；deleteFile 为 true 时同时删除产物文件
  */
-export const removeDownloadHistory: RendererEmitterInvokeFn<'download:history:remove'> = key => {
-  return emitter.invoke('download:history:remove', key)
+export const removeDownloadHistory: RendererEmitterInvokeFn<'download:history:remove'> = (key, deleteFile) => {
+  return emitter.invoke('download:history:remove', key, deleteFile)
 }
 
 /**

@@ -216,6 +216,7 @@ type DownloadItemEndArgs = {
   success: boolean
   message: string
   outputPath?: string
+  cancelled?: boolean
 }
 
 // 下载历史（SQLite 持久化）

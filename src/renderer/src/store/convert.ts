@@ -231,11 +231,11 @@ export const useConvertStore = defineStore('convert', () => {
     }
   }
 
-  /** 删除单个任务：历史记录 + 产物文件 + UI 同步 */
-  const removeItem = async (task: ConvertTask): Promise<void> => {
+  /** 删除单个任务：默认只删记录，deleteFile 为 true 时同时删除产物 */
+  const removeItem = async (task: ConvertTask, deleteFile = false): Promise<void> => {
     const isHistory = task.id.startsWith('history:')
     try {
-      await removeConvertHistory(task.bvid)
+      await removeConvertHistory(task.bvid, deleteFile)
       if (isHistory) {
         history.value = history.value.filter(record => record.bvid !== task.bvid)
       } else {
@@ -244,7 +244,7 @@ export const useConvertStore = defineStore('convert', () => {
       }
       mittbus.emit('toast:add', {
         severity: 'success',
-        message: '已删除转换任务'
+        message: deleteFile ? '已删除转换记录和文件' : '已删除转换记录'
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)

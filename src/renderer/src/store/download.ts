@@ -353,7 +353,14 @@ export const useDownloadStore = defineStore('download', () => {
       item.progress = progress
     })
 
-    subscribeDownloadItemEndEvent(({ bvid, cid, success, message, outputPath }) => {
+    subscribeDownloadItemEndEvent(({ bvid, cid, success, message, outputPath, cancelled }) => {
+      if (cancelled) {
+        const itemKey = downloadTaskId(bvid, cid)
+        if (items[itemKey]) Object.assign(items[itemKey], emptyItem())
+        delete snapshots[itemKey]
+        history.value = history.value.filter(record => !(record.bvid === bvid && record.cid === cid))
+        return
+      }
       const item = getItem(bvid, cid)
       item.status = success ? 'success' : 'fail'
       if (success) {
@@ -421,17 +428,17 @@ export const useDownloadStore = defineStore('download', () => {
     for (const key of Object.keys(snapshots)) delete snapshots[key]
   }
 
-  const removeItem = async (row: DownloadTaskRow): Promise<void> => {
+  const removeItem = async (row: DownloadTaskRow, deleteFile = false): Promise<void> => {
     const key = { bvid: row.video.bvid, cid: row.page.cid }
     try {
-      await removeDownloadHistory(key)
+      await removeDownloadHistory(key, deleteFile)
       history.value = history.value.filter(record => !(record.bvid === key.bvid && record.cid === key.cid))
       const itemKey = downloadTaskId(key.bvid, key.cid)
       if (items[itemKey]) Object.assign(items[itemKey], emptyItem())
       delete snapshots[itemKey]
       mittbus.emit('toast:add', {
         severity: 'success',
-        message: '已删除下载任务'
+        message: deleteFile ? '已删除下载记录和文件' : '已删除下载记录'
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)

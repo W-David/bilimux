@@ -18,13 +18,16 @@ export function registerConvertIpc(app: Application): void {
     return app.convertHistoryStore.list()
   })
 
-  app.ipcManager.mainIpc.handle('convert:history:remove', (_, bvid: string) => {
-    const record = app.convertHistoryStore.getOutputPath(bvid)
-    if (record) {
-      const roots = getAllowedUserRoots(app.configManager, app.context.platform)
-      assertAllowedPath(record, roots, '转换产物路径')
+  app.ipcManager.mainIpc.handle('convert:history:remove', (_, bvid: string, deleteFile?: boolean) => {
+    const shouldDeleteFile = Boolean(deleteFile)
+    if (shouldDeleteFile) {
+      const record = app.convertHistoryStore.getOutputPath(bvid)
+      if (record) {
+        const roots = getAllowedUserRoots(app.configManager, app.context.platform)
+        assertAllowedPath(record, roots, '转换产物路径')
+      }
     }
-    app.convertHistoryStore.remove(bvid)
+    app.convertHistoryStore.remove(bvid, shouldDeleteFile)
   })
 
   app.ipcManager.mainIpc.handle('convert:history:clear', () => {
