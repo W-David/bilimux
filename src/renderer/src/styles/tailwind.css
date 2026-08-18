@@ -13,3 +13,22 @@
 @utility card-glassy-hover {
   @apply hover:border-white/15 shadow-black/30;
 }
+
+/* 收藏：800 两列，默认 1024 三列，xl 四列，更大再加两列 */
+@utility library-folder-grid {
+  @apply grid grid-cols-2 gap-x-4 gap-y-6 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 3xl:grid-cols-8;
+}
+
+/* 追番 / 追剧海报更窄，同档多一列 */
+@utility library-poster-grid {
+  @apply grid grid-cols-3 gap-x-4 gap-y-6 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 3xl:grid-cols-10;
+}
+
+/* 弹窗固定三列 */
+@utility library-dialog-grid {
+  @apply grid grid-cols-3 gap-x-4 gap-y-6;
+}
+
+@utility cover-zoom-img {
+  @apply h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-110;
+}

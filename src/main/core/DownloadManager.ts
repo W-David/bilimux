@@ -365,13 +365,8 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
     }
   }
 
-  /**
-   * 获取视频 CID 与播放地址；refresh 时强制重新请求
-   */
-  private async fetchPlayUrls(runtime: TaskRuntime, refresh: boolean): Promise<void> {
+  private async fetchUgcPlayData(runtime: TaskRuntime): Promise<PlayUrlData | null> {
     const { bvid, cid } = runtime.task
-    if (runtime.playUrlFetched && !refresh) return
-
     const signedParams = await getWbiSignedParams(this.httpClient, {
       bvid,
       cid,
@@ -383,7 +378,37 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
     const playRes = await this.httpClient.get('https://api.bilibili.com/x/player/wbi/playurl', {
       searchParams: signedParams
     })
-    const playData = playRes.data as PlayUrlData | null
+    return (playRes.data as PlayUrlData | null) ?? null
+  }
+
+  private async fetchOgvPlayData(runtime: TaskRuntime): Promise<PlayUrlData | null> {
+    const { bvid, cid, epId } = runtime.task
+    const playRes = await this.httpClient.get('https://api.bilibili.com/pgc/player/web/playurl', {
+      searchParams: {
+        bvid,
+        cid,
+        ...(epId ? { ep_id: epId } : {}),
+        qn: runtime.qn,
+        fnval: 4048,
+        fnver: 0,
+        fourk: 1
+      }
+    })
+    if (playRes.code !== 0) {
+      throw new Error(playRes.message || '获取番剧视频流失败')
+    }
+    return ((playRes.result ?? playRes.data) as PlayUrlData | null) ?? null
+  }
+
+  /**
+   * 获取视频 CID 与播放地址；refresh 时强制重新请求
+   */
+  private async fetchPlayUrls(runtime: TaskRuntime, refresh: boolean): Promise<void> {
+    const { bvid, cid } = runtime.task
+    if (runtime.playUrlFetched && !refresh) return
+
+    const playData =
+      runtime.task.kind === 'ogv' ? await this.fetchOgvPlayData(runtime) : await this.fetchUgcPlayData(runtime)
     if (!playData) {
       throw new Error('获取视频流失败')
     }

@@ -41,10 +41,24 @@ type ProcessItemStartArgs = {
 type ProgressStatus = 'waiting' | 'preprocess' | 'importing' | 'writing' | 'success' | 'fail'
 type DownloadTaskStatus = 'waiting' | 'downloading' | 'paused' | 'success' | 'fail'
 
-// 收藏夹
+type FavoriteCntInfo = {
+  collect?: number
+  play?: number
+  danmaku?: number
+  thumb_up?: number
+  share?: number
+}
+
+type FavoriteUpper = {
+  mid: number
+  name: string
+  face: string
+}
+
+// 收藏夹 / 合集目录项
 type FavoriteFolder = {
   id: number
-  fid: number
+  fid?: number
   mid: number
   attr: number
   title: string
@@ -52,6 +66,11 @@ type FavoriteFolder = {
   cover?: string
   intro?: string
   ctime?: number
+  mtime?: number
+  state?: number
+  type?: number
+  upper?: FavoriteUpper
+  cnt_info?: FavoriteCntInfo
 }
 
 // 收藏夹内的视频资源
@@ -65,11 +84,11 @@ type FavoriteResource = {
   bvid: string
   /** 稿件分 P 总数，不是第几 P，也不是 cid */
   page?: number
-  upper: {
-    mid: number
-    name: string
-    face: string
-  }
+  intro?: string
+  ctime?: number
+  pubtime?: number
+  upper: FavoriteUpper
+  cnt_info?: FavoriteCntInfo
 }
 
 // 收藏夹及其内的全部视频
@@ -184,6 +203,10 @@ type DownloadVideoTask = {
   uname: string
   folderName: string
   coverUrl?: string
+  /** 普通稿 ugc；番剧/影视 ogv */
+  kind?: 'ugc' | 'ogv'
+  /** ogv 单集 epid，取流时传给 pgc playurl */
+  epId?: number
 }
 
 type DownloadProgressStatus =
@@ -395,8 +418,48 @@ type UserStore = {
 type BiliResponseType<D = unknown> = {
   ttl: number
   data: D | null
+  /** 番剧等 PGC 接口用 result，不用 data */
+  result?: D | null
   code: number
   message: string
+}
+
+type BangumiFollowItem = {
+  seasonId: number
+  mediaId: number
+  title: string
+  cover: string
+  squareCover: string
+  badge: string
+  isFinish: number
+  totalCount: number
+  newEpIndexShow: string
+  progress: string
+  evaluate: string
+  seasonType: number
+}
+
+type BangumiEpisode = {
+  epId: number
+  aid: number
+  bvid: string
+  cid: number
+  title: string
+  longTitle: string
+  cover: string
+  pubTime: number
+  duration: number
+  badge: string
+}
+
+type VideoViewDetail = {
+  bvid: string
+  title: string
+  cover: string
+  desc: string
+  pubdate: number
+  duration: number
+  owner: FavoriteUpper
 }
 
 type VideoType = 'BV' | 'BVS' | 'FESTIVAL' | 'BANGUMI' | 'CHEESE'
@@ -407,6 +470,8 @@ type RegType = {
 }
 
 export type {
+  BangumiEpisode,
+  BangumiFollowItem,
   BiliResponseType,
   BiliVideoPage,
   ComposEventMap,
@@ -430,9 +495,11 @@ export type {
   EngineBinMap,
   EngineEventMap,
   EngineResponse,
+  FavoriteCntInfo,
   FavoriteFolder,
   FavoriteFolderData,
   FavoriteResource,
+  FavoriteUpper,
   FavoritesData,
   FileInfo,
   Page,
@@ -443,5 +510,6 @@ export type {
   UserInfo,
   UserStore,
   VideoTaskInfo,
-  VideoType
+  VideoType,
+  VideoViewDetail
 }

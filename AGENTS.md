@@ -115,3 +115,7 @@ Convert flow: `convert:prescan` reconciles output files and scans the cache (ski
 - Prettier: single quotes, **no semicolons**, `printWidth: 120`, `trailingComma: 'none'`, `arrowParens: 'avoid'`
 - ESLint flat config (`eslint.config.mjs`); Vue SFCs require `lang="ts"` on `<script>`
 - Indent 2 spaces, LF (`.editorconfig`)
+
+## External references
+
+- B 站非官方接口文档（第三方整理）：本地 `/Users/codyw/GitWork/bilibili-API-collect`（[SocialSisterYi/bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect)，阅读页 https://socialsisteryi.github.io/bilibili-API-collect/）。查登录、收藏、播放地址、Wbi、追番等接口时先看这里。CC-BY-NC 4.0，仅学习测试，不是官方开放平台。

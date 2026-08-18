@@ -10,7 +10,6 @@ import {
 } from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
 import { fetchVideoPages } from '@renderer/services/video'
-import { usePreferenceStore } from '@renderer/store/preference'
 import { downloadTaskId } from '@shared/download'
 import type { BiliVideoPage, DownloadHistoryRecord, DownloadProgressStatus, FavoriteResource } from '@shared/types'
 import logger from 'electron-log/renderer'
@@ -42,6 +41,13 @@ export type DownloadTaskRow = {
   page: BiliVideoPage
   pagesTotal: number
   history: DownloadHistoryRecord | null
+  kind?: 'ugc' | 'ogv'
+  epId?: number
+}
+
+export type VideoBadge = {
+  status: 'idle' | 'active' | 'partial' | 'completed'
+  label: string
 }
 
 const ACTIVE_STATUS = new Set<DownloadItemStatus>([
@@ -179,20 +185,26 @@ export const useDownloadStore = defineStore('download', () => {
   }
 
   function lookupFavorite(bvid: string): { video: FavoriteResource; folderName: string } | undefined {
-    const folders = usePreferenceStore().preference['favorites-data']?.folders ?? []
-    for (const folder of folders) {
-      const video = folder.videos.find(item => item.bvid === bvid)
-      if (video) return { video, folderName: folder.title }
+    for (const snap of Object.values(snapshots)) {
+      if (snap.video.bvid === bvid) return { video: snap.video, folderName: snap.folderName }
     }
     return undefined
   }
 
-  function rememberTask(video: FavoriteResource, folderName: string, page: BiliVideoPage, pagesTotal: number): void {
+  function rememberTask(
+    video: FavoriteResource,
+    folderName: string,
+    page: BiliVideoPage,
+    pagesTotal: number,
+    extra?: { kind?: 'ugc' | 'ogv'; epId?: number }
+  ): void {
     snapshots[downloadTaskId(video.bvid, page.cid)] = {
       video,
       folderName,
       page,
-      pagesTotal
+      pagesTotal,
+      kind: extra?.kind ?? 'ugc',
+      epId: extra?.epId
     }
   }
 
@@ -311,11 +323,55 @@ export const useDownloadStore = defineStore('download', () => {
     return rows
   })
 
-  function enqueuePart(video: FavoriteResource, folderName: string, page: BiliVideoPage, pagesTotal: number): boolean {
+  function videoBadge(bvid: string, expectedPages = 0): VideoBadge {
+    const loaded = pagesByBvid[bvid]
+    const cids = new Set<number>()
+    if (loaded?.length) {
+      for (const page of loaded) cids.add(page.cid)
+    }
+    for (const record of historyMap.value.get(bvid) ?? []) cids.add(record.cid)
+    for (const key of Object.keys(items)) {
+      const parsed = parseTaskKey(key)
+      if (parsed?.bvid === bvid) cids.add(parsed.cid)
+    }
+
+    let active = 0
+    let completed = 0
+    for (const cid of cids) {
+      const lane = partLane(bvid, cid)
+      if (lane === 'active') active += 1
+      if (lane === 'completed') completed += 1
+    }
+
+    const total = loaded?.length || (expectedPages > 0 ? expectedPages : cids.size)
+    if (active > 0) return { status: 'active', label: '下载中' }
+    if (total > 0 && completed >= total && completed > 0) return { status: 'completed', label: '已下载完成' }
+    if (completed > 0) return { status: 'partial', label: `已下载 ${completed}/${total || '?'}` }
+    return { status: 'idle', label: '' }
+  }
+
+  function isCidActive(bvid: string, cid: number): boolean {
+    return partLane(bvid, cid) === 'active'
+  }
+
+  function isCidCompleted(bvid: string, cid: number): boolean {
+    return partLane(bvid, cid) === 'completed'
+  }
+
+  function enqueuePart(
+    video: FavoriteResource,
+    folderName: string,
+    page: BiliVideoPage,
+    pagesTotal: number,
+    extra?: { kind?: 'ugc' | 'ogv'; epId?: number }
+  ): boolean {
     const item = getItem(video.bvid, page.cid)
     if (ACTIVE_STATUS.has(item.status) || item.status === 'success') return false
     const previous = item.status
-    rememberTask(video, folderName, page, pagesTotal)
+    const previousSnap = snapshots[downloadTaskId(video.bvid, page.cid)]
+    const kind = extra?.kind ?? previousSnap?.kind ?? 'ugc'
+    const epId = extra?.epId ?? previousSnap?.epId
+    rememberTask(video, folderName, page, pagesTotal, { kind, epId })
     startDownloadVideo({
       bvid: video.bvid,
       cid: page.cid,
@@ -325,7 +381,9 @@ export const useDownloadStore = defineStore('download', () => {
       title: video.title,
       uname: video.upper.name,
       folderName,
-      coverUrl: video.cover
+      coverUrl: video.cover,
+      kind,
+      epId
     })
     item.status = 'waiting'
     if (previous !== 'fail') {
@@ -576,6 +634,9 @@ export const useDownloadStore = defineStore('download', () => {
     partLane,
     pendingPagesFor,
     hasPendingParts,
+    videoBadge,
+    isCidActive,
+    isCidCompleted,
     rememberTask,
     enqueuePart,
     activeList,

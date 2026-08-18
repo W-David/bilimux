@@ -11,6 +11,10 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    Accordion: typeof import('./src/components/ui/accordion/Accordion.vue')['default']
+    AccordionContent: typeof import('./src/components/ui/accordion/AccordionContent.vue')['default']
+    AccordionItem: typeof import('./src/components/ui/accordion/AccordionItem.vue')['default']
+    AccordionTrigger: typeof import('./src/components/ui/accordion/AccordionTrigger.vue')['default']
     AlertDialog: typeof import('./src/components/ui/alert-dialog/AlertDialog.vue')['default']
     AlertDialogAction: typeof import('./src/components/ui/alert-dialog/AlertDialogAction.vue')['default']
     AlertDialogCancel: typeof import('./src/components/ui/alert-dialog/AlertDialogCancel.vue')['default']
@@ -28,6 +32,7 @@ declare module 'vue' {
     AvatarGroupCount: typeof import('./src/components/ui/avatar/AvatarGroupCount.vue')['default']
     AvatarImage: typeof import('./src/components/ui/avatar/AvatarImage.vue')['default']
     Badge: typeof import('./src/components/ui/badge/Badge.vue')['default']
+    BangumiPosterCard: typeof import('./src/components/library/BangumiPosterCard.vue')['default']
     Button: typeof import('./src/components/ui/button/Button.vue')['default']
     Card: typeof import('./src/components/ui/card/Card.vue')['default']
     CardAction: typeof import('./src/components/ui/card/CardAction.vue')['default']
@@ -37,6 +42,9 @@ declare module 'vue' {
     CardHeader: typeof import('./src/components/ui/card/CardHeader.vue')['default']
     CardTitle: typeof import('./src/components/ui/card/CardTitle.vue')['default']
     Checkbox: typeof import('./src/components/ui/checkbox/Checkbox.vue')['default']
+    CollectionDialog: typeof import('./src/components/library/CollectionDialog.vue')['default']
+    CollectionListItem: typeof import('./src/components/library/CollectionListItem.vue')['default']
+    CollectionMediaPanel: typeof import('./src/components/library/CollectionMediaPanel.vue')['default']
     ConvertTaskItem: typeof import('./src/components/ConvertTaskItem.vue')['default']
     ConvertTaskList: typeof import('./src/components/ConvertTaskList.vue')['default']
     DeleteTaskDialog: typeof import('./src/components/DeleteTaskDialog.vue')['default']
@@ -65,6 +73,7 @@ declare module 'vue' {
     FieldSet: typeof import('./src/components/ui/field/FieldSet.vue')['default']
     FieldTitle: typeof import('./src/components/ui/field/FieldTitle.vue')['default']
     FileDetailsDrawer: typeof import('./src/components/FileDetailsDrawer.vue')['default']
+    FolderCoverCard: typeof import('./src/components/library/FolderCoverCard.vue')['default']
     FolderItem: typeof import('./src/components/FolderItem.vue')['default']
     FolderList: typeof import('./src/components/FolderList.vue')['default']
     Header: typeof import('./src/components/Header.vue')['default']
@@ -78,6 +87,7 @@ declare module 'vue' {
     Item: typeof import('./src/layout/sidebar/Item.vue')['default']
     Label: typeof import('./src/components/ui/label/Label.vue')['default']
     Layout: typeof import('./src/layout/index.vue')['default']
+    LibraryGridSkeleton: typeof import('./src/components/library/LibraryGridSkeleton.vue')['default']
     Main: typeof import('./src/layout/Main.vue')['default']
     ProgressRing: typeof import('./src/components/ProgressRing.vue')['default']
     Qrcode: typeof import('./src/components/Qrcode.vue')['default']
@@ -117,6 +127,8 @@ declare module 'vue' {
     TooltipTrigger: typeof import('./src/components/ui/tooltip/TooltipTrigger.vue')['default']
     Update: typeof import('./src/components/Update.vue')['default']
     UserCard: typeof import('./src/components/UserCard.vue')['default']
+    VideoCoverCard: typeof import('./src/components/library/VideoCoverCard.vue')['default']
+    VideoDetailDialog: typeof import('./src/components/library/VideoDetailDialog.vue')['default']
     VideoItem: typeof import('./src/components/VideoItem.vue')['default']
     VideoList: typeof import('./src/components/VideoList.vue')['default']
   }

@@ -10,6 +10,8 @@
   --font-sans: 'Roboto', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, monospace;
   --font-heading: var(--font-sans);
+  /* 默认只有到 2xl(1536)；窗口再宽时多两列 */
+  --breakpoint-3xl: 120rem;
 }
 
 :root {
