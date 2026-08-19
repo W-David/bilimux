@@ -1,7 +1,7 @@
 <template>
   <button
     type="button"
-    class="flex w-full cursor-pointer flex-col gap-2 p-1 text-left"
+    class="flex w-full cursor-pointer flex-col gap-2 p-2 text-left rounded-lg"
     @click="emit('select')">
     <div class="group relative aspect-video overflow-hidden rounded-lg bg-gray-900">
       <img
@@ -31,7 +31,7 @@
       </div>
     </div>
     <div class="min-w-0 px-0.5">
-      <div class="line-clamp-2 text-sm text-[#f6f6f6] leading-5">{{ video.title }}</div>
+      <div class="line-clamp-2 text-xs text-zinc leading-5">{{ video.title }}</div>
       <div class="mt-1 flex items-center gap-1 text-xs text-gray-500">
         <span
           v-if="video.upper.name"

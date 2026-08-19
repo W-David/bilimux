@@ -103,7 +103,7 @@
       </div>
     </div>
 
-    <div class="shrink-0 pt-4 border-t border-[#1f1f1f]">
+    <div class="shrink-0 pt-4 pr-4 border-t border-[#1f1f1f]">
       <div
         v-if="invalid"
         class="rounded-lg bg-white/5 px-3 py-2 text-xs text-gray-400">
@@ -117,7 +117,7 @@
           @update:model-value="onQnChange">
           <SelectTrigger
             size="sm"
-            class="w-[7.5rem] shrink-0 [&_svg]:rotate-180"
+            class="w-30 shrink-0 [&_svg]:rotate-180"
             aria-label="清晰度">
             <SelectValue placeholder="清晰度" />
           </SelectTrigger>

@@ -20,7 +20,7 @@
       </div>
       <div
         v-else
-        class="library-video-grid">
+        class="cache-video-grid">
         <CacheCoverCard
           v-for="item in items"
           :key="item.id"

@@ -10,10 +10,10 @@ export const pages: Pages = {
   main: {
     attrs: {
       title: 'bilimux',
-      width: 1280,
-      height: 920,
+      width: 1440,
+      height: 1000,
       minWidth: 1280,
-      minHeight: 920,
+      minHeight: 800,
       resizable: true,
       transparent: is.macOS(),
       vibrancy: is.macOS() ? 'fullscreen-ui' : undefined,

@@ -4,7 +4,7 @@
     title="登录后查看收藏夹" />
   <div
     v-else
-    class="relative h-full min-h-0 grid grid-cols-[232px_1fr_320px]">
+    class="relative h-full min-h-0 grid grid-cols-[232px_1fr_350px]">
     <div
       v-if="created.error && !created.loading"
       class="col-span-3 flex flex-col items-center justify-center gap-3">
@@ -55,7 +55,7 @@
               v-for="item in collection.items"
               :key="item.key"
               :video="item.video"
-              :class="item.key === collection.selectedKey ? 'ring-2 ring-pink-400/70 rounded-lg' : ''"
+              :class="item.key === collection.selectedKey ? 'ring-1 ring-pink-400/50' : ''"
               @select="collection.selectedKey = item.key" />
           </div>
           <LibraryGridSkeleton
@@ -75,7 +75,7 @@
             :class="created.loading ? 'animate-spin' : ''" />
         </button>
       </div>
-      <aside class="min-h-0 overflow-hidden border-l border-[#1f1f1f] bg-[#141414] p-4">
+      <aside class="min-h-0 overflow-hidden border-l border-[#1f1f1f] bg-[#141414] p-4 pr-0">
         <LibraryPreviewPanel :payload="collection.selectedItem" />
       </aside>
     </template>
@@ -85,8 +85,8 @@
 <script setup lang="ts">
 import { RefreshCw as RefreshCwIcon } from '@lucide/vue'
 import FolderRail from '@renderer/components/library/FolderRail.vue'
-import LibraryPreviewPanel from '@renderer/components/library/LibraryPreviewPanel.vue'
 import LibraryGridSkeleton from '@renderer/components/library/LibraryGridSkeleton.vue'
+import LibraryPreviewPanel from '@renderer/components/library/LibraryPreviewPanel.vue'
 import LoginGate from '@renderer/components/library/LoginGate.vue'
 import VideoCoverCard from '@renderer/components/library/VideoCoverCard.vue'
 import { useCollectionSource } from '@renderer/composables/useCollectionSource'

@@ -4,7 +4,7 @@
     :title="catalog === 'cinema' ? '登录后查看追剧' : '登录后查看追番'" />
   <div
     v-else
-    class="relative h-full min-h-0 grid grid-cols-[1fr_320px]">
+    class="relative h-full min-h-0 grid grid-cols-[1fr_350px]">
     <div
       v-if="state.error && !state.loading"
       class="col-span-2 flex flex-col items-center justify-center gap-3">
@@ -58,7 +58,7 @@
             :class="state.loading ? 'animate-spin' : ''" />
         </button>
       </div>
-      <aside class="min-h-0 overflow-hidden border-l border-[#1f1f1f] bg-[#141414] p-4">
+      <aside class="min-h-0 overflow-hidden border-l border-[#1f1f1f] bg-[#141414] p-4 pr-0">
         <LibraryPreviewPanel
           :season="selectedSeason"
           :items="collection.items"
@@ -72,8 +72,8 @@
 <script setup lang="ts">
 import { RefreshCw as RefreshCwIcon } from '@lucide/vue'
 import BangumiPosterCard from '@renderer/components/library/BangumiPosterCard.vue'
-import LibraryPreviewPanel from '@renderer/components/library/LibraryPreviewPanel.vue'
 import LibraryGridSkeleton from '@renderer/components/library/LibraryGridSkeleton.vue'
+import LibraryPreviewPanel from '@renderer/components/library/LibraryPreviewPanel.vue'
 import LoginGate from '@renderer/components/library/LoginGate.vue'
 import { useCollectionSource } from '@renderer/composables/useCollectionSource'
 import { useAuthStore } from '@renderer/store/auth'
