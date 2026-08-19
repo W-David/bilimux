@@ -13,6 +13,7 @@
         v-if="video.cover"
         :src="safeCover(video.cover)"
         referrerpolicy="no-referrer"
+        class="h-full w-full object-cover"
         alt="" />
       <div
         v-else

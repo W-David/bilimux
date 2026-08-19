@@ -252,6 +252,7 @@ type DownloadHistoryRecord = {
   part: string
   title: string
   folderName: string
+  cover: string
   outputPath: string | null
   fileSize: number
   status: DownloadHistoryStatus

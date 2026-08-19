@@ -12,6 +12,7 @@ type HistoryRow = {
   part: string
   title: string
   folder_name: string
+  cover: string
   output_path: string | null
   file_size: number
   status: DownloadHistoryStatus
@@ -27,6 +28,7 @@ const CREATE_TABLE_SQL = `
     part TEXT NOT NULL DEFAULT '',
     title TEXT NOT NULL DEFAULT '',
     folder_name TEXT NOT NULL DEFAULT '',
+    cover TEXT NOT NULL DEFAULT '',
     output_path TEXT,
     file_size INTEGER NOT NULL DEFAULT 0,
     status TEXT NOT NULL DEFAULT 'downloading',
@@ -44,6 +46,7 @@ export default class DownloadHistoryStore {
     this.db = new DatabaseSync(dbPath)
     this.db.exec(CREATE_TABLE_SQL)
     this.migrateToCidPrimaryKey()
+    this.ensureCoverColumn()
     this.reconcile()
   }
 
@@ -88,6 +91,12 @@ export default class DownloadHistoryStore {
     }
   }
 
+  private ensureCoverColumn(): void {
+    const columns = this.db.prepare(`PRAGMA table_info(download_history)`).all() as { name: string }[]
+    if (columns.some(column => column.name === 'cover')) return
+    this.db.exec(`ALTER TABLE download_history ADD COLUMN cover TEXT NOT NULL DEFAULT ''`)
+  }
+
   /**
    * 下载开始：写入/重置一条 downloading 记录
    */
@@ -101,21 +110,22 @@ export default class DownloadHistoryStore {
       this.db
         .prepare(
           `INSERT INTO download_history (
-             bvid, cid, page, part, title, folder_name, output_path, file_size, status, downloaded_at, updated_at
+             bvid, cid, page, part, title, folder_name, cover, output_path, file_size, status, downloaded_at, updated_at
            )
-           VALUES (?, ?, ?, ?, ?, ?, NULL, 0, 'downloading', NULL, ?)
+           VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 0, 'downloading', NULL, ?)
            ON CONFLICT(bvid, cid) DO UPDATE SET
              page = excluded.page,
              part = excluded.part,
              title = excluded.title,
              folder_name = excluded.folder_name,
+             cover = excluded.cover,
              output_path = NULL,
              file_size = 0,
              status = 'downloading',
              downloaded_at = NULL,
              updated_at = excluded.updated_at`
         )
-        .run(task.bvid, task.cid, task.page, task.part, task.title, task.folderName, now)
+        .run(task.bvid, task.cid, task.page, task.part, task.title, task.folderName, task.coverUrl || '', now)
       this.db.exec('COMMIT')
     } catch (error) {
       this.db.exec('ROLLBACK')
@@ -163,7 +173,7 @@ export default class DownloadHistoryStore {
     const placeholders = bvids.map(() => '?').join(', ')
     const rows = this.db
       .prepare(
-        `SELECT bvid, cid, page, part, title, folder_name, output_path, file_size, status, downloaded_at, updated_at
+        `SELECT bvid, cid, page, part, title, folder_name, cover, output_path, file_size, status, downloaded_at, updated_at
          FROM download_history
          WHERE bvid IN (${placeholders})`
       )
@@ -178,7 +188,7 @@ export default class DownloadHistoryStore {
   public async listAll(): Promise<DownloadHistoryRecord[]> {
     const rows = this.db
       .prepare(
-        `SELECT bvid, cid, page, part, title, folder_name, output_path, file_size, status, downloaded_at, updated_at
+        `SELECT bvid, cid, page, part, title, folder_name, cover, output_path, file_size, status, downloaded_at, updated_at
          FROM download_history
          ORDER BY updated_at DESC`
       )
@@ -192,7 +202,7 @@ export default class DownloadHistoryStore {
   public async getByKey(key: DownloadTaskKey): Promise<DownloadHistoryRecord | null> {
     const row = this.db
       .prepare(
-        `SELECT bvid, cid, page, part, title, folder_name, output_path, file_size, status, downloaded_at, updated_at
+        `SELECT bvid, cid, page, part, title, folder_name, cover, output_path, file_size, status, downloaded_at, updated_at
          FROM download_history
          WHERE bvid = ? AND cid = ?`
       )
@@ -285,6 +295,7 @@ export default class DownloadHistoryStore {
       part: row.part,
       title: row.title,
       folderName: row.folder_name,
+      cover: row.cover || '',
       outputPath: row.output_path,
       fileSize: row.file_size,
       status: row.status,

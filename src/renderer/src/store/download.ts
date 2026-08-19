@@ -112,12 +112,17 @@ function applyHistoryToState(state: DownloadItemState, record: DownloadHistoryRe
 }
 
 function syntheticVideo(record: DownloadHistoryRecord, favorite?: FavoriteResource): FavoriteResource {
-  if (favorite) return favorite
+  if (favorite) {
+    return {
+      ...favorite,
+      cover: favorite.cover || record.cover || ''
+    }
+  }
   return {
     id: 0,
     type: 2,
     title: record.title,
-    cover: '',
+    cover: record.cover || '',
     duration: 0,
     attr: 0,
     bvid: record.bvid,
@@ -199,7 +204,11 @@ export const useDownloadStore = defineStore('download', () => {
     extra?: { kind?: 'ugc' | 'ogv'; epId?: number }
   ): void {
     snapshots[downloadTaskId(video.bvid, page.cid)] = {
-      video,
+      video: {
+        ...video,
+        upper: { ...video.upper },
+        cnt_info: video.cnt_info ? { ...video.cnt_info } : undefined
+      },
       folderName,
       page,
       pagesTotal,
@@ -229,7 +238,14 @@ export const useDownloadStore = defineStore('download', () => {
     const snap = snapshots[key]
     const historyRecord = record === undefined ? (historyFor(bvid, cid) ?? null) : record
     if (snap) {
-      return { ...snap, history: historyRecord }
+      return {
+        ...snap,
+        video: {
+          ...snap.video,
+          cover: snap.video.cover || historyRecord?.cover || ''
+        },
+        history: historyRecord
+      }
     }
     if (historyRecord) return rowFromHistory(historyRecord)
     const favorite = lookupFavorite(bvid)

@@ -30,6 +30,7 @@
           v-if="cover"
           :src="safeCover(cover)"
           referrerpolicy="no-referrer"
+          class="block h-auto w-full"
           alt="" />
         <div class="absolute inset-0 bg-black/20"></div>
       </div>
