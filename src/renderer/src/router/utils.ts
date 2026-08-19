@@ -1,7 +1,7 @@
 import { type RouteLocationNormalizedLoaded, type RouteRecordNormalized, type RouteRecordRaw } from 'vue-router'
 
 /**
- * Main 下的栏目记录（convert / download / about / prefer）。
+ * Main 下的栏目记录（library / tasks / prefer）。
  */
 export function sectionRecord(
   route: Pick<RouteLocationNormalizedLoaded, 'matched'>

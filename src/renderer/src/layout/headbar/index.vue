@@ -1,0 +1,66 @@
+<template>
+  <div
+    v-if="tabs.length"
+    class="draggable flex h-[var(--headbar-height)] shrink-0 items-stretch border-b border-[#1f1f1f] bg-[#181818] px-4">
+    <div class="flex h-full items-stretch">
+      <HeadbarItem
+        v-for="item in tabs"
+        :key="String(item.name)"
+        :to="String(item.name)" />
+    </div>
+    <div
+      v-if="isTasks"
+      class="no-drag ml-auto flex h-full items-center gap-2">
+      <Button
+        size="sm"
+        variant="outline"
+        @click="openDownloadFolder">
+        <FolderOpenIcon data-icon="inline-start" />
+        下载目录
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        @click="openConvertFolder">
+        <FolderOpenIcon data-icon="inline-start" />
+        转换目录
+      </Button>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { FolderOpen as FolderOpenIcon } from '@lucide/vue'
+import { openPath } from '@renderer/api'
+import { mittbus } from '@renderer/ipc'
+import { getChildTabs, sectionRecord } from '@renderer/router/utils'
+import { usePreferenceStore } from '@renderer/store/preference'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import HeadbarItem from './Item.vue'
+
+const route = useRoute()
+const preferenceStore = usePreferenceStore()
+
+const section = computed(() => sectionRecord(route))
+const tabs = computed(() => getChildTabs(section.value))
+const isTasks = computed(() => section.value?.name === 'tasks')
+
+const openDir = async (dir: string): Promise<void> => {
+  const errMessage = await openPath(dir)
+  if (errMessage) {
+    mittbus.emit('toast:add', {
+      severity: 'error',
+      message: errMessage
+    })
+  }
+}
+
+const openDownloadFolder = (): void => {
+  void openDir(preferenceStore.preference['download-config'].outputDir)
+}
+
+const openConvertFolder = (): void => {
+  void openDir(preferenceStore.preference['convert-config'].outputDir)
+}
+</script>

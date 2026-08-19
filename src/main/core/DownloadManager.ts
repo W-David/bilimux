@@ -225,7 +225,7 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
       streams: {},
       mergeEngine: null,
       cancelled: false,
-      qn: clampDownloadQn(downloadConfig.qn),
+      qn: clampDownloadQn(task.qn ?? downloadConfig.qn),
       codec: clampDownloadCodec(downloadConfig.codec),
       busy: false
     }

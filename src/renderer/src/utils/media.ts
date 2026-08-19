@@ -4,7 +4,9 @@ import type { FavoriteFolder } from '@shared/types'
  * 统一使用 https 封面地址
  */
 export const safeCover = (url?: string): string => {
-  return url?.replace(/^http:\/\//, 'https://') || ''
+  if (!url) return ''
+  if (url.startsWith('//')) return `https:${url}`
+  return url.replace(/^http:\/\//, 'https://')
 }
 
 /**

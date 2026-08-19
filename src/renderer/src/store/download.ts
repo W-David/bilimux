@@ -16,14 +16,6 @@ import logger from 'electron-log/renderer'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref } from 'vue'
 
-export type DownloadSelectionEntry = {
-  video: FavoriteResource
-  folderName: string
-  folderId: number
-  /** null 表示整稿全部分 P；否则为已点选的 cid */
-  cids: number[] | null
-}
-
 export type DownloadItemStatus = DownloadProgressStatus | 'idle'
 
 export type DownloadItemState = {
@@ -144,14 +136,8 @@ export const useDownloadStore = defineStore('download', () => {
   const pagesByBvid = reactive<Record<string, BiliVideoPage[]>>({})
   const pagesLoading = reactive<Record<string, boolean>>({})
   const pagesInflight = new Map<string, Promise<BiliVideoPage[]>>()
-  const selections = reactive<Record<string, DownloadSelectionEntry>>({})
   const snapshots = reactive<Record<string, Omit<DownloadTaskRow, 'history'>>>({})
   const history = ref<DownloadHistoryRecord[]>([])
-  const expandedBvid = ref<string | null>(null)
-  const multiSelectMode = ref(false)
-
-  const selectedList = computed(() => Object.values(selections))
-  const selectedCount = computed(() => selectedList.value.length)
 
   const historyMap = computed(() => {
     const map = new Map<string, DownloadHistoryRecord[]>()
@@ -275,34 +261,6 @@ export const useDownloadStore = defineStore('download', () => {
     return 'waiting'
   }
 
-  function pendingPagesFor(bvid: string, pages: BiliVideoPage[]): BiliVideoPage[] {
-    return pages.filter(page => partLane(bvid, page.cid) === 'waiting')
-  }
-
-  function occupiedCidCount(bvid: string): number {
-    const cids = new Set<number>()
-    for (const record of historyMap.value.get(bvid) ?? []) {
-      if (partLane(bvid, record.cid) !== 'waiting') cids.add(record.cid)
-    }
-    for (const key of Object.keys(items)) {
-      const parsed = parseTaskKey(key)
-      if (parsed?.bvid === bvid && partLane(parsed.bvid, parsed.cid) !== 'waiting') {
-        cids.add(parsed.cid)
-      }
-    }
-    return cids.size
-  }
-
-  function hasPendingParts(video: FavoriteResource): boolean {
-    const loaded = pagesByBvid[video.bvid]
-    if (loaded?.length) {
-      return pendingPagesFor(video.bvid, loaded).length > 0
-    }
-    const pageCount = Number(video.page)
-    const expected = Number.isFinite(pageCount) && pageCount > 0 ? Math.trunc(pageCount) : 1
-    return occupiedCidCount(video.bvid) < expected
-  }
-
   const activeList = computed<DownloadTaskRow[]>(() => {
     const rows: DownloadTaskRow[] = []
     for (const key of Object.keys(items)) {
@@ -379,7 +337,7 @@ export const useDownloadStore = defineStore('download', () => {
     folderName: string,
     page: BiliVideoPage,
     pagesTotal: number,
-    extra?: { kind?: 'ugc' | 'ogv'; epId?: number }
+    extra?: { kind?: 'ugc' | 'ogv'; epId?: number; qn?: number }
   ): boolean {
     const item = getItem(video.bvid, page.cid)
     if (ACTIVE_STATUS.has(item.status) || item.status === 'success') return false
@@ -399,7 +357,8 @@ export const useDownloadStore = defineStore('download', () => {
       folderName,
       coverUrl: video.cover,
       kind,
-      epId
+      epId,
+      qn: extra?.qn
     })
     item.status = 'waiting'
     if (previous !== 'fail') {
@@ -523,120 +482,6 @@ export const useDownloadStore = defineStore('download', () => {
     }
   }
 
-  function getSelection(bvid: string): DownloadSelectionEntry | undefined {
-    return selections[bvid]
-  }
-
-  function isSelected(bvid: string): boolean {
-    return Boolean(selections[bvid])
-  }
-
-  function isPartiallySelected(bvid: string): boolean {
-    const entry = selections[bvid]
-    return Boolean(entry?.cids)
-  }
-
-  function isCidSelected(bvid: string, cid: number): boolean {
-    const entry = selections[bvid]
-    if (!entry) return false
-    if (entry.cids == null) return true
-    return entry.cids.includes(cid)
-  }
-
-  function areAllPartsSelected(bvid: string, allCids: number[]): boolean {
-    const entry = selections[bvid]
-    if (!entry) return false
-    if (entry.cids == null) return true
-    return allCids.length > 0 && allCids.every(cid => entry.cids!.includes(cid))
-  }
-
-  function setExpanded(bvid: string | null): void {
-    expandedBvid.value = bvid
-  }
-
-  function setMultiSelectMode(on: boolean): void {
-    multiSelectMode.value = on
-    if (!on) {
-      clearSelections()
-      setExpanded(null)
-    }
-  }
-
-  function toggleMultiSelectMode(): void {
-    setMultiSelectMode(!multiSelectMode.value)
-  }
-
-  function selectVideo(
-    video: FavoriteResource,
-    folderName: string,
-    folderId: number,
-    cids: number[] | null = null
-  ): void {
-    selections[video.bvid] = { video, folderName, folderId, cids }
-  }
-
-  function deselectVideo(bvid: string): void {
-    delete selections[bvid]
-  }
-
-  function toggleVideo(video: FavoriteResource, folderName: string, folderId: number): void {
-    const existing = selections[video.bvid]
-    if (!existing) {
-      selectVideo(video, folderName, folderId, null)
-      return
-    }
-    if (existing.cids) {
-      existing.cids = null
-      existing.folderName = folderName
-      existing.folderId = folderId
-      return
-    }
-    deselectVideo(video.bvid)
-  }
-
-  function selectVideos(videos: FavoriteResource[], folderName: string, folderId: number): void {
-    for (const video of videos) {
-      selectVideo(video, folderName, folderId, null)
-    }
-  }
-
-  function deselectVideos(bvids: Iterable<string>): void {
-    for (const bvid of bvids) deselectVideo(bvid)
-  }
-
-  function toggleCid(
-    video: FavoriteResource,
-    folderName: string,
-    folderId: number,
-    cid: number,
-    allCids: number[]
-  ): void {
-    const existing = selections[video.bvid]
-    if (!existing) {
-      selectVideo(video, folderName, folderId, [cid])
-      return
-    }
-
-    const current = existing.cids == null ? allCids : existing.cids
-    const nextSet = new Set(current)
-    if (nextSet.has(cid)) nextSet.delete(cid)
-    else nextSet.add(cid)
-
-    if (nextSet.size === 0) {
-      deselectVideo(video.bvid)
-      return
-    }
-
-    const next = allCids.filter(id => nextSet.has(id))
-    existing.cids = next.length === allCids.length ? null : next
-    existing.folderName = folderName
-    existing.folderId = folderId
-  }
-
-  function clearSelections(): void {
-    for (const key of Object.keys(selections)) delete selections[key]
-  }
-
   return {
     getItem,
     loadPages,
@@ -646,36 +491,13 @@ export const useDownloadStore = defineStore('download', () => {
     clearHistory,
     removeItem,
     history,
-    historyMap,
     partLane,
-    pendingPagesFor,
-    hasPendingParts,
     videoBadge,
     isCidActive,
     isCidCompleted,
     rememberTask,
     enqueuePart,
     activeList,
-    completedList,
-    selections,
-    selectedList,
-    selectedCount,
-    expandedBvid,
-    multiSelectMode,
-    getSelection,
-    isSelected,
-    isPartiallySelected,
-    isCidSelected,
-    areAllPartsSelected,
-    setExpanded,
-    setMultiSelectMode,
-    toggleMultiSelectMode,
-    selectVideo,
-    deselectVideo,
-    toggleVideo,
-    selectVideos,
-    deselectVideos,
-    toggleCid,
-    clearSelections
+    completedList
   }
 })

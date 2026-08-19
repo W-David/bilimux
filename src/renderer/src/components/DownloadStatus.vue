@@ -9,11 +9,6 @@
             role="button"
             tabindex="0"
             @click="handleClick">
-            <div
-              v-show="isProgressing"
-              class="absolute inset-y-0 left-0 bg-pink-400/25 transition-all duration-300"
-              :style="{ width: `${progress}%` }"></div>
-
             <span class="relative z-10 flex items-center gap-1">
               <component
                 :is="statusIcon"
@@ -70,7 +65,6 @@ const props = defineProps<{
 const downloadStore = useDownloadStore()
 const item = computed(() => downloadStore.getItem(props.video.bvid, props.page.cid))
 const status = computed(() => item.value.status)
-const progress = computed(() => item.value.progress)
 const message = computed(() => item.value.message)
 const outputPath = computed(() => item.value.outputPath)
 
@@ -134,10 +128,14 @@ const label = computed(() => {
       return '合成中'
     case 'writing':
       return '合成中'
+    case 'waiting':
+      return '排队'
+    case 'downloading':
+      return '暂停'
     case 'idle':
       return '下载'
     default:
-      return `${progress.value}%`
+      return '下载'
   }
 })
 

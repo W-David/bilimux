@@ -1,39 +1,45 @@
 import {
+  Bookmark as BookmarkIcon,
   CircleCheck as CircleCheckIcon,
+  Clapperboard as ClapperboardIcon,
   Download as DownloadIcon,
   Film as FilmIcon,
+  HardDrive as HardDriveIcon,
   Info as InfoIcon,
+  Library as LibraryIcon,
   List as ListIcon,
+  ListTodo as ListTodoIcon,
   Loader as LoaderIcon,
   Settings as SettingsIcon,
-  User as UserIcon
+  Tv as TvIcon
 } from '@lucide/vue'
 import Layout from '@renderer/layout/index.vue'
 import Main from '@renderer/layout/Main.vue'
+import LibraryCache from '@renderer/pages/library/cache.vue'
+import LibraryCreated from '@renderer/pages/library/created.vue'
+import LibraryFollow from '@renderer/pages/library/follow.vue'
+import LibraryIndex from '@renderer/pages/library/index.vue'
 import About from '@renderer/pages/About.vue'
-import ConvertComplete from '@renderer/pages/convert/complete.vue'
-import ConvertIndex from '@renderer/pages/convert/index.vue'
-import ConvertWaiting from '@renderer/pages/convert/waiting.vue'
-import DownloadActive from '@renderer/pages/download/active.vue'
-import Auth from '@renderer/pages/download/auth.vue'
-import DownloadComplete from '@renderer/pages/download/complete.vue'
-import Download from '@renderer/pages/download/index.vue'
-import DownloadWaiting from '@renderer/pages/download/waiting.vue'
 import SettingConvert from '@renderer/pages/setting/convert.vue'
 import SettingDownload from '@renderer/pages/setting/download.vue'
 import SettingIndex from '@renderer/pages/setting/index.vue'
 import SettingNormal from '@renderer/pages/setting/normal.vue'
-import SettingUser from '@renderer/pages/setting/user.vue'
+import TasksActive from '@renderer/pages/tasks/active.vue'
+import TasksAll from '@renderer/pages/tasks/all.vue'
+import TasksComplete from '@renderer/pages/tasks/complete.vue'
+import TasksIndex from '@renderer/pages/tasks/index.vue'
 import { useAuthStore } from '@renderer/store/auth'
 import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-router'
 import { findChildIndex, sectionRecord } from './utils'
 
-// 转换管理页最后停留的分组，父路由重定向时使用
-let lastConvertTabName = 'convert-complete'
-// 下载页最后停留的分组，父路由重定向时使用
-let lastDownloadTabName = 'download-waiting'
-// 设置页最后停留的分组，父路由重定向时使用
+let lastLibraryTabName = 'library-created'
+let lastTasksTabName = 'tasks-all'
 let lastSettingTabName = 'prefer-normal'
+
+export function defaultLibraryTabName(authenticated: boolean): string {
+  if (!authenticated) return 'library-cache'
+  return lastLibraryTabName
+}
 
 const routes: RouteRecordRaw[] = [
   {
@@ -46,93 +52,84 @@ const routes: RouteRecordRaw[] = [
         component: Main,
         children: [
           {
-            path: 'convert',
-            name: 'convert',
-            component: ConvertIndex,
-            redirect: () => ({ name: lastConvertTabName }),
+            path: 'library',
+            name: 'library',
+            component: LibraryIndex,
+            redirect: () => ({ name: lastLibraryTabName }),
             meta: {
               switchTransition: true,
-              menu: { label: '转换管理', icon: ListIcon, description: '客户端缓存视频转 MP4' }
+              menu: { label: '片库', icon: LibraryIcon, description: '收藏、追番和本机缓存' }
             },
             children: [
               {
-                path: 'waiting',
-                name: 'convert-waiting',
-                component: ConvertWaiting,
+                path: 'created',
+                name: 'library-created',
+                component: LibraryCreated,
                 meta: {
-                  tab: { label: '待转换', icon: ListIcon }
+                  tab: { label: '收藏', icon: BookmarkIcon }
                 }
               },
               {
-                path: 'complete',
-                name: 'convert-complete',
-                component: ConvertComplete,
+                path: 'bangumi',
+                name: 'library-bangumi',
+                component: LibraryFollow,
                 meta: {
-                  tab: { label: '已完成', icon: CircleCheckIcon }
+                  tab: { label: '追番', icon: ClapperboardIcon }
                 }
               },
               {
-                path: 'unconverted',
-                name: 'convert-unconverted',
-                redirect: { name: 'convert-complete' }
+                path: 'cinema',
+                name: 'library-cinema',
+                component: LibraryFollow,
+                meta: {
+                  tab: { label: '追剧', icon: TvIcon }
+                }
+              },
+              {
+                path: 'cache',
+                name: 'library-cache',
+                component: LibraryCache,
+                meta: {
+                  tab: { label: '本机缓存', icon: HardDriveIcon }
+                }
               }
             ]
           },
           {
-            path: 'download',
-            name: 'download',
-            component: Download,
+            path: 'tasks',
+            name: 'tasks',
+            component: TasksIndex,
+            redirect: () => ({ name: lastTasksTabName }),
             meta: {
               switchTransition: true,
-              menu: { label: '下载', icon: DownloadIcon, description: '收藏夹视频下载' }
+              menu: { label: '任务', icon: ListTodoIcon, description: '下载与转换任务' }
             },
             children: [
               {
-                path: 'auth',
-                name: 'download-auth',
-                component: Auth
-              },
-              {
-                path: 'waiting',
-                name: 'download-waiting',
-                component: DownloadWaiting,
+                path: 'all',
+                name: 'tasks-all',
+                component: TasksAll,
                 meta: {
-                  requireAuth: true,
-                  tab: { label: '待下载', icon: DownloadIcon }
+                  tab: { label: '全部', icon: ListIcon }
                 }
               },
               {
                 path: 'active',
-                name: 'download-active',
-                component: DownloadActive,
+                name: 'tasks-active',
+                component: TasksActive,
                 meta: {
-                  requireAuth: true,
-                  tab: { label: '下载中', icon: LoaderIcon }
+                  tab: { label: '进行中', icon: LoaderIcon }
                 }
               },
               {
                 path: 'complete',
-                name: 'download-complete',
-                component: DownloadComplete,
+                name: 'tasks-complete',
+                component: TasksComplete,
                 meta: {
-                  requireAuth: true,
                   tab: { label: '已完成', icon: CircleCheckIcon }
                 }
-              },
-              {
-                path: 'task',
-                name: 'download-task',
-                redirect: { name: 'download-waiting' }
               }
             ]
-          },
-          {
-            path: 'about',
-            name: 'about',
-            component: About,
-            meta: {
-              menu: { label: '关于', icon: InfoIcon }
-            }
           },
           {
             path: 'prefer',
@@ -155,10 +152,7 @@ const routes: RouteRecordRaw[] = [
               {
                 path: 'user',
                 name: 'prefer-user',
-                component: SettingUser,
-                meta: {
-                  tab: { label: '用户设置', icon: UserIcon }
-                }
+                redirect: { name: 'prefer-normal' }
               },
               {
                 path: 'convert',
@@ -174,6 +168,14 @@ const routes: RouteRecordRaw[] = [
                 component: SettingDownload,
                 meta: {
                   tab: { label: '视频下载', icon: DownloadIcon }
+                }
+              },
+              {
+                path: 'about',
+                name: 'prefer-about',
+                component: About,
+                meta: {
+                  tab: { label: '关于', icon: InfoIcon }
                 }
               }
             ]
@@ -195,49 +197,29 @@ const router = createRouter({
 
 router.beforeEach(async to => {
   const authStore = useAuthStore()
-
-  if (to.name === 'download') {
+  if (to.name === 'library') {
     await authStore.ensureReady()
-    return { name: authStore.isAuthenticated ? lastDownloadTabName : 'download-auth' }
-  }
-
-  if (to.name === 'download-auth') {
-    await authStore.ensureReady()
-    if (authStore.isAuthenticated) {
-      return { name: lastDownloadTabName }
-    }
-    return
-  }
-
-  if (to.meta.requireAuth && !authStore.isAuthenticated) {
-    // 等待启动时的登录态检查完成，避免首次进入下载页被误判为未登录
-    await authStore.ensureReady()
-    if (!authStore.isAuthenticated) {
-      return { name: 'download-auth' }
-    }
+    return { name: defaultLibraryTabName(authStore.isAuthenticated) }
   }
   return
 })
 
 router.afterEach((to, from) => {
-  // 记录最后一次停留的转换/设置分组，供父路由重定向回到原分组
   if (to.meta.switchTransition && typeof to.name === 'string') {
     const section = sectionRecord(to)
     if (section?.name === 'prefer') {
       lastSettingTabName = to.name
-    } else if (section?.name === 'convert') {
-      lastConvertTabName = to.name
-    } else if (section?.name === 'download' && to.meta.tab) {
-      lastDownloadTabName = to.name
+    } else if (section?.name === 'library' && to.meta.tab) {
+      lastLibraryTabName = to.name
+    } else if (section?.name === 'tasks' && to.meta.tab) {
+      lastTasksTabName = to.name
     }
   }
 
-  // 首次进入或不完整的路由不做过渡
   if (to.matched.length < 3 || from.matched.length < 3) {
     return
   }
 
-  // 菜单级顺序：Main.children 里页面记录的下标
   const toSection = sectionRecord(to)
   const fromSection = sectionRecord(from)
   const toPageIndex = findChildIndex(to.matched[1], toSection)
@@ -249,7 +231,6 @@ router.afterEach((to, from) => {
     toSection?.name &&
     toSection.name === fromSection?.name
   ) {
-    // 同一栏目内的子页：按栏目 children 下标左右滑动
     const toGroupIndex = findChildIndex(toSection, to.matched[3])
     const fromGroupIndex = findChildIndex(fromSection, from.matched[3])
     to.meta.transition = toGroupIndex >= fromGroupIndex ? 'slide-left' : 'slide-right'

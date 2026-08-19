@@ -8,16 +8,13 @@
       :draggable="false"
       :title="label"
       :aria-label="label"
-      class="h-11 w-11 flex select-none items-center justify-center rounded-xl transition-all duration-300"
-      :class="
-        isActive
-          ? 'bg-pink-400/15 text-pink-400 ring-1 ring-pink-400/20'
-          : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'
-      "
+      class="no-drag w-full cursor-pointer rounded-xl px-1 py-2.5 flex select-none flex-col items-center gap-1 transition-all duration-300 [&_*]:pointer-events-none"
+      :class="isActive ? ' text-pink-400' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'"
       @click="navigate">
       <component
         :is="icon"
-        class="size-6" />
+        class="size-5" />
+      <span class="text-[11px] leading-none">{{ label }}</span>
     </a>
   </RouterLink>
 </template>

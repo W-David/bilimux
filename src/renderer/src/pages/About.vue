@@ -108,7 +108,7 @@ const versionList = computed(() => [
   <div class="h-full flex select-none items-center justify-center overflow-hidden">
     <div class="relative z-10 w-120">
       <!-- Header -->
-      <div class="flex flex-col items-center gap-6 pb-8 pt-10">
+      <div class="flex flex-col items-center gap-6 py-6">
         <div class="group relative cursor-default">
           <!-- Glow effects -->
           <div

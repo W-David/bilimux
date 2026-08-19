@@ -16,6 +16,7 @@ export interface ConvertTask {
   uname?: string
   groupTitle?: string
   sourceDir?: string
+  coverUrl?: string
   outputPath?: string
   runId?: string
   startedAt?: number | null

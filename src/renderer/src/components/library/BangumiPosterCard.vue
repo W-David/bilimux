@@ -1,7 +1,7 @@
 <template>
   <button
     type="button"
-    class="flex w-full cursor-pointer flex-col gap-2 text-left"
+    class="flex w-full cursor-pointer flex-col gap-2 p-1 text-left"
     @click="emit('select', item)">
     <div class="group relative aspect-2/3 overflow-hidden rounded-lg bg-gray-900">
       <img

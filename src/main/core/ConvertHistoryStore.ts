@@ -14,6 +14,7 @@ type HistoryRow = {
   uname: string
   group_title: string
   source_dir: string
+  cover_url: string
   output_path: string | null
   file_size: number
   status: ConvertHistoryStatus
@@ -48,6 +49,7 @@ export default class ConvertHistoryStore {
         uname TEXT NOT NULL DEFAULT '',
         group_title TEXT NOT NULL DEFAULT '',
         source_dir TEXT NOT NULL DEFAULT '',
+        cover_url TEXT NOT NULL DEFAULT '',
         output_path TEXT,
         file_size INTEGER NOT NULL DEFAULT 0,
         status TEXT NOT NULL DEFAULT 'processing',
@@ -63,6 +65,9 @@ export default class ConvertHistoryStore {
     if (!columns.some(column => column.name === 'run_seq')) {
       this.db.exec(`ALTER TABLE convert_history ADD COLUMN run_seq INTEGER NOT NULL DEFAULT 0`)
     }
+    if (!columns.some(column => column.name === 'cover_url')) {
+      this.db.exec(`ALTER TABLE convert_history ADD COLUMN cover_url TEXT NOT NULL DEFAULT ''`)
+    }
     this.reconcile()
   }
 
@@ -74,8 +79,8 @@ export default class ConvertHistoryStore {
     this.db
       .prepare(
         `INSERT INTO convert_history
-           (run_id, run_seq, bvid, type, title, uname, group_title, source_dir, output_path, file_size, status, error_message, duration_ms, started_at, completed_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'processing', '', NULL, ?, NULL, ?)
+           (run_id, run_seq, bvid, type, title, uname, group_title, source_dir, cover_url, output_path, file_size, status, error_message, duration_ms, started_at, completed_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'processing', '', NULL, ?, NULL, ?)
          ON CONFLICT(bvid) DO UPDATE SET
            run_id = excluded.run_id,
            run_seq = excluded.run_seq,
@@ -84,6 +89,7 @@ export default class ConvertHistoryStore {
            uname = excluded.uname,
            group_title = excluded.group_title,
            source_dir = excluded.source_dir,
+           cover_url = excluded.cover_url,
            output_path = excluded.output_path,
            file_size = 0,
            status = 'processing',
@@ -102,6 +108,7 @@ export default class ConvertHistoryStore {
         bv.uname,
         bv.groupTitle,
         bv.fileInfo.dirPath,
+        bv.coverUrl || '',
         outputPath ?? null,
         now,
         now
@@ -146,7 +153,7 @@ export default class ConvertHistoryStore {
   public async list(): Promise<ConvertHistoryRecord[]> {
     const rows = this.db
       .prepare(
-        `SELECT rowid AS id, run_id, run_seq, bvid, type, title, uname, group_title, source_dir, output_path,
+        `SELECT rowid AS id, run_id, run_seq, bvid, type, title, uname, group_title, source_dir, cover_url, output_path,
                 file_size, status, error_message, duration_ms, started_at, completed_at, updated_at
          FROM convert_history
          ORDER BY
@@ -182,8 +189,8 @@ export default class ConvertHistoryStore {
     const result = this.db
       .prepare(
         `INSERT INTO convert_history
-           (run_id, run_seq, bvid, type, title, uname, group_title, source_dir, output_path, file_size, status, error_message, duration_ms, started_at, completed_at, updated_at)
-         VALUES ('prescan', ?, ?, ?, ?, ?, ?, ?, NULL, 0, 'scanned', '', NULL, NULL, NULL, ?)
+           (run_id, run_seq, bvid, type, title, uname, group_title, source_dir, cover_url, output_path, file_size, status, error_message, duration_ms, started_at, completed_at, updated_at)
+         VALUES ('prescan', ?, ?, ?, ?, ?, ?, ?, ?, NULL, 0, 'scanned', '', NULL, NULL, NULL, ?)
          ON CONFLICT(bvid) DO UPDATE SET
            run_seq = excluded.run_seq,
            type = excluded.type,
@@ -191,10 +198,11 @@ export default class ConvertHistoryStore {
            uname = excluded.uname,
            group_title = excluded.group_title,
            source_dir = excluded.source_dir,
+           cover_url = excluded.cover_url,
            updated_at = excluded.updated_at
          WHERE convert_history.status = 'scanned'`
       )
-      .run(runSeq, bv.bvid, bv.type, bv.title, bv.uname, bv.groupTitle, bv.fileInfo.dirPath, now)
+      .run(runSeq, bv.bvid, bv.type, bv.title, bv.uname, bv.groupTitle, bv.fileInfo.dirPath, bv.coverUrl || '', now)
     return result.changes > 0
   }
 
@@ -306,6 +314,7 @@ export default class ConvertHistoryStore {
       uname: row.uname,
       groupTitle: row.group_title,
       sourceDir: row.source_dir,
+      coverUrl: row.cover_url || '',
       outputPath: row.output_path,
       fileSize: row.file_size,
       status,

@@ -90,9 +90,8 @@
       <div
         v-else
         class="w-50 overflow-hidden text-center text-wrap text-xs text-gray-400 font-normal leading-relaxed italic">
-        <div>为避免触发 B 站风控</div>
-        <div>登录后会一次性获取所有收藏夹视频</div>
-        <div>后续可手动刷新</div>
+        <div>登录后可查看收藏、追番和追剧</div>
+        <div>本机缓存不需要登录</div>
       </div>
     </div>
   </div>
@@ -113,9 +112,21 @@ import { useAuthStore } from '@renderer/store/auth'
 import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
 import QRCode from 'qrcode'
-import { onActivated, onUnmounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onActivated, onMounted, onUnmounted, ref } from 'vue'
 import { checkQrCodeLoginStatus, getQrCode } from '../api/network'
+
+const props = withDefaults(
+  defineProps<{
+    autoStart?: boolean
+  }>(),
+  {
+    autoStart: false
+  }
+)
+
+const emit = defineEmits<{
+  success: []
+}>()
 
 // 登录状态类型
 type LoginStatus = 'initial' | 'loading' | 'loaded' | 'scanned' | 'expired' | 'error' | 'success'
@@ -131,7 +142,6 @@ enum QRCodeStatus {
 // 状态定义
 const status = ref<LoginStatus>('initial')
 const authStore = useAuthStore()
-const router = useRouter()
 const qrCodeUrl = ref('')
 const qrCodeKey = ref('')
 const countdown = ref(180)
@@ -257,7 +267,8 @@ const startPolling = () => {
               logger.error('持久化登录 Cookie 失败:', error)
             }
             await persistUserInfoOnLogin()
-            router.push({ name: 'download-task' })
+            emit('success')
+            authStore.closeLogin()
             break
           case QRCodeStatus.SCANNED: // 已扫码未确认
             status.value = 'scanned'
@@ -288,6 +299,9 @@ const persistUserInfoOnLogin = async (): Promise<void> => {
     // 新账号登录后清掉上一个账号的收藏夹缓存
     preferenceStore.preference['favorites-data'] = null
     preferenceStore.savePreference()
+    void import('@renderer/store/library').then(({ useLibraryStore }) => {
+      useLibraryStore().reset()
+    })
   } catch (error) {
     logger.error('登录后获取用户信息失败:', error)
   }
@@ -309,10 +323,15 @@ const stopCountdown = () => {
   }
 }
 
+onMounted(() => {
+  if (props.autoStart) void initQRCode()
+})
+
 // KeepAlive 复用缓存实例时，若已退出登录则重置为初始画面
 onActivated(() => {
   if (!authStore.isAuthenticated) {
     resetState()
+    if (props.autoStart) void initQRCode()
   }
 })
 

@@ -207,6 +207,8 @@ type DownloadVideoTask = {
   kind?: 'ugc' | 'ogv'
   /** ogv 单集 epid，取流时传给 pgc playurl */
   epId?: number
+  /** 本次下载清晰度；缺省则用设置里的 qn */
+  qn?: number
 }
 
 type DownloadProgressStatus =
@@ -284,6 +286,7 @@ type ConvertHistoryRecord = {
   uname: string
   groupTitle: string
   sourceDir: string
+  coverUrl: string
   outputPath: string | null
   fileSize: number
   status: ConvertHistoryStatus

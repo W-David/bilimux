@@ -146,7 +146,8 @@
 
 :root {
   --title-height: 32px;
-  --sidebar-width: 82px;
+  --sidebar-width: 88px;
+  --headbar-height: 60px;
 }
 
 * {
@@ -164,8 +165,8 @@ body {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 32px;
+  width: var(--sidebar-width);
+  height: var(--title-height);
   background-color: transparent;
 }
 
@@ -196,7 +197,11 @@ body {
   -webkit-app-region: drag;
   user-select: none;
   app-region: drag;
-  z-index: 65536;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
 }
 
 *,

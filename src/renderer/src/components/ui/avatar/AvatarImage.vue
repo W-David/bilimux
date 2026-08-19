@@ -9,6 +9,7 @@ const props = defineProps<AvatarImageProps>()
   <AvatarImage
     data-slot="avatar-image"
     v-bind="props"
+    referrerpolicy="no-referrer"
     class="rounded-full aspect-square size-full object-cover">
     <slot />
   </AvatarImage>

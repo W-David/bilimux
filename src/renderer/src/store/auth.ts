@@ -9,6 +9,10 @@ interface AuthState {
   isAuthenticated: boolean
   /** 登录态是否已完成首次检查（用于路由守卫等待启动竞态） */
   initialized: boolean
+  /** 扫码登录浮层 */
+  loginOpen: boolean
+  /** 用户信息卡片 */
+  profileOpen: boolean
 }
 
 let authReadyPromise: Promise<void> | null = null
@@ -17,7 +21,9 @@ export const useAuthStore = defineStore('auth', {
   state: (): AuthState => {
     return {
       isAuthenticated: false,
-      initialized: false
+      initialized: false,
+      loginOpen: false,
+      profileOpen: false
     }
   },
   actions: {
@@ -27,6 +33,7 @@ export const useAuthStore = defineStore('auth', {
      */
     async invalidateSession(message?: string) {
       this.isAuthenticated = false
+      this.profileOpen = false
       this.clearCachedUserData()
       if (message) {
         mittbus.emit('toast:add', {
@@ -36,11 +43,20 @@ export const useAuthStore = defineStore('auth', {
       }
       await this.leaveProtectedRoute()
     },
+    openLogin() {
+      this.loginOpen = true
+    },
+    closeLogin() {
+      this.loginOpen = false
+    },
+    openProfile() {
+      this.profileOpen = true
+    },
+    closeProfile() {
+      this.profileOpen = false
+    },
     async leaveProtectedRoute() {
-      const { default: router } = await import('@renderer/router')
-      if (router.currentRoute.value.meta.requireAuth) {
-        await router.replace({ name: 'download-auth' })
-      }
+      // 登录门改在片库内容区展示，退出后不再整页踢走
     },
     async refreshAuth() {
       const biliJct = await getCookie()
