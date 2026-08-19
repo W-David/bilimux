@@ -10,12 +10,11 @@
       <div class="flex-1"></div>
       <button
         type="button"
-        class="no-drag w-full cursor-pointer rounded-xl px-1 py-2.5 flex flex-col items-center gap-1 text-gray-400 transition-colors hover:bg-white/5 hover:text-gray-200 **:pointer-events-none"
+        class="no-drag w-full cursor-pointer rounded-xl px-1 py-2.5 flex flex-col items-center gap-3 text-gray-400 transition-colors hover:bg-white/5 hover:text-gray-200 **:pointer-events-none"
         :aria-label="identityLabel"
         @click="onIdentityClick">
         <Avatar
           v-if="userFace"
-          size="sm"
           class="size-8">
           <AvatarImage
             :src="safeCover(userFace)"
@@ -28,7 +27,7 @@
           {{ identityInitial }}
         </span>
         <span
-          class="max-w-full truncate text-[11px] leading-none"
+          class="max-w-full truncate text-[12px] leading-none"
           :class="authStore.isAuthenticated ? 'text-gray-300' : 'text-pink-400'">
           {{ identityLabel }}
         </span>

@@ -1,21 +1,12 @@
 <template>
   <div class="card-border relative rounded-2xl p-3">
-    <span
-      class="absolute top-2.5 right-2.5 z-10 inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] font-medium"
-      :class="kindClass">
-      <component
-        :is="kindIcon"
-        class="size-3" />
-      {{ kindLabel }}
-    </span>
-
     <div class="relative flex items-center justify-between gap-3 pr-16">
       <div class="relative h-18 w-28 shrink-0 overflow-hidden rounded-lg bg-gray-900 shadow shadow-black/20">
         <img
           v-if="cover"
           :src="safeCover(cover)"
           referrerpolicy="no-referrer"
-          class="h-full w-full object-cover"
+          class="h-full w-full object-cover brightness-50"
           alt="" />
         <div
           v-else
@@ -27,6 +18,11 @@
           class="absolute top-1 right-1 rounded-sm bg-black/60 px-1 py-0.5 text-[10px] text-gray-50">
           {{ partBadge }}
         </span>
+        <div class="absolute top-[50%] left-[50%] translate-[-50%] h-6 w-24 flex justify-center items-center gap-2">
+          <component
+            :is="kindIcon"
+            class="size-4 text-white" />
+        </div>
       </div>
 
       <div class="min-w-0 flex-1 flex flex-col justify-between gap-2">
@@ -224,11 +220,7 @@ const downloadStore = useDownloadStore()
 const convertStore = useConvertStore()
 const detailsOpen = ref(false)
 
-const kindLabel = computed(() => (props.item.kind === 'download' ? '下载' : '转换'))
 const kindIcon = computed(() => (props.item.kind === 'download' ? DownloadIcon : FilmIcon))
-const kindClass = computed(() =>
-  props.item.kind === 'download' ? 'bg-pink-400/15 text-pink-400' : 'bg-sky-400/15 text-sky-400'
-)
 
 const cover = computed(() =>
   props.item.kind === 'download' ? props.item.row.video.cover : props.item.task.coverUrl || ''
