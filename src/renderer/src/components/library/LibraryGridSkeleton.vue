@@ -23,7 +23,7 @@ const props = withDefaults(
   defineProps<{
     count?: number
     poster?: boolean
-    variant?: 'folder' | 'poster' | 'video'
+    variant?: 'poster' | 'video'
   }>(),
   {
     count: 8,
@@ -33,9 +33,5 @@ const props = withDefaults(
 
 const isPoster = computed(() => props.variant === 'poster' || props.poster)
 
-const gridClass = computed(() => {
-  if (props.variant === 'video') return 'library-video-grid'
-  if (isPoster.value) return 'library-poster-grid'
-  return 'library-folder-grid'
-})
+const gridClass = computed(() => (isPoster.value ? 'library-poster-grid' : 'library-video-grid'))
 </script>

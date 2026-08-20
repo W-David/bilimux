@@ -59,8 +59,7 @@
             :video="item.row.video"
             :page="item.row.page"
             :pages-total="item.row.pagesTotal"
-            :folder-name="item.row.folderName"
-            :history="item.row.history" />
+            :folder-name="item.row.folderName" />
           <div
             v-else
             class="flex items-center gap-1 rounded-full border border-white/5 bg-white/6 py-1.5 px-2 shadow-inner shadow-black/20 backdrop-blur-md">

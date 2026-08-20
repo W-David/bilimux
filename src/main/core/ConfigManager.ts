@@ -45,7 +45,6 @@ export default class ConfigManager {
       gpacBinPath,
       forceTransform: false,
       forceComposition: false,
-      genConfig: false,
       concurrent: 1
     }
 

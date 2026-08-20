@@ -48,11 +48,6 @@ export default class HttpClient {
   }
 
   private initGot(): Got {
-    if (this.client) {
-      return this.client
-    }
-
-    // 初始化实例并注入拦截器
     const client = got.extend({
       cookieJar: this.cookieJar,
       headers: {

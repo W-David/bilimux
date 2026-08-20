@@ -32,8 +32,6 @@ const HISTORY_STATUS_MAP: Record<ConvertHistoryRecord['status'], ConvertTask['st
   scanned: 'scanned'
 }
 
-const WAITING_HISTORY_STATUS = new Set(['scanned', 'processing', 'missing'])
-const WAITING_LIVE_STATUS = new Set(['scanned', 'waiting', 'preprocess', 'importing', 'writing', 'missing'])
 let listenersRegistered = false
 // 历史加载版本号：清空历史时递增，阻止清空前的异步加载结果把旧数据写回内存
 let historyVersion = 0
@@ -84,17 +82,6 @@ export const useConvertStore = defineStore('convert', () => {
   const entireList = computed<ConvertTask[]>(() => {
     const live = Array.from(tasks.value.values()).map(task => ({ ...task, id: `live:${task.id}` }))
     const historyTasks = history.value.filter(record => !liveBvids.value.has(record.bvid)).map(toTask)
-    return [...live, ...historyTasks]
-  })
-
-  /** 待转换：缓存扫描待转、转换中、成品丢失；不含失败/中断/已完成 */
-  const waitingList = computed<ConvertTask[]>(() => {
-    const live = Array.from(tasks.value.values())
-      .filter(task => WAITING_LIVE_STATUS.has(task.status))
-      .map(task => ({ ...task, id: `live:${task.id}` }))
-    const historyTasks = history.value
-      .filter(record => !liveBvids.value.has(record.bvid) && WAITING_HISTORY_STATUS.has(record.status))
-      .map(toTask)
     return [...live, ...historyTasks]
   })
 
@@ -349,7 +336,6 @@ export const useConvertStore = defineStore('convert', () => {
     successCount,
     failCount,
     entireList,
-    waitingList,
     prescan,
     scanAndConvert,
     start,

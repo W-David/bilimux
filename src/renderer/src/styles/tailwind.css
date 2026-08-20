@@ -2,21 +2,8 @@
   @apply border-white/5 bg-black/10 ring-black/20 shadow-black/30 border shadow-md ring-1;
 }
 
-@utility card-border-hover {
-  @apply hover:ring-pink-400/20;
-}
-
 @utility card-glassy {
   @apply border border-white/5 bg-white/6 shadow-inner shadow-black/20 backdrop-blur-md;
-}
-
-@utility card-glassy-hover {
-  @apply hover:border-white/15 shadow-black/30;
-}
-
-/* 收藏 */
-@utility library-folder-grid {
-  @apply grid grid-cols-2 gap-x-4 gap-y-6 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 3xl:grid-cols-8;
 }
 
 /* 追番 */

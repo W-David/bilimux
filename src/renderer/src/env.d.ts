@@ -14,7 +14,6 @@ declare module 'vue-router' {
   interface RouteMeta {
     switchTransition?: boolean
     transition?: string
-    requireAuth?: boolean
     menu?: {
       label: string
       icon: Component

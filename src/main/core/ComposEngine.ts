@@ -9,14 +9,7 @@ import {
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import {
-  CONF_FILE_NAME,
-  MP3_SUFFIX,
-  MP4_SUFFIX,
-  OUTPUT_DIR_NAME,
-  PLAYURL_FILE_NAME,
-  VIDEO_INFO_FILE_NAME
-} from '../config/constants'
+import { MP3_SUFFIX, MP4_SUFFIX, OUTPUT_DIR_NAME, PLAYURL_FILE_NAME, VIDEO_INFO_FILE_NAME } from '../config/constants'
 import { createDirIfNotExist, getEngineBinPath, isExist, isValidFile, mapLimit, sanitizeFileName } from '../utils'
 import ConfigManager from './ConfigManager'
 import ConvertHistoryStore from './ConvertHistoryStore'
@@ -130,7 +123,6 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       this.emit('process:start')
 
       const config = this.configManager.store.get('convert-config')
-      const { outputDir, genConfig } = config
       const gpacBinPath = getEngineBinPath(this.configManager.context.platform)
 
       const gpacErrMessage = await isValidFile(gpacBinPath, fs.constants.X_OK)
@@ -157,14 +149,6 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
           reason: '没有待转换的任务，请先缓存扫描'
         })
         return
-      }
-
-      if (genConfig) {
-        await createDirIfNotExist(outputDir)
-        const bvsBuffer = Buffer.from(JSON.stringify(validBVS, null, 2), 'utf-8')
-        const confFilePath = path.join(outputDir, CONF_FILE_NAME)
-        await fs.writeFile(confFilePath, bvsBuffer)
-        logger.debug(`已写入 conf 文件: ${confFilePath}`)
       }
 
       await this.syntheticTask(validBVS, config)

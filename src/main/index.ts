@@ -9,8 +9,7 @@ function main(): void {
   }
 
   const application = new Application()
-  const launcher = new Launcher(application)
-  globalThis.launcher = launcher
+  new Launcher(application)
 }
 
 main()

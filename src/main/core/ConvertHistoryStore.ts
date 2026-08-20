@@ -227,16 +227,6 @@ export default class ConvertHistoryStore {
       .all() as unknown as { bvid: string; sourceDir: string; status: ConvertHistoryStatus }[]
   }
 
-  public countPendingConvert(): number {
-    const row = this.db
-      .prepare(
-        `SELECT COUNT(*) AS count FROM convert_history
-         WHERE status IN ('scanned', 'failed', 'interrupted', 'missing')`
-      )
-      .get() as { count: number }
-    return row.count
-  }
-
   public countWaitingConvert(): number {
     const row = this.db
       .prepare(`SELECT COUNT(*) AS count FROM convert_history WHERE status IN ('scanned', 'missing')`)

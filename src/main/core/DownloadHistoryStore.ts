@@ -161,10 +161,6 @@ export default class DownloadHistoryStore {
     this.updateStatus(key, 'failed')
   }
 
-  public markCancelled(key: DownloadTaskKey): void {
-    this.updateStatus(key, 'cancelled')
-  }
-
   /**
    * 按 bvid 批量查询下载历史（含全部分 P），已完成记录附带文件存在性校验
    */
@@ -277,7 +273,7 @@ export default class DownloadHistoryStore {
     }
   }
 
-  private updateStatus(key: DownloadTaskKey, status: Extract<DownloadHistoryStatus, 'failed' | 'cancelled'>): void {
+  private updateStatus(key: DownloadTaskKey, status: Extract<DownloadHistoryStatus, 'failed'>): void {
     this.db
       .prepare(`UPDATE download_history SET status = ?, updated_at = ? WHERE bvid = ? AND cid = ?`)
       .run(status, Date.now(), key.bvid, key.cid)

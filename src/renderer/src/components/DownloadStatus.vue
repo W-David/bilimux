@@ -51,15 +51,14 @@ import {
 import { cancelDownloadVideo, openPath, pauseDownloadVideo, resumeDownloadVideo } from '@renderer/api'
 import { mittbus } from '@renderer/ipc'
 import { useDownloadStore } from '@renderer/store/download'
-import type { BiliVideoPage, DownloadHistoryRecord, FavoriteResource } from '@shared/types'
-import { computed, watch } from 'vue'
+import type { BiliVideoPage, FavoriteResource } from '@shared/types'
+import { computed } from 'vue'
 
 const props = defineProps<{
   video: FavoriteResource
   folderName: string
   page: BiliVideoPage
   pagesTotal: number
-  history?: DownloadHistoryRecord | null
 }>()
 
 const downloadStore = useDownloadStore()
@@ -175,52 +174,6 @@ const play = async (): Promise<void> => {
     })
   }
 }
-
-/**
- * 根据持久化历史初始化组件状态（仅在没有实时事件覆盖时生效）
- */
-const applyHistory = (): void => {
-  const state = downloadStore.getItem(props.video.bvid, props.page.cid)
-  if (!props.history || state.status !== 'idle') return
-
-  const { status: historyStatus, fileExists, outputPath: path } = props.history
-  const fileAvailable = Boolean(path && fileExists)
-  if ((historyStatus === 'completed' || historyStatus === 'missing') && fileAvailable) {
-    state.status = 'success'
-    state.progress = 100
-    state.outputPath = path || ''
-    return
-  }
-
-  if (historyStatus === 'completed' || historyStatus === 'missing') {
-    state.status = 'fail'
-    state.message = '文件已丢失'
-    return
-  }
-
-  if (historyStatus === 'failed') {
-    state.status = 'fail'
-    state.message = '上次下载失败'
-    return
-  }
-
-  if (historyStatus === 'cancelled') {
-    state.status = 'fail'
-    state.message = '已取消'
-    return
-  }
-
-  if (historyStatus === 'interrupted' || historyStatus === 'downloading') {
-    state.status = 'fail'
-    state.message = '上次下载未完成'
-    return
-  }
-
-  state.status = 'fail'
-  state.message = '上次下载未完成'
-}
-
-watch(() => props.history, applyHistory, { immediate: true })
 </script>
 
 <style scoped></style>

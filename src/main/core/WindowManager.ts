@@ -1,8 +1,7 @@
 import { IpcRendererEvents } from '@shared/ipc/events'
 import type { Pages } from '@shared/types'
-import { app, BrowserWindow, Menu, nativeImage, shell, Tray, WebContents } from 'electron'
+import { app, BrowserWindow, Menu, nativeImage, shell, Tray } from 'electron'
 import is from 'electron-is'
-import EventEmitter from 'node:events'
 import path from 'node:path'
 import { pages } from '../config/page'
 import ConfigManager from './ConfigManager'
@@ -11,7 +10,7 @@ import logger from './Logger'
 
 type Windows = { [k: keyof Pages]: BrowserWindow | null }
 
-export default class WindowManager extends EventEmitter {
+export default class WindowManager {
   // windows 窗口集合
   windows: Windows
   // 程序 Quit 标识
@@ -28,8 +27,6 @@ export default class WindowManager extends EventEmitter {
   private windowBlurBound: boolean
 
   constructor(configManager: ConfigManager, ipcManager: IPCManager) {
-    super()
-
     this.configManager = configManager
     this.ipcManager = ipcManager
     this.windows = {}
@@ -48,16 +45,7 @@ export default class WindowManager extends EventEmitter {
   }
 
   getPageOptions<T extends keyof Pages>(pageName: T): Pages[T] {
-    const result = pages[pageName]
-
-    // const { width, height } = screen.getPrimaryDisplay().workAreaSize
-    // const widthScale = width >= 1280 ? 1 : 0.875
-    // const heightScale = height >= 800 ? 1 : 0.875
-
-    // result.attrs.width = result.attrs.width ? result.attrs.width * widthScale : 1280
-    // result.attrs.height = result.attrs.height ? result.attrs.height * heightScale : 720
-
-    return result
+    return pages[pageName]
   }
 
   openWindow<T extends keyof Pages>(pageName: T): BrowserWindow {
@@ -196,15 +184,6 @@ export default class WindowManager extends EventEmitter {
 
   getWindowList(): BrowserWindow[] {
     return Object.values(this.windows).filter(window => !!window)
-  }
-
-  sendCommandTo<T extends keyof IpcRendererEvents>(
-    webContents: WebContents,
-    command: Extract<T, string>,
-    ...args: IpcRendererEvents[T]
-  ): void {
-    if (webContents.isDestroyed()) return
-    this.ipcManager.mainEmitter.send(webContents, command, ...args)
   }
 
   sendCommandToAll<T extends keyof IpcRendererEvents>(

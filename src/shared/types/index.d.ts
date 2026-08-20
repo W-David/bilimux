@@ -386,7 +386,6 @@ type ConfigOptions = {
   gpacBinPath: string
   forceTransform: boolean
   forceComposition: boolean
-  genConfig: boolean
   /** 并行转换任务数（1/2/4/8） */
   concurrent: number
 }
