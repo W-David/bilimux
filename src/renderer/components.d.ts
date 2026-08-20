@@ -75,6 +75,8 @@ declare module 'vue' {
     Sonner: typeof import('./src/components/ui/sonner/Sonner.vue')['default']
     Spinner: typeof import('./src/components/ui/spinner/Spinner.vue')['default']
     Switch: typeof import('./src/components/ui/switch/Switch.vue')['default']
+    TaskCompleteActions: typeof import('./src/components/TaskCompleteActions.vue')['default']
+    TaskDetailsDrawer: typeof import('./src/components/TaskDetailsDrawer.vue')['default']
     TaskItem: typeof import('./src/components/TaskItem.vue')['default']
     Toggle: typeof import('./src/components/ui/toggle/Toggle.vue')['default']
     ToggleGroup: typeof import('./src/components/ui/toggle-group/ToggleGroup.vue')['default']

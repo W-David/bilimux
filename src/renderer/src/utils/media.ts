@@ -17,6 +17,16 @@ export const isPrivateFolder = (folder: FavoriteFolder): boolean => {
 }
 
 /**
+ * 毫秒时间戳 → YYYY-MM-DD HH:mm
+ */
+export const formatTimestamp = (timestamp?: number | null): string => {
+  if (!timestamp) return '—'
+  const date = new Date(timestamp)
+  const pad = (value: number): string => String(value).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+/**
  * 格式化创建时间
  */
 export const formatDate = (timestamp?: number): string => {
