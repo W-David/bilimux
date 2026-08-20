@@ -25,30 +25,34 @@ import { CircleCheck as CircleCheckIcon, Inbox as InboxIcon, Loader as LoaderIco
 import TaskItem from '@renderer/components/TaskItem.vue'
 import { useDownloadStore } from '@renderer/store/download'
 import { computed, type Component } from 'vue'
-import { useUnifiedTasks, type UnifiedTask } from './unified'
+import { useRoute } from 'vue-router'
+import { isConvertActive, useUnifiedTasks, type UnifiedTask } from './unified'
 
-const props = defineProps<{
-  lane: 'all' | 'active' | 'complete'
-}>()
-
+const route = useRoute()
 const { all, active, complete } = useUnifiedTasks()
 const downloadStore = useDownloadStore()
 
+const lane = computed<'all' | 'active' | 'complete'>(() => {
+  if (route.name === 'tasks-active') return 'active'
+  if (route.name === 'tasks-complete') return 'complete'
+  return 'all'
+})
+
 const items = computed(() => {
-  if (props.lane === 'active') return active.value
-  if (props.lane === 'complete') return complete.value
+  if (lane.value === 'active') return active.value
+  if (lane.value === 'complete') return complete.value
   return all.value
 })
 
 const emptyText = computed(() => {
-  if (props.lane === 'active') return '暂无进行中的任务'
-  if (props.lane === 'complete') return '暂无已完成的任务'
+  if (lane.value === 'active') return '暂无进行中的任务'
+  if (lane.value === 'complete') return '暂无已完成的任务'
   return '暂无任务'
 })
 
 const emptyIcon = computed<Component>(() => {
-  if (props.lane === 'active') return LoaderIcon
-  if (props.lane === 'complete') return CircleCheckIcon
+  if (lane.value === 'active') return LoaderIcon
+  if (lane.value === 'complete') return CircleCheckIcon
   return InboxIcon
 })
 
@@ -56,6 +60,6 @@ const laneOf = (item: UnifiedTask): 'active' | 'complete' => {
   if (item.kind === 'download') {
     return downloadStore.partLane(item.row.video.bvid, item.row.page.cid) === 'active' ? 'active' : 'complete'
   }
-  return ['waiting', 'preprocess', 'importing', 'writing'].includes(item.task.status) ? 'active' : 'complete'
+  return isConvertActive(item.task) ? 'active' : 'complete'
 }
 </script>

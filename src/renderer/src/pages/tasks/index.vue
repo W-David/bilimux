@@ -5,28 +5,16 @@
         :name="route.meta.transition || 'fade'"
         mode="out-in"
         appear>
-        <KeepAlive>
-          <component
-            :is="Component"
-            :key="currentRoute.name"></component>
-        </KeepAlive>
+        <component
+          :is="Component"
+          :key="currentRoute.name"></component>
       </Transition>
     </RouterView>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useConvertStore } from '@renderer/store/convert'
-import { useDownloadStore } from '@renderer/store/download'
-import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
-const downloadStore = useDownloadStore()
-const convertStore = useConvertStore()
-
-onMounted(() => {
-  void downloadStore.loadHistory()
-  void convertStore.loadHistory()
-})
 </script>

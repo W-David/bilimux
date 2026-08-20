@@ -10,7 +10,7 @@ export type UnifiedTask =
 const CONVERT_ACTIVE = new Set(['waiting', 'preprocess', 'importing', 'writing'])
 const CONVERT_DONE = new Set(['success', 'fail', 'skipped', 'interrupted', 'missing'])
 
-function isConvertActive(task: ConvertTask): boolean {
+export function isConvertActive(task: ConvertTask): boolean {
   if (task.status === 'scanned') return false
   return CONVERT_ACTIVE.has(task.status)
 }

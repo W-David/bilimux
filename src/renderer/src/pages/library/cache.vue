@@ -50,7 +50,7 @@ import LibraryGridSkeleton from '@renderer/components/library/LibraryGridSkeleto
 import { mittbus } from '@renderer/ipc'
 import { useConvertStore } from '@renderer/store/convert'
 import type { ConvertTask } from '@renderer/types/convert'
-import { computed, onMounted } from 'vue'
+import { computed } from 'vue'
 
 const convertStore = useConvertStore()
 const items = computed(() => convertStore.entireList)
@@ -70,8 +70,4 @@ const playTask = async (task: ConvertTask): Promise<void> => {
     })
   }
 }
-
-onMounted(() => {
-  void convertStore.loadHistory()
-})
 </script>

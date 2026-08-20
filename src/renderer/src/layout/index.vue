@@ -2,8 +2,19 @@
 import LoginDialog from '@renderer/components/LoginDialog.vue'
 import Update from '@renderer/components/Update.vue'
 import UserProfileDialog from '@renderer/components/UserProfileDialog.vue'
+import { useConvertStore } from '@renderer/store/convert'
+import { useDownloadStore } from '@renderer/store/download'
+import { onMounted } from 'vue'
 import Headbar from './headbar/index.vue'
 import Sidebar from './sidebar/index.vue'
+
+const downloadStore = useDownloadStore()
+const convertStore = useConvertStore()
+
+onMounted(() => {
+  void downloadStore.loadHistory()
+  void convertStore.loadHistory()
+})
 </script>
 
 <template>

@@ -24,10 +24,8 @@ import SettingConvert from '@renderer/pages/setting/convert.vue'
 import SettingDownload from '@renderer/pages/setting/download.vue'
 import SettingIndex from '@renderer/pages/setting/index.vue'
 import SettingNormal from '@renderer/pages/setting/normal.vue'
-import TasksActive from '@renderer/pages/tasks/active.vue'
-import TasksAll from '@renderer/pages/tasks/all.vue'
-import TasksComplete from '@renderer/pages/tasks/complete.vue'
 import TasksIndex from '@renderer/pages/tasks/index.vue'
+import TaskList from '@renderer/pages/tasks/list.vue'
 import { useAuthStore } from '@renderer/store/auth'
 import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-router'
 import { findChildIndex, sectionRecord } from './utils'
@@ -108,7 +106,7 @@ const routes: RouteRecordRaw[] = [
               {
                 path: 'all',
                 name: 'tasks-all',
-                component: TasksAll,
+                component: TaskList,
                 meta: {
                   tab: { label: '全部', icon: ListIcon }
                 }
@@ -116,7 +114,7 @@ const routes: RouteRecordRaw[] = [
               {
                 path: 'active',
                 name: 'tasks-active',
-                component: TasksActive,
+                component: TaskList,
                 meta: {
                   tab: { label: '进行中', icon: LoaderIcon }
                 }
@@ -124,7 +122,7 @@ const routes: RouteRecordRaw[] = [
               {
                 path: 'complete',
                 name: 'tasks-complete',
-                component: TasksComplete,
+                component: TaskList,
                 meta: {
                   tab: { label: '已完成', icon: CircleCheckIcon }
                 }
