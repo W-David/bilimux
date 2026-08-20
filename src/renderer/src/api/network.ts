@@ -1,6 +1,6 @@
 import { emitter } from '@renderer/ipc'
 import { BiliHttpGetOptions, RendererEmitterInvokeFn } from '@shared/ipc/events'
-import { BiliResponseType, FavoriteFolder, FavoriteResource, UserInfo } from '@shared/types'
+import { BiliResponseType, BiliVideoPage, FavoriteFolder, FavoriteResource, UserInfo } from '@shared/types'
 
 type PromiseResponseType<T> = Promise<BiliResponseType<T>>
 
@@ -106,20 +106,13 @@ export const getFavoriteResources = (mediaId: number, pn = 1, ps = 20) => {
   }) as PromiseResponseType<{ info: FavoriteFolder; medias: FavoriteResource[]; has_more: boolean }>
 }
 
-export type VideoPageListItem = {
-  cid: number
-  page: number
-  part: string
-  duration: number
-}
-
 /**
  * 用 bvid 换分 P 列表（cid / 序号 / 标题）
  */
 export const getVideoPageList = (bvid: string) => {
   return httpGet('https://api.bilibili.com/x/player/pagelist', {
     searchParams: { bvid }
-  }) as PromiseResponseType<VideoPageListItem[]>
+  }) as PromiseResponseType<BiliVideoPage[]>
 }
 
 export type VideoViewResponse = {

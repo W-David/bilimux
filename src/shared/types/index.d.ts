@@ -1,5 +1,6 @@
 import type { LogLevel } from 'electron-log'
 import type { BrowserWindowConstructorOptions } from 'electron/main'
+import type { DownloadCodecPref } from '../download'
 
 type Page = {
   attrs: BrowserWindowConstructorOptions
@@ -90,79 +91,22 @@ type FavoriteResource = {
   cnt_info?: FavoriteCntInfo
 }
 
-// 当前登录用户信息（来自 /x/web-interface/nav）
+// 当前登录用户信息（来自 /x/web-interface/nav，只保留 UI 用到的字段）
 type UserInfo = {
-  isLogin: boolean
+  isLogin?: boolean
   mid: number
   uname: string
   face: string
-  face_nft?: number
-  face_nft_type?: number
-  email_verified?: number
-  mobile_verified?: number
-  level_info: {
+  level_info?: {
     current_level: number
-    current_min: number
-    current_exp: number
-    next_exp: number | string
   }
   money?: number
-  moral?: number
-  official: {
-    role: number
-    title: string
-    desc: string
-    type: number
-  }
-  officialVerify?: {
-    type: number
-    desc: string
-  }
-  pendant?: {
-    pid: number
-    name: string
-    image: string
-    expire: number
-    image_enhance?: string
-    image_enhance_frame?: string
-  } | null
-  scores?: number
-  vipDueDate: number
-  vipStatus: number
-  vipType: number
-  vip_pay_type?: number
-  vip_theme_type?: number
-  vip_label: {
-    path: string
+  vipStatus?: number
+  vip_label?: {
     text: string
-    label_theme: string
-    text_color: string
-    bg_color: string
-    border_color?: string
-    use_img_label?: boolean
-    img_label_uri_hans?: string
-    img_label_uri_hant?: string
-    img_label_uri_hans_static?: string
-    img_label_uri_hant_static?: string
   }
-  vip_avatar_subscript?: number
-  vip_nickname_color: string
-  wallet?: {
-    mid: number
-    bcoin_balance: number
-    coupon_balance: number
-    coupon_due_time: number
-  }
-  has_shop?: boolean
-  shop_url?: string
-  allowance_count?: number
-  answer_status?: number
+  vip_nickname_color?: string
   is_senior_member?: number
-  wbi_img?: {
-    img_url?: string
-    sub_url?: string
-  }
-  is_jury?: boolean
 }
 
 type DownloadTaskKey = {
@@ -176,8 +120,6 @@ type BiliVideoPage = {
   part: string
   duration: number
 }
-
-type DownloadCodecPref = 'avc' | 'hevc' | 'av1'
 
 // 下载任务（一集/一分 P）
 type DownloadVideoTask = {
