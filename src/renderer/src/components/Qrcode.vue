@@ -296,8 +296,6 @@ const persistUserInfoOnLogin = async (): Promise<void> => {
     const userInfo = await fetchCurrentUserInfo()
     const preferenceStore = usePreferenceStore()
     preferenceStore.preference['user-info'] = userInfo
-    // 新账号登录后清掉上一个账号的收藏夹缓存
-    preferenceStore.preference['favorites-data'] = null
     preferenceStore.savePreference()
     void import('@renderer/store/library').then(({ useLibraryStore }) => {
       useLibraryStore().reset()

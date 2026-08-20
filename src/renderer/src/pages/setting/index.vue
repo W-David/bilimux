@@ -43,7 +43,7 @@
           <AlertDialogTitle>重置所有设置</AlertDialogTitle>
           <AlertDialogDescription>
             <div class="flex flex-col gap-1">
-              <span>将重置：所有设置、登录信息、收藏夹缓存。</span>
+              <span>将重置：所有设置、登录信息。</span>
               <span>不会删除：已下载的视频文件、下载历史、转换历史。</span>
             </div>
           </AlertDialogDescription>

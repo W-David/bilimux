@@ -90,18 +90,6 @@ type FavoriteResource = {
   cnt_info?: FavoriteCntInfo
 }
 
-// 收藏夹及其内的全部视频
-type FavoriteFolderData = FavoriteFolder & {
-  videos: FavoriteResource[]
-  /** 该收藏夹视频列表拉取失败时的错误信息，与「空夹」区分 */
-  fetchError?: string
-}
-
-// 一次性获取到的全部收藏数据
-type FavoritesData = {
-  folders: FavoriteFolderData[]
-}
-
 // 当前登录用户信息（来自 /x/web-interface/nav）
 type UserInfo = {
   isLogin: boolean
@@ -404,7 +392,6 @@ type DownloadConfigOptions = {
 // electron-store 配置类型
 type UserStore = {
   'user-info'?: UserInfo | null
-  'favorites-data'?: FavoritesData | null
   'convert-config': ConfigOptions
   'download-config': DownloadConfigOptions
   'open-at-login': boolean
@@ -487,10 +474,8 @@ export type {
   EngineResponse,
   FavoriteCntInfo,
   FavoriteFolder,
-  FavoriteFolderData,
   FavoriteResource,
   FavoriteUpper,
-  FavoritesData,
   FileInfo,
   Page,
   Pages,

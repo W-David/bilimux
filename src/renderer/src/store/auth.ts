@@ -101,12 +101,11 @@ export const useAuthStore = defineStore('auth', {
     clearCachedUserData() {
       const preferenceStore = usePreferenceStore()
       preferenceStore.preference['user-info'] = null
-      preferenceStore.preference['favorites-data'] = null
       preferenceStore.savePreference()
       void import('@renderer/store/library').then(({ useLibraryStore }) => {
         useLibraryStore().reset()
       })
-      logger.debug('已清理本地缓存的用户信息与收藏夹数据')
+      logger.debug('已清理本地缓存的用户信息')
     },
     async logout() {
       try {

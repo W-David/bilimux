@@ -7,7 +7,6 @@ import logger from '../core/Logger'
 
 const PREFERENCE_KEYS = [
   'user-info',
-  'favorites-data',
   'convert-config',
   'download-config',
   'open-at-login',
@@ -24,7 +23,6 @@ function mergePreference(app: Application, incoming: UserStore): UserStore {
 
   return {
     'user-info': 'user-info' in incoming ? incoming['user-info'] : current['user-info'],
-    'favorites-data': 'favorites-data' in incoming ? incoming['favorites-data'] : current['favorites-data'],
     'convert-config': {
       ...current['convert-config'],
       ...(convertIncoming ?? {}),

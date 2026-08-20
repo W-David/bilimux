@@ -56,7 +56,6 @@ export default class ConfigManager {
 
     const defaultConfig: Required<UserStore> = {
       'user-info': null,
-      'favorites-data': null,
       'convert-config': defaultConvertConfig,
       'download-config': defaultDownloadConfig,
       'open-at-login': false,
@@ -133,11 +132,15 @@ export default class ConfigManager {
     }
 
     // 登录 Cookie 迁移到独立的 cookies.json，清理旧配置中的残留
-    type LegacyStore = UserStore & { 'user-cookie'?: string }
+    type LegacyStore = UserStore & { 'user-cookie'?: string; 'favorites-data'?: unknown }
     const legacyStore = this.store as unknown as Store<LegacyStore>
     if (legacyStore.has('user-cookie')) {
       legacyStore.delete('user-cookie')
       logger.info('[Config] 登录 Cookie 已迁移到独立文件 cookies.json')
+    }
+    if (legacyStore.has('favorites-data')) {
+      legacyStore.delete('favorites-data')
+      logger.info('[Config] 已移除不再使用的收藏夹缓存字段')
     }
   }
 

@@ -25,8 +25,7 @@ export const usePreferenceStore = defineStore('preference', () => {
     'auto-hide-window': false,
     'bind-close-to-hide': false,
     'log-level': 'verbose',
-    'user-info': null,
-    'favorites-data': null
+    'user-info': null
   })
 
   let applyingRemote = false

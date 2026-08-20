@@ -80,7 +80,7 @@ Convert flow: `convert:prescan` reconciles output files and scans the cache (ski
 
 ### Persistence
 
-- electron-store (`ConfigManager`): `user-info`, `favorites-data`, `convert-config`, `download-config`.
+- electron-store (`ConfigManager`): `user-info`, `convert-config`, `download-config`.
 - node:sqlite: `userData/downloads.db` (`DownloadHistoryStore`) and `userData/converts.db` (`ConvertHistoryStore`).
 
 ### Renderer
