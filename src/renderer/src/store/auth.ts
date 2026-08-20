@@ -1,6 +1,5 @@
-import { getCookie, logout as logoutApi } from '@renderer/api'
 import { checkAuthStatus } from '@renderer/api/network'
-import { mittbus } from '@renderer/ipc'
+import { emitter, mittbus } from '@renderer/ipc'
 import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
 import { defineStore } from 'pinia'
@@ -55,7 +54,7 @@ export const useAuthStore = defineStore('auth', {
       this.profileOpen = false
     },
     async refreshAuth() {
-      const biliJct = await getCookie()
+      const biliJct = await emitter.invoke('get-cookie')
       if (!biliJct) {
         logger.error('bili_jct cookie not found')
         await this.invalidateSession('登录状态已失效，请重新扫码登录')
@@ -109,7 +108,7 @@ export const useAuthStore = defineStore('auth', {
     },
     async logout() {
       try {
-        await logoutApi()
+        await emitter.invoke('logout')
       } catch (error) {
         logger.error('清除主进程登录信息失败:', error)
       } finally {

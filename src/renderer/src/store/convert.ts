@@ -1,20 +1,5 @@
-import {
-  clearConvertHistories,
-  getConvertHistories,
-  prescanConvert,
-  removeConvertHistory,
-  startProcess,
-  subscribeConvertPrescanDone,
-  subscribeProcessBrokeEvent,
-  subscribeProcessItemEndEvent,
-  subscribeProcessItemProgressEvent,
-  subscribeProcessItemStartEvent,
-  subscribeProcessReadyEvent,
-  subscribeProcessStartEvent,
-  subscribeProcessSuccessEvent
-} from '@renderer/api'
 import type { ConvertTask } from '@renderer/types/convert'
-import { mittbus } from '@renderer/ipc'
+import { emitter, ipc, mittbus } from '@renderer/ipc'
 import type { ConvertHistoryRecord, ConvertPrescanResult } from '@shared/types'
 import logger from 'electron-log/renderer'
 import { defineStore } from 'pinia'
@@ -89,7 +74,7 @@ export const useConvertStore = defineStore('convert', () => {
     if (runStatus.value === 'scanning' || runStatus.value === 'processing') return null
     runStatus.value = 'scanning'
     try {
-      const result = await prescanConvert()
+      const result = await emitter.invoke('convert:prescan')
       historyVersion += 1
       tasks.value = new Map()
       await loadHistory()
@@ -129,7 +114,7 @@ export const useConvertStore = defineStore('convert', () => {
     errorMessage.value = ''
     runStatus.value = 'scanning'
     try {
-      await startProcess()
+      await emitter.invoke('start:process')
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       runStatus.value = 'error'
@@ -152,7 +137,7 @@ export const useConvertStore = defineStore('convert', () => {
   const loadHistory = async (): Promise<void> => {
     const version = historyVersion
     try {
-      const records = await getConvertHistories()
+      const records = await emitter.invoke('convert:history:list')
       if (version !== historyVersion) return
       history.value = records
       // 用历史对账信息（文件存在性、状态等）补全保留下来的 live 任务，不替换列表本身
@@ -183,7 +168,7 @@ export const useConvertStore = defineStore('convert', () => {
     history.value = []
     tasks.value = new Map()
     try {
-      await clearConvertHistories()
+      await emitter.invoke('convert:history:clear')
     } catch (error) {
       logger.error('清空转换历史失败:', error)
       throw error
@@ -194,7 +179,7 @@ export const useConvertStore = defineStore('convert', () => {
   const removeItem = async (task: ConvertTask, deleteFile = false): Promise<void> => {
     const isHistory = task.id.startsWith('history:')
     try {
-      await removeConvertHistory(task.bvid, deleteFile)
+      await emitter.invoke('convert:history:remove', task.bvid, deleteFile)
       if (isHistory) {
         history.value = history.value.filter(record => record.bvid !== task.bvid)
       } else {
@@ -218,11 +203,11 @@ export const useConvertStore = defineStore('convert', () => {
   if (!listenersRegistered) {
     listenersRegistered = true
 
-    subscribeProcessStartEvent(() => {
+    ipc.on('process:start', () => {
       runStatus.value = 'scanning'
     })
 
-    subscribeProcessReadyEvent(({ bvs }) => {
+    ipc.on('process:ready', (_, { bvs }) => {
       runStatus.value = 'processing'
       const next = new Map<string, ConvertTask>()
       bvs.forEach(bv => {
@@ -249,7 +234,7 @@ export const useConvertStore = defineStore('convert', () => {
       tasks.value = next
     })
 
-    subscribeProcessItemStartEvent(({ bv, outputPath }) => {
+    ipc.on('process:item:start', (_, { bv, outputPath }) => {
       const existing = tasks.value.get(bv.bvid)
       if (existing) {
         existing.outputPath = outputPath ?? ''
@@ -278,7 +263,7 @@ export const useConvertStore = defineStore('convert', () => {
       }
     })
 
-    subscribeProcessItemProgressEvent(({ bvid, type, progress }) => {
+    ipc.on('process:item:progress', (_, { bvid, type, progress }) => {
       const task = tasks.value.get(bvid)
       if (task) {
         task.status = type
@@ -286,7 +271,7 @@ export const useConvertStore = defineStore('convert', () => {
       }
     })
 
-    subscribeProcessItemEndEvent(({ bvid, success, message, skipped, durationMs, fileSize, outputPath }) => {
+    ipc.on('process:item:end', (_, { bvid, success, message, skipped, durationMs, fileSize, outputPath }) => {
       const task = tasks.value.get(bvid)
       if (task) {
         task.finished = success
@@ -301,7 +286,7 @@ export const useConvertStore = defineStore('convert', () => {
       }
     })
 
-    subscribeProcessSuccessEvent(({ count }) => {
+    ipc.on('process:success', (_, { count }) => {
       runStatus.value = 'success'
       successCount.value = count.success
       failCount.value = count.fail
@@ -314,7 +299,7 @@ export const useConvertStore = defineStore('convert', () => {
       void loadHistory()
     })
 
-    subscribeProcessBrokeEvent(({ reason }) => {
+    ipc.on('process:broke', (_, { reason }) => {
       runStatus.value = 'error'
       errorMessage.value = reason
       mittbus.emit('toast:add', {
@@ -323,7 +308,7 @@ export const useConvertStore = defineStore('convert', () => {
       })
     })
 
-    subscribeConvertPrescanDone(() => {
+    ipc.on('convert:prescan:done', () => {
       void loadHistory()
     })
   }

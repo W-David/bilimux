@@ -6,8 +6,7 @@ import {
   Loader2 as Loader2Icon,
   RefreshCw as RefreshCwIcon
 } from '@lucide/vue'
-import { checkForUpdate, getAppVersion } from '@renderer/api'
-import { mittbus } from '@renderer/ipc'
+import { emitter, mittbus } from '@renderer/ipc'
 import logger from 'electron-log/renderer'
 import { computed, ref } from 'vue'
 
@@ -16,7 +15,7 @@ const isChecking = ref(false)
 const isMac = window.electron.process.platform === 'darwin'
 
 const fetchAppVersion = () => {
-  getAppVersion()
+  emitter.invoke('get-app-version')
     .then(version => (appVersion.value = version))
     .catch(e => logger.error(e))
 }
@@ -38,7 +37,7 @@ const handleCheckUpdate = async () => {
 
   isChecking.value = true
   try {
-    const result = await checkForUpdate()
+    const result = await emitter.invoke('check-for-update')
     if (result?.isUpdateAvailable) {
       // macOS 由主进程自动打开 GitHub 下载页，并通过 update:manual-download 提示，避免重复 toast
       if (isMac) return

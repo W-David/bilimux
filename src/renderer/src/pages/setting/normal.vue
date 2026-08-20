@@ -69,8 +69,7 @@
 
 <script setup lang="ts">
 import { ExternalLink as ExternalLinkIcon, Trash2 as Trash2Icon } from '@lucide/vue'
-import { clearLogFile, openLogFile } from '@renderer/api'
-import { mittbus } from '@renderer/ipc'
+import { emitter, mittbus } from '@renderer/ipc'
 import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
 import { storeToRefs } from 'pinia'
@@ -83,7 +82,7 @@ const logLevelOptions = ref(['verbose', 'info', 'warn', 'error'])
 const showClearDialog = ref(false)
 
 const openLog = async (): Promise<void> => {
-  const err = await openLogFile()
+  const err = await emitter.invoke('open-log-file')
   if (err) {
     logger.error(err)
     mittbus.emit('toast:add', {
@@ -96,7 +95,7 @@ const openLog = async (): Promise<void> => {
 const handleClearLog = async (): Promise<void> => {
   showClearDialog.value = false
   try {
-    const ok = await clearLogFile()
+    const ok = await emitter.invoke('clear-log-file')
     if (ok) {
       mittbus.emit('toast:add', {
         severity: 'success',

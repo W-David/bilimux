@@ -52,8 +52,7 @@
 
 <script setup lang="ts">
 import { Zap as ZapIcon } from '@lucide/vue'
-import { checkEngine } from '@renderer/api'
-import { mittbus } from '@renderer/ipc'
+import { emitter, mittbus } from '@renderer/ipc'
 import { useConvertStore } from '@renderer/store/convert'
 import { usePreferenceStore } from '@renderer/store/preference'
 import { storeToRefs } from 'pinia'
@@ -69,7 +68,7 @@ const { preference } = storeToRefs(store)
 const isValidEngine = ref(true)
 
 const checkMp4Box = async (toastShow?: boolean): Promise<void> => {
-  const isValid = await checkEngine()
+  const isValid = await emitter.invoke('check-engine')
   isValidEngine.value = isValid
   if (toastShow) {
     mittbus.emit('toast:add', {

@@ -1,4 +1,4 @@
-import { loadConfigFromNativeStore, saveConfigToNativeStore } from '@renderer/api'
+import { emitter } from '@renderer/ipc'
 import { defineStore } from 'pinia'
 import { UserStore } from '@shared/types'
 import { reactive, toRaw, watch } from 'vue'
@@ -33,7 +33,7 @@ export const usePreferenceStore = defineStore('preference', () => {
   async function fetchPreference(): Promise<UserPreference> {
     applyingRemote = true
     try {
-      const config = await loadConfigFromNativeStore()
+      const config = await emitter.invoke('get-preference')
       Object.assign(preference, config)
       return preference
     } finally {
@@ -46,7 +46,7 @@ export const usePreferenceStore = defineStore('preference', () => {
       clearTimeout(saveTimer)
       saveTimer = null
     }
-    saveConfigToNativeStore(toRaw(preference))
+    emitter.send('save-preference', toRaw(preference))
   }
 
   function scheduleSave(): void {
@@ -54,7 +54,7 @@ export const usePreferenceStore = defineStore('preference', () => {
     if (saveTimer) clearTimeout(saveTimer)
     saveTimer = setTimeout(() => {
       saveTimer = null
-      saveConfigToNativeStore(toRaw(preference))
+      emitter.send('save-preference', toRaw(preference))
     }, 300)
   }
 

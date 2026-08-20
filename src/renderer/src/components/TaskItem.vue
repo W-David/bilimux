@@ -126,13 +126,12 @@ import {
   SkipForward as SkipForwardIcon,
   Tv as TvIcon
 } from '@lucide/vue'
-import { openFolder, openPath } from '@renderer/api'
 import DownloadStatus from '@renderer/components/DownloadStatus.vue'
 import ProgressRing from '@renderer/components/ProgressRing.vue'
 import TaskCompleteActions from '@renderer/components/TaskCompleteActions.vue'
 import TaskDetailsDrawer from '@renderer/components/TaskDetailsDrawer.vue'
 import { convertDetailRows, downloadDetailRows } from '@renderer/components/taskDetails'
-import { mittbus } from '@renderer/ipc'
+import { emitter, mittbus } from '@renderer/ipc'
 import type { UnifiedTask } from '@renderer/pages/tasks/unified'
 import { useConvertStore } from '@renderer/store/convert'
 import { useDownloadStore } from '@renderer/store/download'
@@ -267,7 +266,7 @@ const openFileLocation = async (): Promise<void> => {
     return
   }
   try {
-    await openFolder(outputTarget.value)
+    await emitter.invoke('open-folder', outputTarget.value)
   } catch (error) {
     mittbus.emit('toast:add', {
       severity: 'error',
@@ -284,7 +283,7 @@ const openTaskFile = async (): Promise<void> => {
     })
     return
   }
-  const errMessage = await openPath(outputTarget.value)
+  const errMessage = await emitter.invoke('open-path', outputTarget.value)
   if (errMessage) {
     mittbus.emit('toast:add', {
       severity: 'error',

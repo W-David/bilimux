@@ -164,10 +164,9 @@
 </template>
 
 <script setup lang="ts">
-import { openPath } from '@renderer/api'
 import type { CollectionMedia } from '@renderer/components/library/types'
 import ProgressRing from '@renderer/components/ProgressRing.vue'
-import { mittbus } from '@renderer/ipc'
+import { emitter, mittbus } from '@renderer/ipc'
 import { fetchVideoDetail } from '@renderer/services/library'
 import { useDownloadStore } from '@renderer/store/download'
 import { usePreferenceStore } from '@renderer/store/preference'
@@ -432,7 +431,7 @@ const play = async (): Promise<void> => {
     path = page ? downloadStore.getItem(video.value.bvid, page.cid).outputPath : ''
   }
   if (!path) return
-  const errMessage = await openPath(path)
+  const errMessage = await emitter.invoke('open-path', path)
   if (errMessage) {
     mittbus.emit('toast:add', {
       severity: 'error',

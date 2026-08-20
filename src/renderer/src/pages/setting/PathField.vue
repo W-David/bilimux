@@ -19,8 +19,7 @@
 
 <script setup lang="ts">
 import { FolderOpen as FolderOpenIcon } from '@lucide/vue'
-import { openFileDialog, openFolder } from '@renderer/api'
-import { mittbus } from '@renderer/ipc'
+import { emitter, mittbus } from '@renderer/ipc'
 
 const props = withDefaults(
   defineProps<{
@@ -45,7 +44,7 @@ const emit = defineEmits<{
 const onButton = async (): Promise<void> => {
   if (props.action === 'reveal') {
     try {
-      await openFolder(props.modelValue)
+      await emitter.invoke('open-folder', props.modelValue)
     } catch (error) {
       mittbus.emit('toast:add', {
         severity: 'error',
@@ -55,7 +54,7 @@ const onButton = async (): Promise<void> => {
     return
   }
 
-  const next = await openFileDialog({
+  const next = await emitter.invoke('open-file-dialog', {
     title: '选择目录',
     properties: ['openDirectory', 'createDirectory'],
     defaultPath: props.modelValue,

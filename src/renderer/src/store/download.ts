@@ -1,14 +1,4 @@
-import {
-  clearDownloadHistories,
-  getDownloadHistories,
-  getDownloadHistory,
-  removeDownloadHistory,
-  startDownloadVideo,
-  subscribeDownloadItemEndEvent,
-  subscribeDownloadItemProgressEvent,
-  subscribeDownloadItemStartEvent
-} from '@renderer/api'
-import { mittbus } from '@renderer/ipc'
+import { emitter, ipc, mittbus } from '@renderer/ipc'
 import { fetchVideoPages } from '@renderer/services/video'
 import { downloadTaskId } from '@shared/download'
 import type { BiliVideoPage, DownloadHistoryRecord, DownloadProgressStatus, FavoriteResource } from '@shared/types'
@@ -346,7 +336,7 @@ export const useDownloadStore = defineStore('download', () => {
     const kind = extra?.kind ?? previousSnap?.kind ?? 'ugc'
     const epId = extra?.epId ?? previousSnap?.epId
     rememberTask(video, folderName, page, pagesTotal, { kind, epId })
-    startDownloadVideo({
+    emitter.invoke('download:video', {
       bvid: video.bvid,
       cid: page.cid,
       page: page.page,
@@ -370,7 +360,7 @@ export const useDownloadStore = defineStore('download', () => {
   if (!ipcListenersRegistered) {
     ipcListenersRegistered = true
 
-    subscribeDownloadItemStartEvent(({ bvid, cid }) => {
+    ipc.on('download:item:start', (_, { bvid, cid }) => {
       const item = getItem(bvid, cid)
       const previous = item.status
       item.status = 'downloading'
@@ -380,13 +370,13 @@ export const useDownloadStore = defineStore('download', () => {
       item.message = ''
     })
 
-    subscribeDownloadItemProgressEvent(({ bvid, cid, type, progress }) => {
+    ipc.on('download:item:progress', (_, { bvid, cid, type, progress }) => {
       const item = getItem(bvid, cid)
       item.status = type
       item.progress = progress
     })
 
-    subscribeDownloadItemEndEvent(({ bvid, cid, success, message, outputPath, cancelled }) => {
+    ipc.on('download:item:end', (_, { bvid, cid, success, message, outputPath, cancelled }) => {
       if (cancelled) {
         const itemKey = downloadTaskId(bvid, cid)
         if (items[itemKey]) Object.assign(items[itemKey], emptyItem())
@@ -407,7 +397,7 @@ export const useDownloadStore = defineStore('download', () => {
 
   async function refreshHistoryRecord(key: { bvid: string; cid: number }): Promise<void> {
     try {
-      const record = await getDownloadHistory(key)
+      const record = await emitter.invoke('download:history:get', key)
       const next = history.value.filter(item => !(item.bvid === key.bvid && item.cid === key.cid))
       if (record) next.unshift(record)
       history.value = next
@@ -439,7 +429,7 @@ export const useDownloadStore = defineStore('download', () => {
   const loadHistory = async (): Promise<void> => {
     const version = ++historyLoadVersion
     try {
-      const records = await getDownloadHistories()
+      const records = await emitter.invoke('download:history:list')
       if (version !== historyLoadVersion) return
       history.value = records
       for (const record of records) {
@@ -453,7 +443,7 @@ export const useDownloadStore = defineStore('download', () => {
   /** 清空下载历史：删除数据库记录并重置内存中的下载状态 */
   const clearHistory = async (): Promise<void> => {
     historyLoadVersion += 1
-    await clearDownloadHistories()
+    await emitter.invoke('download:history:clear')
     history.value = []
     for (const key of Object.keys(items)) {
       Object.assign(items[key], emptyItem())
@@ -464,7 +454,7 @@ export const useDownloadStore = defineStore('download', () => {
   const removeItem = async (row: DownloadTaskRow, deleteFile = false): Promise<void> => {
     const key = { bvid: row.video.bvid, cid: row.page.cid }
     try {
-      await removeDownloadHistory(key, deleteFile)
+      await emitter.invoke('download:history:remove', key, deleteFile)
       history.value = history.value.filter(record => !(record.bvid === key.bvid && record.cid === key.cid))
       const itemKey = downloadTaskId(key.bvid, key.cid)
       if (items[itemKey]) Object.assign(items[itemKey], emptyItem())

@@ -31,8 +31,7 @@
 
 <script setup lang="ts">
 import { FolderOpen as FolderOpenIcon } from '@lucide/vue'
-import { openPath } from '@renderer/api'
-import { mittbus } from '@renderer/ipc'
+import { emitter, mittbus } from '@renderer/ipc'
 import { getChildTabs, sectionRecord } from '@renderer/router/utils'
 import { usePreferenceStore } from '@renderer/store/preference'
 import { computed } from 'vue'
@@ -47,7 +46,7 @@ const tabs = computed(() => getChildTabs(section.value))
 const isTasks = computed(() => section.value?.name === 'tasks')
 
 const openDir = async (dir: string): Promise<void> => {
-  const errMessage = await openPath(dir)
+  const errMessage = await emitter.invoke('open-path', dir)
   if (errMessage) {
     mittbus.emit('toast:add', {
       severity: 'error',

@@ -105,8 +105,7 @@ import {
   RefreshCw as RefreshCwIcon,
   Smartphone as SmartphoneIcon
 } from '@lucide/vue'
-import { persistCookie } from '@renderer/api'
-import { mittbus } from '@renderer/ipc'
+import { emitter, mittbus } from '@renderer/ipc'
 import { fetchCurrentUserInfo } from '@renderer/services/user'
 import { useAuthStore } from '@renderer/store/auth'
 import { usePreferenceStore } from '@renderer/store/preference'
@@ -262,7 +261,7 @@ const startPolling = () => {
             authStore.isAuthenticated = true
             try {
               // 登录成功后主动持久化 cookie jar，避免重启后登录态丢失
-              await persistCookie()
+              await emitter.invoke('persist-cookie')
             } catch (error) {
               logger.error('持久化登录 Cookie 失败:', error)
             }

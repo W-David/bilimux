@@ -59,8 +59,7 @@
 
 <script setup lang="ts">
 import { Save as SaveIcon } from '@lucide/vue'
-import { clearNativeStore, subscribeFetchPreferenceEvent } from '@renderer/api'
-import { mittbus } from '@renderer/ipc'
+import { emitter, ipc, mittbus } from '@renderer/ipc'
 import { useAuthStore } from '@renderer/store/auth'
 import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
@@ -74,7 +73,7 @@ const route = useRoute()
 
 const showResetDialog = ref(false)
 
-const subscribe = subscribeFetchPreferenceEvent(async () => {
+const subscribe = ipc.on('fetch-preference', async () => {
   try {
     await fetchPreference()
   } catch (error) {
@@ -97,7 +96,7 @@ const save = (): void => {
 const clear = (): void => {
   showResetDialog.value = false
   authStore.isAuthenticated = false
-  clearNativeStore()
+  emitter.send('reset-preference')
 }
 
 onUnmounted(() => {

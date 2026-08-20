@@ -48,8 +48,7 @@ import {
   Settings as SettingsIcon,
   X as XIcon
 } from '@lucide/vue'
-import { cancelDownloadVideo, openPath, pauseDownloadVideo, resumeDownloadVideo } from '@renderer/api'
-import { mittbus } from '@renderer/ipc'
+import { emitter, mittbus } from '@renderer/ipc'
 import { useDownloadStore } from '@renderer/store/download'
 import type { BiliVideoPage, FavoriteResource } from '@shared/types'
 import { computed } from 'vue'
@@ -145,13 +144,13 @@ const handleClick = (): void => {
   }
 
   if (status.value === 'paused') {
-    resumeDownloadVideo(taskKey.value)
+    emitter.invoke('download:resume', taskKey.value)
     item.value.status = 'waiting'
     return
   }
 
   if (status.value === 'downloading' || status.value === 'waiting') {
-    pauseDownloadVideo(taskKey.value)
+    emitter.invoke('download:pause', taskKey.value)
     return
   }
 
@@ -161,12 +160,12 @@ const handleClick = (): void => {
 }
 
 const handleCancel = (): void => {
-  cancelDownloadVideo(taskKey.value)
+  emitter.invoke('download:cancel', taskKey.value)
 }
 
 const play = async (): Promise<void> => {
   if (!outputPath.value) return
-  const errMessage = await openPath(outputPath.value)
+  const errMessage = await emitter.invoke('open-path', outputPath.value)
   if (errMessage) {
     mittbus.emit('toast:add', {
       severity: 'error',
