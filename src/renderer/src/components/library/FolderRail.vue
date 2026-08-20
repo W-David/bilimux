@@ -8,9 +8,12 @@
       v-for="folder in folders"
       :key="folder.id"
       type="button"
-      class="mb-1 grid w-full grid-cols-[36px_1fr] items-center gap-2 rounded-lg p-2 text-left"
-      :class="folder.id === selectedId ? 'bg-white/5 ring-1 ring-black/5' : 'hover:bg-white/5'"
+      class="relative mb-1 grid w-full grid-cols-[40px_1fr] items-center gap-3 rounded-lg p-2 text-left"
+      :class="folder.id === selectedId ? 'bg-pink-400/10' : 'hover:bg-white/5'"
       @click="emit('select', folder)">
+      <span
+        v-if="folder.id === selectedId"
+        class="absolute top-2 bottom-2 left-0 w-0.5 rounded-full bg-pink-400" />
       <div class="size-10 overflow-hidden rounded-md bg-gray-900">
         <img
           v-if="folder.cover"
@@ -25,7 +28,9 @@
         </div>
       </div>
       <div class="min-w-0">
-        <div class="truncate text-xs text-[#e5e7eb]">
+        <div
+          class="truncate text-xs"
+          :class="folder.id === selectedId ? 'text-pink-300' : 'text-[#e5e7eb]'">
           {{ folder.title }}
           <span
             v-if="isPrivateFolder(folder)"
