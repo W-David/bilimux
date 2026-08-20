@@ -47,7 +47,6 @@ type IpcMainHandleEvents = {
   'download:history:remove': (key: DownloadTaskKey, deleteFile?: boolean) => void
   'download:history:clear': () => void
   'persist-cookie': () => void
-  'http-get-video-metadata': (url: string) => [string[] | null, string | null]
   'http-get': (url: string, options?: BiliHttpGetOptions) => BiliResponseType
 }
 
@@ -61,7 +60,6 @@ type IpcMainListenEvents = {
 type IpcRendererEvents = ComposEventMap &
   DownloadEventMap & {
     'fetch-preference': []
-    'update:checking': []
     'update:available': [UpdateInfo]
     'update:manual-download': [UpdateInfo]
     'update:not-available': []

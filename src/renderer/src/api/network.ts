@@ -1,7 +1,6 @@
 import { emitter } from '@renderer/ipc'
 import { BiliHttpGetOptions, RendererEmitterInvokeFn } from '@shared/ipc/events'
 import { BiliResponseType, FavoriteFolder, FavoriteResource, UserInfo } from '@shared/types'
-import { Nullable } from 'tough-cookie'
 
 type PromiseResponseType<T> = Promise<BiliResponseType<T>>
 
@@ -13,13 +12,6 @@ const httpGet: RendererEmitterInvokeFn<'http-get'> = (url, options) => {
 }
 
 type HttpGetOptions = BiliHttpGetOptions
-
-/**
- * 解析 HTML URL 页面，获取视频元数据
- */
-const httpGetVideoMetaData: RendererEmitterInvokeFn<'http-get-video-metadata'> = url => {
-  return emitter.invoke('http-get-video-metadata', url)
-}
 
 // 二维码返回数据类型
 export interface QrCodeResponseData {
@@ -69,13 +61,6 @@ export const checkAuthStatus = (options?: HttpGetOptions) => {
     'https://passport.bilibili.com/x/passport-login/web/cookie/info',
     options
   ) as PromiseResponseType<CheckAuthStatusResponseData>
-}
-
-/**
- * 获取视频元数据
- */
-export const getVideoMetaData = (url: string) => {
-  return httpGetVideoMetaData(url) as Promise<[Nullable<string[]>, Nullable<string>]>
 }
 
 /**

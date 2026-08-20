@@ -26,10 +26,6 @@ export default class UpdateManager {
   }
 
   private setupListeners() {
-    autoUpdater.on('checking-for-update', () => {
-      this.sendToRenderer('update:checking')
-    })
-
     autoUpdater.on('update-available', info => {
       if (process.platform === 'darwin') {
         void this.openManualDownloadPage(info)

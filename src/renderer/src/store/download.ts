@@ -16,16 +16,16 @@ import logger from 'electron-log/renderer'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref } from 'vue'
 
-export type DownloadItemStatus = DownloadProgressStatus | 'idle'
+type DownloadItemStatus = DownloadProgressStatus | 'idle'
 
-export type DownloadItemState = {
+type DownloadItemState = {
   status: DownloadItemStatus
   progress: number
   message: string
   outputPath: string
 }
 
-export type DownloadPartLane = 'waiting' | 'active' | 'completed'
+type DownloadPartLane = 'waiting' | 'active' | 'completed'
 
 export type DownloadTaskRow = {
   video: FavoriteResource
@@ -37,7 +37,7 @@ export type DownloadTaskRow = {
   epId?: number
 }
 
-export type VideoBadge = {
+type VideoBadge = {
   status: 'idle' | 'active' | 'partial' | 'completed'
   label: string
 }

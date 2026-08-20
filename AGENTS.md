@@ -88,8 +88,8 @@ Convert flow: `convert:prescan` reconciles output files and scans the cache (ski
 - Vue 3 + Pinia + vue-router **memory history** + Tailwind CSS v4 + shadcn-vue (Reka UI + lucide + vue-sonner)
 - shadcn-vue + local components auto-imported via `unplugin-vue-components` (dirs: `src/components`, `src/layout`, relative to the `src/renderer` root)
 - shadcn-vue config lives in root `components.json` (aliases `@renderer/components`, `@renderer/components/ui`, `@renderer/lib/utils`); generated UI components live in `src/renderer/src/components/ui/`; `cn` helper in `src/renderer/src/lib/utils.ts`; theme CSS variables in `src/renderer/src/styles/base.css` (dark-only, `.dark` on `<html>`, pink primary). Add/update components with `pnpm dlx shadcn-vue@latest add <component>`.
-- Pages: Convert (legacy), Convert Manager (`pages/convert/{index,complete,entire,unconverted}.vue`), Download (auth/task), Settings (`pages/setting/{index,normal,user,convert,download}.vue`), About
-- Pinia stores live in `store/` (`auth`, `favorites`, `download`, `convert`, `preference`, `update`); Bilibili data fetching lives in `services/{favorites,user}.ts`. One-shot favorites fetch (`fetchAllFavorites`) waits 500ms between folders to avoid risk control.
+- Pages: Library (`pages/library/{index,created,follow,cache}.vue`), Tasks (`pages/tasks/{index,all,active,complete,list}.vue` + `unified.ts`), Settings (`pages/setting/{index,normal,convert,download}.vue`), About
+- Pinia stores live in `store/` (`auth`, `download`, `convert`, `library`, `preference`, `update`); Bilibili data fetching lives in `services/{library,user,video}.ts`.
 - Dark-only UI
 
 ### Build gotchas

@@ -41,7 +41,6 @@ export const useAuthStore = defineStore('auth', {
           message
         })
       }
-      await this.leaveProtectedRoute()
     },
     openLogin() {
       this.loginOpen = true
@@ -54,9 +53,6 @@ export const useAuthStore = defineStore('auth', {
     },
     closeProfile() {
       this.profileOpen = false
-    },
-    async leaveProtectedRoute() {
-      // 登录门改在片库内容区展示，退出后不再整页踢走
     },
     async refreshAuth() {
       const biliJct = await getCookie()
@@ -121,7 +117,6 @@ export const useAuthStore = defineStore('auth', {
         this.isAuthenticated = false
         this.clearCachedUserData()
         logger.debug('已退出登录，本地登录态已清空')
-        await this.leaveProtectedRoute()
       }
     }
   }

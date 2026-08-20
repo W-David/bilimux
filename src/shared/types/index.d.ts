@@ -39,7 +39,6 @@ type ProcessItemStartArgs = {
 }
 
 type ProgressStatus = 'waiting' | 'preprocess' | 'importing' | 'writing' | 'success' | 'fail'
-type DownloadTaskStatus = 'waiting' | 'downloading' | 'paused' | 'success' | 'fail'
 
 type FavoriteCntInfo = {
   collect?: number
@@ -380,10 +379,6 @@ type VideoTaskInfo = {
   fileInfo: FileInfo
 }
 
-type VideoTaskMessage = Pick<VideoTaskInfo, 'bvid' | 'type' | 'title'> & {
-  fileName: Pick<FileInfo, 'fileName'>
-}
-
 // 合成任务配置
 type ConfigOptions = {
   cachePath: string
@@ -466,13 +461,6 @@ type VideoViewDetail = {
   owner: FavoriteUpper
 }
 
-type VideoType = 'BV' | 'BVS' | 'FESTIVAL' | 'BANGUMI' | 'CHEESE'
-
-type RegType = {
-  reg: RegExp
-  type: VideoType
-}
-
 export type {
   BangumiEpisode,
   BangumiFollowItem,
@@ -493,7 +481,6 @@ export type {
   DownloadItemStartArgs,
   DownloadProgressStatus,
   DownloadTaskKey,
-  DownloadTaskStatus,
   DownloadConfigOptions,
   DownloadVideoTask,
   EngineBinMap,
@@ -510,10 +497,8 @@ export type {
   Pages,
   ProcessItemProgressArgs,
   ProgressStatus,
-  RegType,
   UserInfo,
   UserStore,
   VideoTaskInfo,
-  VideoType,
   VideoViewDetail
 }

@@ -150,11 +150,6 @@ const routes: RouteRecordRaw[] = [
                 }
               },
               {
-                path: 'user',
-                name: 'prefer-user',
-                redirect: { name: 'prefer-normal' }
-              },
-              {
                 path: 'convert',
                 name: 'prefer-convert',
                 component: SettingConvert,

@@ -20,7 +20,7 @@ import logger from 'electron-log/renderer'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-export type ConvertRunStatus = 'idle' | 'scanning' | 'processing' | 'success' | 'error'
+type ConvertRunStatus = 'idle' | 'scanning' | 'processing' | 'success' | 'error'
 
 const HISTORY_STATUS_MAP: Record<ConvertHistoryRecord['status'], ConvertTask['status']> = {
   completed: 'success',

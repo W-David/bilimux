@@ -38,7 +38,6 @@ export default class Launcher {
         globalThis.application.windowManager.openWindow('main')
       })
     })
-    app.on('will-quit', () => {})
     app.on('window-all-closed', () => {
       if (this.application.context['platform'] !== 'darwin') {
         app.quit()

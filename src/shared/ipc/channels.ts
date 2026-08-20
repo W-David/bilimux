@@ -26,7 +26,6 @@ export const INVOKE_CHANNELS = [
   'download:history:remove',
   'download:history:clear',
   'persist-cookie',
-  'http-get-video-metadata',
   'http-get'
 ] as const
 
@@ -44,7 +43,6 @@ export const RECEIVE_CHANNELS = [
   'download:item:progress',
   'download:item:end',
   'fetch-preference',
-  'update:checking',
   'update:available',
   'update:manual-download',
   'update:not-available',

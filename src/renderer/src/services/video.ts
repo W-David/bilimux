@@ -1,15 +1,5 @@
 import { getVideoPageList } from '@renderer/api/network'
-import type { BiliVideoPage, FavoriteResource } from '@shared/types'
-
-const BV_RE = /BV[0-9A-Za-z]{10}/i
-
-/** 从 BV 号或视频链接中取出 bvid */
-export function parseBvid(input: string): string | null {
-  const trimmed = input.trim()
-  if (!trimmed) return null
-  const matched = trimmed.match(BV_RE)
-  return matched ? matched[0] : null
-}
+import type { BiliVideoPage } from '@shared/types'
 
 /**
  * 用 pagelist 拉取分 P；失败不回退到稿件 1P 的 cid
@@ -38,13 +28,4 @@ export async function fetchVideoPages(bvid: string): Promise<BiliVideoPage[]> {
   }
 
   return pages
-}
-
-/** 按标题 / UP 主过滤收藏视频；输入 BV 号时不过滤，交给搜索提交去拉稿件 */
-export function filterFavoriteVideos(videos: FavoriteResource[], query: string): FavoriteResource[] {
-  const keyword = query.trim().toLowerCase()
-  if (!keyword || parseBvid(keyword)) return videos
-  return videos.filter(
-    video => video.title.toLowerCase().includes(keyword) || video.upper.name.toLowerCase().includes(keyword)
-  )
 }

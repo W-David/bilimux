@@ -98,7 +98,6 @@ const clear = (): void => {
   showResetDialog.value = false
   authStore.isAuthenticated = false
   clearNativeStore()
-  void authStore.leaveProtectedRoute()
 }
 
 onUnmounted(() => {

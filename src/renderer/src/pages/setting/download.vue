@@ -149,7 +149,6 @@ const handleClearDownloadHistory = async (): Promise<void> => {
   clearingDownloadHistory.value = true
   try {
     await downloadStore.clearHistory()
-    mittbus.emit('download:history:cleared')
     mittbus.emit('toast:add', {
       severity: 'success',
       message: '下载历史已清空'

@@ -31,19 +31,19 @@
     <button
       v-if="items.length"
       type="button"
-      class="absolute right-4 bottom-4 z-10 flex size-11 cursor-pointer items-center justify-center rounded-full bg-[#2a2a2a] text-gray-200 shadow-lg shadow-black/40 hover:bg-[#333] disabled:pointer-events-none disabled:opacity-60"
+      class="absolute right-4 bottom-4 z-10 flex size-14 cursor-pointer items-center justify-center rounded-full bg-[#2a2a2a] text-gray-200 shadow-lg shadow-black/40 hover:bg-[#333] disabled:pointer-events-none disabled:opacity-60"
       :disabled="busy"
-      aria-label="刷新"
+      aria-label="缓存扫描"
       @click="scanAndConvert">
       <RefreshCwIcon
-        class="size-5"
+        class="size-6"
         :class="busy ? 'animate-spin' : ''" />
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { HardDrive as HardDriveIcon, RefreshCw as RefreshCwIcon } from '@lucide/vue'
+import { HardDrive as HardDriveIcon, RefreshCcwDot as RefreshCwIcon } from '@lucide/vue'
 import { openPath } from '@renderer/api'
 import CacheCoverCard from '@renderer/components/library/CacheCoverCard.vue'
 import LibraryGridSkeleton from '@renderer/components/library/LibraryGridSkeleton.vue'

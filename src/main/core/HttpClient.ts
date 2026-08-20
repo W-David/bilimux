@@ -1,6 +1,6 @@
 import { DOMAIN, ERROR_CODE } from '@main/config/constants'
 import { BiliResponseType } from '@shared/types'
-import type { Got, OptionsOfJSONResponseBody, OptionsOfTextResponseBody } from 'got'
+import type { Got, OptionsOfJSONResponseBody } from 'got'
 import got from 'got'
 import { app } from 'electron/main'
 import fs from 'node:fs'
@@ -12,15 +12,7 @@ import UserAgent from 'user-agents'
 import { resetWbiKeys } from '../utils/wbi'
 import logger from './Logger'
 
-export interface HtmlResponseType {
-  statusCode: number
-  html: string
-  redirectUrl: string
-}
-
-export type HttpGetHtml = (url: string, options?: OptionsOfTextResponseBody) => Promise<HtmlResponseType>
 export type HttpGetJson = (url: string, options?: OptionsOfJSONResponseBody) => Promise<BiliResponseType>
-export type HttpPostJson = (url: string, options?: OptionsOfJSONResponseBody) => Promise<BiliResponseType>
 
 export type DownloadFileResponseInfo = {
   statusCode: number
@@ -193,26 +185,6 @@ export default class HttpClient {
   }
 
   /**
-   * 获取Html页面
-   * @param url 请求地址
-   * @param options 请求选项
-   */
-  public getHtml: HttpGetHtml = async (url, options) => {
-    try {
-      const response = await this.client(url, { ...options, method: 'GET' })
-      return {
-        statusCode: response.statusCode,
-        html: response.body,
-        redirectUrl:
-          response.redirectUrls && response.redirectUrls.length > 0 ? response.redirectUrls[0].toString() : ''
-      }
-    } catch (error) {
-      logger.error(`[GET HTML]: ${url}`, error)
-      throw error
-    }
-  }
-
-  /**
    * 发送 GET 请求
    * @param url 请求地址
    * @param options 请求选项
@@ -223,21 +195,6 @@ export default class HttpClient {
       return response.body
     } catch (error) {
       logger.error(`[GET]: ${url}`, error)
-      throw error
-    }
-  }
-
-  /**
-   * 发送 POST 请求
-   * @param url 请求地址
-   * @param options 请求选项
-   */
-  public post: HttpPostJson = async (url, options) => {
-    try {
-      const response = await this.client<BiliResponseType>(url, { ...options, responseType: 'json', method: 'POST' })
-      return response.body
-    } catch (error) {
-      logger.error(`[POST]: ${url}`, error)
       throw error
     }
   }
