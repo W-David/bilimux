@@ -8,12 +8,12 @@
       v-for="folder in folders"
       :key="folder.id"
       type="button"
-      class="relative mb-1 grid w-full grid-cols-[40px_1fr] items-center gap-3 rounded-lg p-2 text-left"
-      :class="folder.id === selectedId ? 'bg-pink-400/10' : 'hover:bg-white/5'"
+      class="relative mb-1 grid w-full grid-cols-[40px_1fr] items-center gap-3 rounded-lg p-2 text-left border-l-2 border-l-transparent transform-all duration-200"
+      :class="folder.id === selectedId ? 'bg-pink-400/10 border-l-pink-400!' : 'hover:bg-white/5'"
       @click="emit('select', folder)">
-      <span
+      <!-- <span
         v-if="folder.id === selectedId"
-        class="absolute top-2 bottom-2 left-0 w-0.5 rounded-full bg-pink-400" />
+        class="absolute top-2 bottom-2 left-0 w-0.5 rounded-full bg-pink-400" /> -->
       <div class="size-10 overflow-hidden rounded-md bg-gray-900">
         <img
           v-if="folder.cover"

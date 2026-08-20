@@ -1,6 +1,7 @@
 import { OpenDialogOptions } from 'electron'
 import type { ProgressInfo, UpdateCheckResult, UpdateInfo } from 'electron-updater'
 import type { Cookie } from 'tough-cookie'
+import type { DownloadQn, DownloadQualitiesQuery } from '../download'
 import type {
   BiliResponseType,
   ComposEventMap,
@@ -39,6 +40,7 @@ type IpcMainHandleEvents = {
   'convert:history:remove': (bvid: string, deleteFile?: boolean) => void
   'convert:history:clear': () => void
   'download:video': (task: DownloadVideoTask) => void
+  'download:qualities': (query: DownloadQualitiesQuery) => DownloadQn[]
   'download:pause': (key: DownloadTaskKey) => void
   'download:resume': (key: DownloadTaskKey) => void
   'download:cancel': (key: DownloadTaskKey) => void

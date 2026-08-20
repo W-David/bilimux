@@ -1,41 +1,30 @@
 <template>
-  <div class="flex shrink-0 items-center gap-1">
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger as-child>
-          <div
-            class="relative h-8 min-w-20 flex cursor-pointer select-none items-center justify-center overflow-hidden rounded-full px-2 text-xs transition-all duration-200 card-glassy hover:ring-1"
-            :class="rootClass"
-            role="button"
-            tabindex="0"
-            @click="handleClick">
-            <span class="relative z-10 flex items-center gap-1">
-              <component
-                :is="statusIcon"
-                class="size-4"
-                :class="{ 'animate-spin': isMerging }" />
-              <span>{{ label }}</span>
-            </span>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent v-if="status === 'fail'">{{ message }}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-
-    <DeleteTaskDialog
+  <ProgressCapsule
+    :percent="showProgress ? item.progress : null"
+    :label="idleLabel"
+    :busy="showProgress"
+    :paused="status === 'paused'"
+    :cancellable="canCancel"
+    :icon="statusIcon"
+    :icon-spin="isMerging"
+    :aria-label="ariaLabel"
+    @click="handleClick">
+    <template
       v-if="canCancel"
-      title="删除下载中的任务？"
-      description="将中止下载，删除缓存文件并移除该任务记录，此操作不可恢复。"
-      @confirm="handleCancel">
-      <button
-        type="button"
-        class="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-gray-400 transition-colors card-glassy hover:text-red-400"
-        aria-label="删除下载任务"
-        @click.stop>
-        <XIcon class="size-3.5" />
-      </button>
-    </DeleteTaskDialog>
-  </div>
+      #cancel>
+      <DeleteTaskDialog
+        title="取消下载？"
+        description="将中止下载，删除缓存文件并移除该任务记录，此操作不可恢复。"
+        @confirm="handleCancel">
+        <button
+          type="button"
+          class="progress-capsule__x"
+          aria-label="取消下载">
+          <XIcon class="size-3.5" />
+        </button>
+      </DeleteTaskDialog>
+    </template>
+  </ProgressCapsule>
 </template>
 
 <script setup lang="ts">
@@ -48,6 +37,7 @@ import {
   Settings as SettingsIcon,
   X as XIcon
 } from '@lucide/vue'
+import ProgressCapsule from '@renderer/components/ProgressCapsule.vue'
 import { emitter, mittbus } from '@renderer/ipc'
 import { useDownloadStore } from '@renderer/store/download'
 import type { BiliVideoPage, FavoriteResource } from '@shared/types'
@@ -73,20 +63,25 @@ const isProgressing = computed(() =>
 )
 const isMerging = computed(() => ['preprocess', 'importing', 'writing'].includes(status.value))
 const canCancel = computed(() => isProgressing.value || status.value === 'paused')
+const showProgress = computed(() => canCancel.value)
 
-const rootClass = computed(() => {
+const idleLabel = computed(() => {
   switch (status.value) {
     case 'success':
-      return 'text-green-400 hover:ring-green-400/20'
+      return '播放'
     case 'fail':
-      return 'text-red-400 hover:ring-red-400/20'
-    case 'paused':
-      return 'text-slate-300 hover:ring-slate-300/20'
+      return '重试'
     case 'idle':
-      return 'text-pink-400 hover:ring-pink-400/20'
+      return '下载'
     default:
-      return 'text-pink-400 hover:ring-pink-400/20'
+      return '下载'
   }
+})
+
+const ariaLabel = computed(() => {
+  if (status.value === 'fail' && message.value) return message.value
+  if (showProgress.value) return `下载进度 ${Math.round(item.value.progress)}%`
+  return idleLabel.value
 })
 
 const statusIcon = computed(() => {
@@ -98,13 +93,10 @@ const statusIcon = computed(() => {
     case 'paused':
       return PlayIcon
     case 'downloading':
-      return PauseIcon
     case 'waiting':
       return PauseIcon
     case 'preprocess':
-      return SettingsIcon
     case 'importing':
-      return SettingsIcon
     case 'writing':
       return SettingsIcon
     default:
@@ -112,34 +104,9 @@ const statusIcon = computed(() => {
   }
 })
 
-const label = computed(() => {
-  switch (status.value) {
-    case 'success':
-      return '播放'
-    case 'fail':
-      return '重新下载'
-    case 'paused':
-      return '继续下载'
-    case 'preprocess':
-      return '合成中'
-    case 'importing':
-      return '合成中'
-    case 'writing':
-      return '合成中'
-    case 'waiting':
-      return '排队'
-    case 'downloading':
-      return '暂停'
-    case 'idle':
-      return '下载'
-    default:
-      return '下载'
-  }
-})
-
 const handleClick = (): void => {
   if (status.value === 'success') {
-    play()
+    void play()
     return
   }
 
@@ -174,5 +141,3 @@ const play = async (): Promise<void> => {
   }
 }
 </script>
-
-<style scoped></style>

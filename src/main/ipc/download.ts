@@ -6,6 +6,10 @@ export function registerDownloadIpc(app: Application): void {
     app.downloadManager.start(task)
   })
 
+  app.ipcManager.mainIpc.handle('download:qualities', (_, query) => {
+    return app.downloadManager.listQualities(query)
+  })
+
   app.ipcManager.mainIpc.handle('download:pause', (_, key) => {
     app.downloadManager.pause(key)
   })

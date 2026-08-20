@@ -6,7 +6,7 @@
           v-if="cover"
           :src="safeCover(cover)"
           referrerpolicy="no-referrer"
-          class="h-full w-full object-cover brightness-50"
+          class="h-full w-full object-cover"
           alt="" />
         <div
           v-else
@@ -18,10 +18,10 @@
           class="absolute top-1 right-1 rounded-sm bg-black/60 px-1 py-0.5 text-[10px] text-gray-50">
           {{ partBadge }}
         </span>
-        <div class="absolute top-[50%] left-[50%] translate-[-50%] h-6 w-24 flex justify-center items-center gap-2">
+        <div class="absolute top-1.5 left-1.5 size-4.5 flex justify-center items-center bg-black/65 rounded-[3px]">
           <component
             :is="kindIcon"
-            class="size-4 text-white" />
+            class="size-3 text-white" />
         </div>
       </div>
 
@@ -50,10 +50,6 @@
 
       <div class="absolute right-0 bottom-0 flex items-center gap-2">
         <template v-if="item.kind === 'download'">
-          <ProgressRing
-            v-if="lane === 'active' && downloadShowRing"
-            compact
-            :percent="downloadItem.progress" />
           <DownloadStatus
             v-if="lane === 'active'"
             :video="item.row.video"
@@ -127,7 +123,6 @@ import {
   Tv as TvIcon
 } from '@lucide/vue'
 import DownloadStatus from '@renderer/components/DownloadStatus.vue'
-import ProgressRing from '@renderer/components/ProgressRing.vue'
 import TaskCompleteActions from '@renderer/components/TaskCompleteActions.vue'
 import TaskDetailsDrawer from '@renderer/components/TaskDetailsDrawer.vue'
 import { convertDetailRows, downloadDetailRows } from '@renderer/components/taskDetails'
@@ -180,8 +175,6 @@ const downloadItem = computed(() => {
   }
   return downloadStore.getItem(props.item.row.video.bvid, props.item.row.page.cid)
 })
-const downloadShowRing = computed(() => ['waiting', 'downloading', 'paused'].includes(downloadItem.value.status))
-
 const outputTarget = computed(() => {
   if (props.item.kind === 'download') {
     return downloadItem.value.outputPath || props.item.row.history?.outputPath || ''

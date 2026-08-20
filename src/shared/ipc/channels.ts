@@ -18,6 +18,7 @@ export const INVOKE_CHANNELS = [
   'convert:history:remove',
   'convert:history:clear',
   'download:video',
+  'download:qualities',
   'download:pause',
   'download:resume',
   'download:cancel',

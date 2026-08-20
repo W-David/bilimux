@@ -5,11 +5,13 @@ import {
   dashMediaBackups,
   dashMediaUrl,
   downloadTaskId,
+  extractDownloadQns,
   pickDashAudio,
   pickDashVideo,
   type DashMedia,
   type DownloadCodecPref,
-  type DownloadQn
+  type DownloadQn,
+  type DownloadQualitiesQuery
 } from '@shared/download'
 import { DownloadEventMap, DownloadProgressStatus, DownloadTaskKey, DownloadVideoTask } from '@shared/types'
 import { EventEmitter } from 'node:events'
@@ -35,9 +37,19 @@ type DurlStream = {
   backup_url?: string[]
 }
 
+type PlayUrlQuery = {
+  bvid: string
+  cid: number
+  qn: number
+  epId?: number
+}
+
 type PlayUrlData = {
   dash?: DashData
   durl?: DurlStream[]
+  accept_quality?: number[]
+  support_formats?: Array<{ quality?: number }>
+  quality?: number
 }
 
 type StreamKind = 'video' | 'audio' | 'durl'
@@ -118,6 +130,23 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
    */
   public setConcurrency(count: number): void {
     this.queue.setConcurrency(clampConcurrent(count))
+  }
+
+  /**
+   * 探测稿件/分 P 实际可下载的清晰度（playurl accept_quality / dash.video.id）
+   */
+  public async listQualities(query: DownloadQualitiesQuery): Promise<DownloadQn[]> {
+    if (!query.bvid || !Number.isFinite(query.cid) || query.cid <= 0) return []
+    try {
+      const playQuery: PlayUrlQuery = { bvid: query.bvid, cid: query.cid, qn: 120, epId: query.epId }
+      const playData =
+        query.kind === 'ogv' ? await this.fetchOgvPlayData(playQuery) : await this.fetchUgcPlayData(playQuery)
+      if (!playData) return []
+      return extractDownloadQns(playData)
+    } catch (error) {
+      logger.warn(`获取清晰度失败: ${query.bvid}:${query.cid}`, error)
+      return []
+    }
   }
 
   /**
@@ -365,12 +394,11 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
     }
   }
 
-  private async fetchUgcPlayData(runtime: TaskRuntime): Promise<PlayUrlData | null> {
-    const { bvid, cid } = runtime.task
+  private async fetchUgcPlayData(query: PlayUrlQuery): Promise<PlayUrlData | null> {
     const signedParams = await getWbiSignedParams(this.httpClient, {
-      bvid,
-      cid,
-      qn: runtime.qn,
+      bvid: query.bvid,
+      cid: query.cid,
+      qn: query.qn,
       fnval: 4048,
       fnver: 0,
       fourk: 1
@@ -378,17 +406,19 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
     const playRes = await this.httpClient.get('https://api.bilibili.com/x/player/wbi/playurl', {
       searchParams: signedParams
     })
+    if (playRes.code !== 0) {
+      throw new Error(playRes.message || '获取视频流失败')
+    }
     return (playRes.data as PlayUrlData | null) ?? null
   }
 
-  private async fetchOgvPlayData(runtime: TaskRuntime): Promise<PlayUrlData | null> {
-    const { bvid, cid, epId } = runtime.task
+  private async fetchOgvPlayData(query: PlayUrlQuery): Promise<PlayUrlData | null> {
     const playRes = await this.httpClient.get('https://api.bilibili.com/pgc/player/web/playurl', {
       searchParams: {
-        bvid,
-        cid,
-        ...(epId ? { ep_id: epId } : {}),
-        qn: runtime.qn,
+        bvid: query.bvid,
+        cid: query.cid,
+        ...(query.epId ? { ep_id: query.epId } : {}),
+        qn: query.qn,
         fnval: 4048,
         fnver: 0,
         fourk: 1
@@ -404,11 +434,12 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
    * 获取视频 CID 与播放地址；refresh 时强制重新请求
    */
   private async fetchPlayUrls(runtime: TaskRuntime, refresh: boolean): Promise<void> {
-    const { bvid, cid } = runtime.task
+    const { bvid, cid, epId } = runtime.task
     if (runtime.playUrlFetched && !refresh) return
 
+    const playQuery: PlayUrlQuery = { bvid, cid, qn: runtime.qn, epId }
     const playData =
-      runtime.task.kind === 'ogv' ? await this.fetchOgvPlayData(runtime) : await this.fetchUgcPlayData(runtime)
+      runtime.task.kind === 'ogv' ? await this.fetchOgvPlayData(playQuery) : await this.fetchUgcPlayData(playQuery)
     if (!playData) {
       throw new Error('获取视频流失败')
     }

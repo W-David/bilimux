@@ -8,7 +8,7 @@
       :draggable="false"
       :title="label"
       :aria-label="label"
-      class="no-drag w-full cursor-pointer rounded-xl px-1 py-2.5 flex select-none flex-col items-center gap-1 transition-all duration-300 [&_*]:pointer-events-none"
+      class="no-drag w-full cursor-pointer rounded-xl px-1 py-2.5 flex select-none flex-col items-center gap-1 transition-all duration-300 **:pointer-events-none"
       :class="isActive ? ' text-pink-400' : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'"
       @click="navigate">
       <component

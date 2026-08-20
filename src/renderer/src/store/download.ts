@@ -1,6 +1,6 @@
 import { emitter, ipc, mittbus } from '@renderer/ipc'
 import { fetchVideoPages } from '@renderer/services/video'
-import { downloadTaskId } from '@shared/download'
+import { downloadTaskId, type DownloadQn, type DownloadQualitiesQuery } from '@shared/download'
 import type { BiliVideoPage, DownloadHistoryRecord, DownloadProgressStatus, FavoriteResource } from '@shared/types'
 import logger from 'electron-log/renderer'
 import { defineStore } from 'pinia'
@@ -126,6 +126,8 @@ export const useDownloadStore = defineStore('download', () => {
   const pagesByBvid = reactive<Record<string, BiliVideoPage[]>>({})
   const pagesLoading = reactive<Record<string, boolean>>({})
   const pagesInflight = new Map<string, Promise<BiliVideoPage[]>>()
+  const qualitiesByKey: Record<string, DownloadQn[]> = {}
+  const qualitiesInflight = new Map<string, Promise<DownloadQn[]>>()
   const snapshots = reactive<Record<string, Omit<DownloadTaskRow, 'history'>>>({})
   const history = ref<DownloadHistoryRecord[]>([])
 
@@ -406,6 +408,30 @@ export const useDownloadStore = defineStore('download', () => {
     }
   }
 
+  function qualitiesCacheKey(query: DownloadQualitiesQuery): string {
+    return `${query.kind ?? 'ugc'}:${query.bvid}:${query.cid}:${query.epId ?? ''}`
+  }
+
+  async function loadQualities(query: DownloadQualitiesQuery): Promise<DownloadQn[]> {
+    const key = qualitiesCacheKey(query)
+    const cached = qualitiesByKey[key]
+    if (cached?.length) return cached
+    const pending = qualitiesInflight.get(key)
+    if (pending) return pending
+
+    const request = emitter
+      .invoke('download:qualities', query)
+      .then(qns => {
+        if (qns.length) qualitiesByKey[key] = qns
+        return qns
+      })
+      .finally(() => {
+        qualitiesInflight.delete(key)
+      })
+    qualitiesInflight.set(key, request)
+    return request
+  }
+
   async function loadPages(bvid: string): Promise<BiliVideoPage[]> {
     const cached = pagesByBvid[bvid]
     if (cached?.length) return cached
@@ -475,6 +501,7 @@ export const useDownloadStore = defineStore('download', () => {
   return {
     getItem,
     loadPages,
+    loadQualities,
     pagesByBvid,
     pagesLoading,
     loadHistory,

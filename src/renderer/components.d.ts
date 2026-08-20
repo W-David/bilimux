@@ -57,6 +57,7 @@ declare module 'vue' {
     LoginDialog: typeof import('./src/components/LoginDialog.vue')['default']
     LoginGate: typeof import('./src/components/library/LoginGate.vue')['default']
     Main: typeof import('./src/layout/Main.vue')['default']
+    ProgressCapsule: typeof import('./src/components/ProgressCapsule.vue')['default']
     ProgressRing: typeof import('./src/components/ProgressRing.vue')['default']
     Qrcode: typeof import('./src/components/Qrcode.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

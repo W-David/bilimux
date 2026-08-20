@@ -90,14 +90,21 @@
               :disabled="row.disabled"
               @update:model-value="checked => toggleEpisode(row.key, Boolean(checked))" />
             <span class="min-w-0 flex-1 truncate text-gray-300 ml-2">{{ row.label }}</span>
-            <Spinner
+            <div
               v-if="row.active"
-              class="size-4 text-pink-400" />
-            <span
-              v-else-if="row.completed"
-              class="text-xs text-green-400">
-              已完成
-            </span>
+              class="flex size-6 shrink-0 items-center justify-center"
+              aria-label="下载中">
+              <DownloadIcon class="size-4 text-pink-400" />
+            </div>
+            <button
+              v-else-if="row.downloaded"
+              type="button"
+              aria-label="播放"
+              class="group flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10"
+              @click="playEpisode(row.key)">
+              <CirclePlayIcon
+                class="size-4 text-gray-400 transition-all duration-200 group-hover:scale-110 group-hover:text-green-400" />
+            </button>
           </div>
         </div>
       </div>
@@ -113,7 +120,9 @@
         v-else
         class="flex items-center gap-2">
         <Select
+          v-if="showDownloadButton"
           :model-value="qnValue"
+          :disabled="qualitiesLoading"
           @update:model-value="onQnChange">
           <SelectTrigger
             size="sm"
@@ -128,7 +137,7 @@
             :side-offset="6">
             <SelectGroup>
               <SelectItem
-                v-for="option in DOWNLOAD_QN_OPTIONS"
+                v-for="option in qnOptions"
                 :key="option.qn"
                 :value="String(option.qn)">
                 {{ option.label }}
@@ -137,13 +146,6 @@
           </SelectContent>
         </Select>
         <div class="ml-auto flex items-center gap-2">
-          <ProgressRing
-            v-if="activeProgress !== null"
-            compact
-            :percent="activeProgress" />
-          <Spinner
-            v-else-if="pagesLoading"
-            class="size-4 text-pink-400" />
           <Button
             v-if="playable"
             size="sm"
@@ -151,12 +153,21 @@
             @click="play">
             播放
           </Button>
-          <Button
+          <div
+            v-if="showDownloadingHint && !showEpisodes"
+            class="flex size-7 shrink-0 items-center justify-center"
+            aria-label="下载中">
+            <DownloadIcon class="size-4 text-pink-400" />
+          </div>
+          <ProgressCapsule
+            v-if="showDownloadButton"
             size="sm"
+            :label="downloadLabel"
             :disabled="downloadDisabled"
-            @click="downloadSelected">
-            {{ downloadLabel }}
-          </Button>
+            :loading="pagesLoading"
+            :icon="DownloadIcon"
+            :aria-label="downloadLabel"
+            @click="downloadSelected" />
         </div>
       </div>
     </div>
@@ -164,14 +175,21 @@
 </template>
 
 <script setup lang="ts">
+import { CirclePlay as CirclePlayIcon, Download as DownloadIcon } from '@lucide/vue'
 import type { CollectionMedia } from '@renderer/components/library/types'
-import ProgressRing from '@renderer/components/ProgressRing.vue'
+import ProgressCapsule from '@renderer/components/ProgressCapsule.vue'
 import { emitter, mittbus } from '@renderer/ipc'
 import { fetchVideoDetail } from '@renderer/services/library'
 import { useDownloadStore } from '@renderer/store/download'
 import { usePreferenceStore } from '@renderer/store/preference'
 import { formatDate, safeCover } from '@renderer/utils/media'
-import { clampDownloadQn, DOWNLOAD_QN_OPTIONS, type DownloadQn } from '@shared/download'
+import {
+  clampDownloadQn,
+  DOWNLOAD_QN_OPTIONS,
+  DOWNLOAD_QN_VALUES,
+  pickPreferredDownloadQn,
+  type DownloadQn
+} from '@shared/download'
 import type { BangumiFollowItem, BiliVideoPage } from '@shared/types'
 import { computed, ref, watch } from 'vue'
 
@@ -181,7 +199,7 @@ type EpisodeRow = {
   checked: boolean
   disabled: boolean
   active: boolean
-  completed: boolean
+  downloaded: boolean
 }
 
 const props = withDefaults(
@@ -210,6 +228,9 @@ const dateOverride = ref(0)
 const selectedCids = ref<number[]>([])
 const selectedKeys = ref<string[]>([])
 const selectedQn = ref<DownloadQn>(clampDownloadQn(preferenceStore.preference['download-config'].qn))
+const availableQns = ref<DownloadQn[]>([])
+const qualitiesLoading = ref(false)
+let loadSeq = 0
 
 const isSeason = computed(() => Boolean(props.season))
 const ready = computed(() => Boolean(props.payload || props.season))
@@ -243,7 +264,13 @@ const isMultiPart = computed(() => {
 const showEpisodes = computed(() => isSeason.value || isMultiPart.value)
 const introLoading = computed(() => (isSeason.value ? props.loading : detailLoading.value))
 const episodesLoading = computed(() => (isSeason.value ? props.loading : pagesLoading.value))
-const qnValue = computed(() => String(selectedQn.value))
+const qnValue = computed(() => (availableQns.value.includes(selectedQn.value) ? String(selectedQn.value) : undefined))
+const qnOptions = computed(() => {
+  if (!availableQns.value.length) return []
+  const allowed = new Set(availableQns.value)
+  return DOWNLOAD_QN_OPTIONS.filter(option => allowed.has(option.qn))
+})
+const preferredQn = computed(() => clampDownloadQn(preferenceStore.preference['download-config'].qn))
 const downloadLabel = computed(() => (isMultiPart.value ? '下载所选' : '下载'))
 
 const isOgvActive = (item: CollectionMedia): boolean => {
@@ -251,9 +278,9 @@ const isOgvActive = (item: CollectionMedia): boolean => {
   return downloadStore.isCidActive(item.video.bvid, item.cid)
 }
 
-const isOgvCompleted = (item: CollectionMedia): boolean => {
-  if (!item.cid) return false
-  return downloadStore.isCidCompleted(item.video.bvid, item.cid)
+const isPartDownloaded = (bvid: string, cid: number): boolean => {
+  const state = downloadStore.getItem(bvid, cid)
+  return state.status === 'success' && Boolean(state.outputPath)
 }
 
 const playPathOf = (item: CollectionMedia): string => {
@@ -265,43 +292,50 @@ const episodeRows = computed<EpisodeRow[]>(() => {
   if (isSeason.value) {
     return props.items.map(item => {
       const active = isOgvActive(item)
-      const completed = isOgvCompleted(item)
+      const downloaded = Boolean(item.cid && isPartDownloaded(item.video.bvid, item.cid))
       return {
         key: item.key,
         label: item.video.title,
-        checked: selectedKeys.value.includes(item.key),
-        disabled: active,
+        checked: !active && !downloaded && selectedKeys.value.includes(item.key),
+        disabled: active || downloaded,
         active,
-        completed
+        downloaded
       }
     })
   }
   if (!video.value) return []
   return pages.value.map(page => {
     const active = downloadStore.isCidActive(video.value!.bvid, page.cid)
-    const completed = downloadStore.isCidCompleted(video.value!.bvid, page.cid)
+    const downloaded = isPartDownloaded(video.value!.bvid, page.cid)
     return {
       key: String(page.cid),
       label: `P${page.page} ${page.part}`,
-      checked: selectedCids.value.includes(page.cid),
-      disabled: active,
+      checked: !active && !downloaded && selectedCids.value.includes(page.cid),
+      disabled: active || downloaded,
       active,
-      completed
+      downloaded
     }
   })
 })
 
 const episodeSummary = computed(() => {
-  if (isSeason.value) return `共 ${props.items.length} 话 / 已选 ${selectedKeys.value.length}`
-  return `共 ${pages.value.length} P / 已选 ${selectedCids.value.length} P`
+  const selected = episodeRows.value.filter(row => row.checked).length
+  if (isSeason.value) return `共 ${props.items.length} 话 / 已选 ${selected}`
+  return `共 ${pages.value.length} P / 已选 ${selected} P`
 })
 
 const selectableCids = computed(() => {
   if (!video.value) return []
-  return pages.value.filter(page => !downloadStore.isCidActive(video.value!.bvid, page.cid)).map(page => page.cid)
+  return pages.value
+    .filter(
+      page => !downloadStore.isCidActive(video.value!.bvid, page.cid) && !isPartDownloaded(video.value!.bvid, page.cid)
+    )
+    .map(page => page.cid)
 })
 
-const selectableSeasonItems = computed(() => props.items.filter(item => !isOgvActive(item) && !isOgvCompleted(item)))
+const selectableSeasonItems = computed(() =>
+  props.items.filter(item => !isOgvActive(item) && !(item.cid && isPartDownloaded(item.video.bvid, item.cid)))
+)
 
 const allSelectableChecked = computed(() => {
   if (isSeason.value) {
@@ -320,42 +354,74 @@ const canEnqueue = computed(() => {
   if (!video.value) return false
   if (pages.value.length <= 1) {
     const cid = pages.value[0]?.cid
-    return Boolean(cid) && !downloadStore.isCidActive(video.value.bvid, cid)
+    return Boolean(cid) && !downloadStore.isCidActive(video.value.bvid, cid) && !isPartDownloaded(video.value.bvid, cid)
   }
-  return selectedCids.value.some(cid => !downloadStore.isCidActive(video.value!.bvid, cid))
+  return selectedCids.value.some(cid => selectableCids.value.includes(cid))
 })
 
 const downloadDisabled = computed(() => {
+  if (qualitiesLoading.value) return true
   if (isSeason.value) return !canEnqueue.value
   return pagesLoading.value || !canEnqueue.value
 })
 
-const activeProgress = computed(() => {
-  if (isSeason.value) {
-    const item = props.items.find(entry => isOgvActive(entry))
-    if (!item?.cid) return null
-    return downloadStore.getItem(item.video.bvid, item.cid).progress
-  }
-  if (!video.value) return null
-  const page = pages.value.find(item => downloadStore.isCidActive(video.value!.bvid, item.cid))
-  if (!page) return null
-  return downloadStore.getItem(video.value.bvid, page.cid).progress
+const showDownloadingHint = computed(() => {
+  if (isSeason.value) return props.items.some(item => isOgvActive(item))
+  if (!video.value) return false
+  return pages.value.some(page => downloadStore.isCidActive(video.value!.bvid, page.cid))
 })
 
 const playable = computed(() => {
-  if (isSeason.value) return props.items.some(item => isOgvCompleted(item) && Boolean(playPathOf(item)))
+  if (isSeason.value) return props.items.some(item => item.cid && isPartDownloaded(item.video.bvid, item.cid))
   if (!video.value) return false
-  return pages.value.some(page => {
-    const state = downloadStore.getItem(video.value!.bvid, page.cid)
-    return state.status === 'success' && Boolean(state.outputPath)
-  })
+  return pages.value.some(page => isPartDownloaded(video.value!.bvid, page.cid))
 })
 
+const fullyDownloaded = computed(() => {
+  if (isSeason.value) {
+    const list = props.items.filter(item => item.cid)
+    return list.length > 0 && list.every(item => isPartDownloaded(item.video.bvid, item.cid!))
+  }
+  if (!video.value || !pages.value.length) return false
+  return pages.value.every(page => isPartDownloaded(video.value!.bvid, page.cid))
+})
+
+const showDownloadButton = computed(() => {
+  if (fullyDownloaded.value) return false
+  return canEnqueue.value || pagesLoading.value || qualitiesLoading.value
+})
+
+const applyQualities = (qns: DownloadQn[]): void => {
+  availableQns.value = qns.length ? qns : [...DOWNLOAD_QN_VALUES]
+  selectedQn.value = pickPreferredDownloadQn(availableQns.value, preferredQn.value)
+}
+
+const loadQualitiesFor = async (
+  seq: number,
+  query: { bvid: string; cid: number; kind?: 'ugc' | 'ogv'; epId?: number }
+): Promise<void> => {
+  qualitiesLoading.value = true
+  try {
+    const qns = await downloadStore.loadQualities(query)
+    if (seq !== loadSeq) return
+    applyQualities(qns)
+  } catch {
+    if (seq !== loadSeq) return
+    applyQualities([])
+  } finally {
+    if (seq === loadSeq) qualitiesLoading.value = false
+  }
+}
+
 const onQnChange = (value: unknown): void => {
-  selectedQn.value = clampDownloadQn(value)
+  const qn = clampDownloadQn(value)
+  if (availableQns.value.length && !availableQns.value.includes(qn)) return
+  selectedQn.value = qn
 }
 
 const toggleEpisode = (key: string, checked: boolean): void => {
+  const row = episodeRows.value.find(item => item.key === key)
+  if (row?.disabled) return
   if (isSeason.value) {
     if (checked) {
       if (!selectedKeys.value.includes(key)) selectedKeys.value = [...selectedKeys.value, key]
@@ -382,10 +448,14 @@ const toggleAll = (): void => {
 }
 
 const downloadSelected = (): void => {
-  const qn = selectedQn.value
+  const qn = pickPreferredDownloadQn(availableQns.value, selectedQn.value)
   if (isSeason.value) {
     const targets = props.items.filter(
-      item => selectedKeys.value.includes(item.key) && item.cid && !isOgvActive(item) && !isOgvCompleted(item)
+      item =>
+        selectedKeys.value.includes(item.key) &&
+        item.cid &&
+        !isOgvActive(item) &&
+        !isPartDownloaded(item.video.bvid, item.cid)
     )
     for (const item of targets) {
       downloadStore.enqueuePart(
@@ -411,25 +481,17 @@ const downloadSelected = (): void => {
     list.length <= 1
       ? list
       : list.filter(
-          page => selectedCids.value.includes(page.cid) && !downloadStore.isCidActive(current.video.bvid, page.cid)
+          page =>
+            selectedCids.value.includes(page.cid) &&
+            !downloadStore.isCidActive(current.video.bvid, page.cid) &&
+            !isPartDownloaded(current.video.bvid, page.cid)
         )
   for (const page of targets) {
     downloadStore.enqueuePart(current.video, current.folderName, page, list.length || 1, { kind: 'ugc', qn })
   }
 }
 
-const play = async (): Promise<void> => {
-  let path = ''
-  if (isSeason.value) {
-    const item = props.items.find(entry => isOgvCompleted(entry) && playPathOf(entry))
-    path = item ? playPathOf(item) : ''
-  } else if (video.value) {
-    const page = pages.value.find(item => {
-      const state = downloadStore.getItem(video.value!.bvid, item.cid)
-      return state.status === 'success' && Boolean(state.outputPath)
-    })
-    path = page ? downloadStore.getItem(video.value.bvid, page.cid).outputPath : ''
-  }
+const openLocalFile = async (path: string): Promise<void> => {
   if (!path) return
   const errMessage = await emitter.invoke('open-path', path)
   if (errMessage) {
@@ -440,12 +502,35 @@ const play = async (): Promise<void> => {
   }
 }
 
-let loadSeq = 0
+const playEpisode = async (key: string): Promise<void> => {
+  if (isSeason.value) {
+    const item = props.items.find(entry => entry.key === key)
+    await openLocalFile(item ? playPathOf(item) : '')
+    return
+  }
+  if (!video.value) return
+  const cid = Number(key)
+  if (!Number.isFinite(cid)) return
+  await openLocalFile(downloadStore.getItem(video.value.bvid, cid).outputPath)
+}
+
+const play = async (): Promise<void> => {
+  let path = ''
+  if (isSeason.value) {
+    const item = props.items.find(entry => entry.cid && isPartDownloaded(entry.video.bvid, entry.cid))
+    path = item ? playPathOf(item) : ''
+  } else if (video.value) {
+    const page = pages.value.find(item => isPartDownloaded(video.value!.bvid, item.cid))
+    path = page ? downloadStore.getItem(video.value.bvid, page.cid).outputPath : ''
+  }
+  await openLocalFile(path)
+}
 
 watch(
   () => props.payload?.video.bvid ?? props.season?.seasonId ?? '',
   () => {
-    selectedQn.value = clampDownloadQn(preferenceStore.preference['download-config'].qn)
+    availableQns.value = []
+    qualitiesLoading.value = Boolean(props.payload || props.season)
   }
 )
 
@@ -469,8 +554,17 @@ watch(
             !downloadStore.isCidActive(payload.video.bvid, page.cid)
         )
         .map(page => page.cid)
+      const cid = list[0]?.cid
+      if (cid) {
+        void loadQualitiesFor(seq, { bvid: payload.video.bvid, cid, kind: 'ugc' })
+      } else {
+        applyQualities([])
+        qualitiesLoading.value = false
+      }
     } catch (error) {
       if (seq !== loadSeq) return
+      applyQualities([])
+      qualitiesLoading.value = false
       mittbus.emit('toast:add', {
         severity: 'error',
         message: error instanceof Error ? error.message : String(error)
@@ -492,9 +586,31 @@ watch(
 )
 
 watch(
+  () => {
+    const first = props.items.find(item => Number(item.cid) > 0)
+    if (!props.season || !first?.cid) return ''
+    return `${first.video.bvid}:${first.cid}:${first.epId ?? ''}`
+  },
+  key => {
+    if (!key || !props.season) return
+    const first = props.items.find(item => Number(item.cid) > 0)
+    if (!first?.cid) return
+    const seq = ++loadSeq
+    void loadQualitiesFor(seq, {
+      bvid: first.video.bvid,
+      cid: first.cid,
+      kind: 'ogv',
+      epId: first.epId
+    })
+  }
+)
+
+watch(
   () => props.items,
   list => {
-    selectedKeys.value = list.filter(item => !isOgvActive(item) && !isOgvCompleted(item)).map(item => item.key)
+    selectedKeys.value = list
+      .filter(item => !isOgvActive(item) && !(item.cid && isPartDownloaded(item.video.bvid, item.cid)))
+      .map(item => item.key)
   }
 )
 </script>

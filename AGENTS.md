@@ -118,4 +118,8 @@ Convert flow: `convert:prescan` reconciles output files and scans the cache (ski
 
 ## External references
 
-- B 站非官方接口文档（第三方整理）：本地 `/Users/codyw/GitWork/bilibili-API-collect`（[SocialSisterYi/bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect)，阅读页 https://socialsisteryi.github.io/bilibili-API-collect/）。查登录、收藏、播放地址、Wbi、追番等接口时先看这里。CC-BY-NC 4.0，仅学习测试，不是官方开放平台。
+- **设计或改 B 站接口前，先到这里核对，不要凭记忆编 URL / 参数 / 错误码。** 本地 `/Users/codyw/GitWork/bilibili-API-collect`（[SocialSisterYi/bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect)，阅读页 https://socialsisteryi.github.io/bilibili-API-collect/）。
+  1. 先读该仓库 `/Users/codyw/GitWork/bilibili-API-collect/AGENTS.md`：任务 → 文档对照表、认证/鉴权、已失效路径。
+  2. 再打开对应 `docs/**/*.md`（登录、收藏、播放地址、Wbi、追番等），以文档里的地址、方法、参数表为准。
+  3. 划掉或标明「已失效 / 已下线」的不要再用；带 `/wbi/` 的新地址优先。
+  CC-BY-NC 4.0，仅学习测试，不是官方开放平台。
