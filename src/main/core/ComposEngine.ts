@@ -4,6 +4,7 @@ import {
   ConfigOptions,
   ConvertPrescanResult,
   EngineResponse,
+  ProcessItemProgressArgs,
   VideoTaskInfo
 } from '@shared/types'
 import { EventEmitter } from 'node:events'
@@ -172,7 +173,6 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
    */
   private async syntheticTask(bvs: VideoTaskInfo[], config: ConfigOptions): Promise<void> {
     const { outputDir, replaceExisting } = config
-    const gpacBinPath = getEngineBinPath(this.configManager.context.platform)
 
     const taskFn = async (bv: VideoTaskInfo, outputFilePath: string) => {
       const { videoM4sPath, videoMp4Path, audioM4sPath, audioMp3Path } = bv.fileInfo
@@ -228,7 +228,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       // 合成 (Composition)
       const isOutputExist = await isExist(outputFilePath)
       if (!isOutputExist || replaceExisting) {
-        await this.compose(gpacBinPath, {
+        await this.muxWithEngine({
           bvInfo: bv,
           videoFile: videoMp4Path,
           audioFile: audioMp3Path,
@@ -576,14 +576,39 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
   }
 
   /**
-   * 调用 MP4Box 进行合成
+   * 调用 MP4Box 合成；下载取消时可通过 signal 杀掉进程
    */
-  private async compose(binPath: string, options: CompositionOptions): Promise<EngineResponse> {
+  private async muxWithEngine(
+    options: CompositionOptions,
+    extras?: {
+      signal?: AbortSignal
+      bindEngine?: (engine: Engine | null) => void
+      onProgress?: (data: ProcessItemProgressArgs) => void
+    }
+  ): Promise<EngineResponse> {
+    const binPath = getEngineBinPath(this.configManager.context.platform)
     const engine = new Engine(binPath, options)
-    engine.on('convert:item:progress', progressData => {
-      this.emit('convert:item:progress', progressData)
+    engine.on('convert:item:progress', data => {
+      extras?.onProgress?.(data)
+      if (!extras?.onProgress) this.emit('convert:item:progress', data)
     })
-    return engine.start()
+
+    const onAbort = (): void => {
+      engine.stop()
+    }
+    extras?.signal?.addEventListener('abort', onAbort)
+    extras?.bindEngine?.(engine)
+    try {
+      if (extras?.signal?.aborted) {
+        const error = new Error('已取消')
+        error.name = 'AbortError'
+        throw error
+      }
+      return await engine.start()
+    } finally {
+      extras?.signal?.removeEventListener('abort', onAbort)
+      extras?.bindEngine?.(null)
+    }
   }
 
   /**
@@ -602,7 +627,6 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
     onProgress?: (type: 'preprocess' | 'importing' | 'writing', progress: number) => void
   }): Promise<void> {
     const { bvid, videoPath, audioPath, outputPath, tempDir, signal, bindEngine, onProgress } = params
-    const gpacBinPath = getEngineBinPath(this.configManager.context.platform)
 
     const throwIfAborted = (): void => {
       if (signal?.aborted) {
@@ -627,29 +651,22 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
     throwIfAborted()
     onProgress?.('preprocess', 100)
 
-    const engine = new Engine(gpacBinPath, {
-      bvInfo: { bvid } as VideoTaskInfo,
-      videoFile: tempVideoPath,
-      audioFile: tempAudioPath,
-      outputFile: outputPath
-    })
-    engine.on('convert:item:progress', data => {
-      const type = data.type === 'importing' || data.type === 'writing' ? data.type : 'preprocess'
-      onProgress?.(type, data.progress)
-    })
-
-    const onAbort = (): void => {
-      engine.stop()
-    }
-    signal?.addEventListener('abort', onAbort)
-    bindEngine?.(engine)
-    try {
-      throwIfAborted()
-      await engine.start()
-    } finally {
-      signal?.removeEventListener('abort', onAbort)
-      bindEngine?.(null)
-    }
+    await this.muxWithEngine(
+      {
+        bvInfo: { bvid } as VideoTaskInfo,
+        videoFile: tempVideoPath,
+        audioFile: tempAudioPath,
+        outputFile: outputPath
+      },
+      {
+        signal,
+        bindEngine,
+        onProgress: data => {
+          const type = data.type === 'importing' || data.type === 'writing' ? data.type : 'preprocess'
+          onProgress?.(type, data.progress)
+        }
+      }
+    )
   }
 
   /**
