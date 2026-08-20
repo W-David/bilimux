@@ -1,10 +1,10 @@
 <template>
   <button
     type="button"
-    class="flex w-full flex-col gap-2 p-1 text-left"
-    :class="playable ? 'cursor-pointer' : 'cursor-default'"
+    class="card-border group flex w-full flex-col overflow-hidden rounded-xl text-left shadow-lg shadow-black/40 transition-colors duration-200"
+    :class="playable ? 'cursor-pointer hover:bg-white/4' : 'cursor-default'"
     @click="onClick">
-    <div class="group relative aspect-video overflow-hidden rounded-lg bg-gray-900">
+    <div class="relative aspect-video overflow-hidden bg-gray-900">
       <img
         v-if="cover"
         :src="safeCover(cover)"
@@ -37,12 +37,21 @@
         </div>
       </div>
     </div>
-    <div class="min-w-0 px-0.5">
+    <div class="min-w-0 px-2.5 py-2">
       <div class="line-clamp-2 text-sm text-[#f6f6f6] leading-5">{{ task.title }}</div>
-      <div
-        v-if="task.uname"
-        class="mt-1 truncate text-xs text-gray-500">
-        {{ task.uname }}
+      <div class="mt-1.5 flex min-w-0 items-center gap-1.5 text-xs text-gray-500">
+        <template v-if="task.uname">
+          <span
+            class="h-4 w-6 flex shrink-0 items-center justify-center rounded-sm bg-pink-400/20 text-[9px] text-pink-400 font-bold leading-none">
+            UP
+          </span>
+          <span class="min-w-0 truncate">{{ task.uname }}</span>
+        </template>
+        <span
+          v-if="sizeText"
+          class="ml-auto shrink-0 tabular-nums">
+          {{ sizeText }}
+        </span>
       </div>
     </div>
   </button>
@@ -52,7 +61,7 @@
 import { Play as PlayIcon, Tv as TvIcon } from '@lucide/vue'
 import ProgressRing from '@renderer/components/ProgressRing.vue'
 import type { ConvertTask } from '@renderer/types/convert'
-import { safeCover } from '@renderer/utils/media'
+import { formatFileSize, safeCover } from '@renderer/utils/media'
 import { computed } from 'vue'
 
 const CONVERTING = new Set(['waiting', 'preprocess', 'importing', 'writing'])
@@ -72,12 +81,14 @@ const playable = computed(() => {
   if (props.task.fileExists === false) return false
   return props.task.status === 'success' || props.task.status === 'skipped'
 })
+const sizeText = computed(() => formatFileSize(props.task.fileSize) || '')
 
 const badge = computed(() => {
   if (converting.value) return '转换中'
   if (props.task.status === 'fail') return '失败'
   if (props.task.status === 'missing' || props.task.fileExists === false) return '文件丢失'
   if (props.task.status === 'scanned' || props.task.status === 'interrupted') return '待转换'
+  if (playable.value) return '可播放'
   return ''
 })
 
@@ -86,6 +97,7 @@ const badgeClass = computed(() => {
     return 'bg-red-600/80'
   }
   if (converting.value) return 'bg-pink-500/85'
+  if (playable.value) return 'bg-green-600/80'
   return 'bg-zinc-600/80'
 })
 
