@@ -17,12 +17,6 @@
         <TvIcon class="size-8" />
       </div>
       <div
-        v-if="badge"
-        class="absolute top-1.5 left-1.5 rounded-sm px-1.5 py-0.5 text-[10px] text-white"
-        :class="badgeClass">
-        {{ badge }}
-      </div>
-      <div
         v-if="converting"
         class="absolute inset-0 flex items-center justify-center bg-black/40">
         <ProgressRing
@@ -82,24 +76,6 @@ const playable = computed(() => {
   return props.task.status === 'success' || props.task.status === 'skipped'
 })
 const sizeText = computed(() => formatFileSize(props.task.fileSize) || '')
-
-const badge = computed(() => {
-  if (converting.value) return '转换中'
-  if (props.task.status === 'fail') return '失败'
-  if (props.task.status === 'missing' || props.task.fileExists === false) return '文件丢失'
-  if (props.task.status === 'scanned' || props.task.status === 'interrupted') return '待转换'
-  if (playable.value) return '可播放'
-  return ''
-})
-
-const badgeClass = computed(() => {
-  if (props.task.status === 'fail' || props.task.status === 'missing' || props.task.fileExists === false) {
-    return 'bg-red-600/80'
-  }
-  if (converting.value) return 'bg-pink-500/85'
-  if (playable.value) return 'bg-green-600/80'
-  return 'bg-zinc-600/80'
-})
 
 const onClick = (): void => {
   if (!playable.value) return

@@ -15,7 +15,7 @@
           r="15.9"
           fill="none"
           stroke-width="3"
-          class="stroke-gray-800" />
+          class="stroke-white/25" />
         <circle
           cx="18"
           cy="18"
@@ -23,12 +23,12 @@
           fill="none"
           stroke-width="3"
           stroke-linecap="round"
-          class="stroke-pink-500 transition-all duration-300"
+          class="stroke-pink-400 transition-all duration-300"
           :stroke-dasharray="circumference"
           :stroke-dashoffset="dashOffset" />
       </svg>
       <span
-        class="absolute inset-0 flex items-center justify-center font-semibold text-pink-400"
+        class="absolute inset-0 flex items-center justify-center font-semibold text-white"
         :class="compact ? 'text-[10px]' : 'text-[11px]'">
         {{ Math.round(percent) }}%
       </span>
