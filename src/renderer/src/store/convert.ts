@@ -114,7 +114,7 @@ export const useConvertStore = defineStore('convert', () => {
     errorMessage.value = ''
     runStatus.value = 'scanning'
     try {
-      await emitter.invoke('start:process')
+      await emitter.invoke('convert:run')
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       runStatus.value = 'error'
@@ -203,11 +203,11 @@ export const useConvertStore = defineStore('convert', () => {
   if (!listenersRegistered) {
     listenersRegistered = true
 
-    ipc.on('process:start', () => {
+    ipc.on('convert:start', () => {
       runStatus.value = 'scanning'
     })
 
-    ipc.on('process:ready', (_, { bvs }) => {
+    ipc.on('convert:ready', (_, { bvs }) => {
       runStatus.value = 'processing'
       const next = new Map<string, ConvertTask>()
       bvs.forEach(bv => {
@@ -234,7 +234,7 @@ export const useConvertStore = defineStore('convert', () => {
       tasks.value = next
     })
 
-    ipc.on('process:item:start', (_, { bv, outputPath }) => {
+    ipc.on('convert:item:start', (_, { bv, outputPath }) => {
       const existing = tasks.value.get(bv.bvid)
       if (existing) {
         existing.outputPath = outputPath ?? ''
@@ -263,7 +263,7 @@ export const useConvertStore = defineStore('convert', () => {
       }
     })
 
-    ipc.on('process:item:progress', (_, { bvid, type, progress }) => {
+    ipc.on('convert:item:progress', (_, { bvid, type, progress }) => {
       const task = tasks.value.get(bvid)
       if (task) {
         task.status = type
@@ -271,7 +271,7 @@ export const useConvertStore = defineStore('convert', () => {
       }
     })
 
-    ipc.on('process:item:end', (_, { bvid, success, message, skipped, durationMs, fileSize, outputPath }) => {
+    ipc.on('convert:item:end', (_, { bvid, success, message, skipped, durationMs, fileSize, outputPath }) => {
       const task = tasks.value.get(bvid)
       if (task) {
         task.finished = success
@@ -286,7 +286,7 @@ export const useConvertStore = defineStore('convert', () => {
       }
     })
 
-    ipc.on('process:success', (_, { count }) => {
+    ipc.on('convert:success', (_, { count }) => {
       runStatus.value = 'success'
       successCount.value = count.success
       failCount.value = count.fail
@@ -299,7 +299,7 @@ export const useConvertStore = defineStore('convert', () => {
       void loadHistory()
     })
 
-    ipc.on('process:broke', (_, { reason }) => {
+    ipc.on('convert:broke', (_, { reason }) => {
       runStatus.value = 'error'
       errorMessage.value = reason
       mittbus.emit('toast:add', {

@@ -330,17 +330,17 @@ type ProcessFinishArgs = {
 
 // 引擎事件映射
 type EngineEventMap = {
-  'process:item:start': [ProcessItemStartArgs]
-  'process:item:progress': [ProcessItemProgressArgs]
-  'process:item:end': [ProcessItemEndArgs]
+  'convert:item:start': [ProcessItemStartArgs]
+  'convert:item:progress': [ProcessItemProgressArgs]
+  'convert:item:end': [ProcessItemEndArgs]
 }
 
 // 合成引擎事件映射
 type ComposEventMap = EngineEventMap & {
-  'process:start': []
-  'process:ready': [ProcessReadyArgs]
-  'process:broke': [ProcessBrokeArgs]
-  'process:success': [ProcessFinishArgs]
+  'convert:start': []
+  'convert:ready': [ProcessReadyArgs]
+  'convert:broke': [ProcessBrokeArgs]
+  'convert:success': [ProcessFinishArgs]
 }
 
 //文件结构信息

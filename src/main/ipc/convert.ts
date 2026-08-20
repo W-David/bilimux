@@ -2,7 +2,7 @@ import type Application from '../Application'
 import { assertAllowedPath, getAllowedUserRoots } from '../utils/allowed-path'
 
 export function registerConvertIpc(app: Application): void {
-  app.ipcManager.mainIpc.handle('start:process', async () => {
+  app.ipcManager.mainIpc.handle('convert:run', async () => {
     return app.composEngine.run()
   })
 

@@ -97,8 +97,8 @@ export default class Application {
   }
 
   initComposEngine(): void {
-    this.composEngine.on('process:item:start', data => {
-      this.windowManager.sendCommandToAll('process:item:start', data)
+    this.composEngine.on('convert:item:start', data => {
+      this.windowManager.sendCommandToAll('convert:item:start', data)
       if (this.currentConvertRunId) {
         this.convertHistoryStore.markStarted(
           this.currentConvertRunId,
@@ -108,11 +108,11 @@ export default class Application {
         )
       }
     })
-    this.composEngine.on('process:item:progress', data => {
-      this.windowManager.sendCommandToAll('process:item:progress', data)
+    this.composEngine.on('convert:item:progress', data => {
+      this.windowManager.sendCommandToAll('convert:item:progress', data)
     })
-    this.composEngine.on('process:item:end', data => {
-      this.windowManager.sendCommandToAll('process:item:end', data)
+    this.composEngine.on('convert:item:end', data => {
+      this.windowManager.sendCommandToAll('convert:item:end', data)
       if (this.currentConvertRunId) {
         this.convertHistoryStore.markEnded(this.currentConvertRunId, data.bvid, {
           success: data.success,
@@ -124,19 +124,19 @@ export default class Application {
       }
     })
 
-    this.composEngine.on('process:start', () => {
+    this.composEngine.on('convert:start', () => {
       this.currentConvertRunId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-      this.windowManager.sendCommandToAll('process:start')
+      this.windowManager.sendCommandToAll('convert:start')
     })
-    this.composEngine.on('process:ready', data => {
+    this.composEngine.on('convert:ready', data => {
       this.currentConvertOrder = new Map(data.bvs.map((bv, index) => [bv.bvid, index]))
-      this.windowManager.sendCommandToAll('process:ready', data)
+      this.windowManager.sendCommandToAll('convert:ready', data)
     })
-    this.composEngine.on('process:broke', data => {
-      this.windowManager.sendCommandToAll('process:broke', data)
+    this.composEngine.on('convert:broke', data => {
+      this.windowManager.sendCommandToAll('convert:broke', data)
     })
-    this.composEngine.on('process:success', data => {
-      this.windowManager.sendCommandToAll('process:success', data)
+    this.composEngine.on('convert:success', data => {
+      this.windowManager.sendCommandToAll('convert:success', data)
     })
   }
 

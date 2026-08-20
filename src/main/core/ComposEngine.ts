@@ -114,13 +114,13 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
     }
 
     if (this.isPrescanning) {
-      this.emit('process:broke', { reason: '缓存扫描尚未结束，请稍后再转换' })
+      this.emit('convert:broke', { reason: '缓存扫描尚未结束，请稍后再转换' })
       return
     }
 
     this.isRunning = true
     try {
-      this.emit('process:start')
+      this.emit('convert:start')
 
       const config = this.configManager.store.get('convert-config')
       const gpacBinPath = getEngineBinPath(this.configManager.context.platform)
@@ -129,7 +129,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       const isValidEngine = await this.checkEngine()
       if (gpacErrMessage || !isValidEngine) {
         logger.error(gpacErrMessage)
-        this.emit('process:broke', {
+        this.emit('convert:broke', {
           reason: '无效的MP4Box可执行文件，请检查配置'
         })
         return
@@ -145,7 +145,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       )
 
       if (validBVS.length === 0) {
-        this.emit('process:broke', {
+        this.emit('convert:broke', {
           reason: '没有待转换的任务，请先缓存扫描'
         })
         return
@@ -155,7 +155,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
     } catch (error) {
       const message = `合成失败: ${error instanceof Error ? error.message : String(error)}`
       logger.error(message)
-      this.emit('process:broke', {
+      this.emit('convert:broke', {
         reason: message
       })
     } finally {
@@ -186,7 +186,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
         await this.transformFile(videoM4sPath, videoMp4Path)
         const message = `已转换视频${replaceExisting ? '（覆盖）' : ''}: ${videoM4sPath} -> ${videoMp4Path}`
         logger.debug(message)
-        this.emit('process:item:progress', {
+        this.emit('convert:item:progress', {
           bvid: bv.bvid,
           type: 'preprocess',
           progress: 0
@@ -194,7 +194,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       } else {
         const message = `视频已存在,跳过转换: ${videoMp4Path}`
         logger.debug(message)
-        this.emit('process:item:progress', {
+        this.emit('convert:item:progress', {
           bvid: bv.bvid,
           type: 'preprocess',
           progress: 0
@@ -207,7 +207,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
         await this.transformFile(audioM4sPath, audioMp3Path)
         const message = `已转换音频${replaceExisting ? '（覆盖）' : ''}: ${audioM4sPath} -> ${audioMp3Path}`
         logger.debug(message)
-        this.emit('process:item:progress', {
+        this.emit('convert:item:progress', {
           bvid: bv.bvid,
           type: 'preprocess',
           progress: 0
@@ -215,7 +215,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       } else {
         const message = `音频已存在,跳过转换: ${audioMp3Path}`
         logger.debug(message)
-        this.emit('process:item:progress', {
+        this.emit('convert:item:progress', {
           bvid: bv.bvid,
           type: 'preprocess',
           progress: 0
@@ -255,7 +255,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
     return new Promise(resolve => {
       const count = { success: 0, fail: 0 }
 
-      this.emit('process:ready', {
+      this.emit('convert:ready', {
         bvs: bvs
       })
 
@@ -266,13 +266,13 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
         const outputFilePath = path.join(outputDir, bv.fileInfo.fileName)
         this.processQueue
           .add(() => {
-            this.emit('process:item:start', { bv, outputPath: outputFilePath })
+            this.emit('convert:item:start', { bv, outputPath: outputFilePath })
             return taskFn(bv, outputFilePath)
           })
           .then(({ duration, skipped, fileSize }) => {
             count.success += 1
 
-            this.emit('process:item:end', {
+            this.emit('convert:item:end', {
               bvid: bv.bvid,
               success: true,
               message: `耗时: ${duration} ms${skipped ? '（已跳过合成）' : ''}`,
@@ -285,7 +285,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
           .catch(error => {
             count.fail += 1
 
-            this.emit('process:item:end', {
+            this.emit('convert:item:end', {
               bvid: bv.bvid,
               success: false,
               message: error instanceof Error ? error.message : String(error),
@@ -296,7 +296,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       })
       this.processQueue.onIdle().then(() => {
         logger.info('所有任务已经完成')
-        this.emit('process:success', {
+        this.emit('convert:success', {
           count
         })
         resolve()
@@ -321,7 +321,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
         const message = `未缓存完成,跳过合成: ${bv.fileInfo.fileName}`
         logger.warn(message)
         if (!options?.silent) {
-          this.emit('process:item:progress', {
+          this.emit('convert:item:progress', {
             bvid: bv.bvid,
             type: 'preprocess',
             progress: 0
@@ -336,7 +336,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
         const message = `${videoValidError}: ${videoM4sPath}, 跳过处理`
         logger.warn(message)
         if (!options?.silent) {
-          this.emit('process:item:progress', {
+          this.emit('convert:item:progress', {
             bvid: bv.bvid,
             type: 'preprocess',
             progress: 0
@@ -351,7 +351,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
         const message = `${audioValidError}, 跳过: ${audioM4sPath}`
         logger.warn(message)
         if (!options?.silent) {
-          this.emit('process:item:progress', {
+          this.emit('convert:item:progress', {
             bvid: bv.bvid,
             type: 'preprocess',
             progress: 0
@@ -550,8 +550,8 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
    */
   private async compose(binPath: string, options: CompositionOptions): Promise<EngineResponse> {
     const engine = new Engine(binPath, options)
-    engine.on('process:item:progress', progressData => {
-      this.emit('process:item:progress', progressData)
+    engine.on('convert:item:progress', progressData => {
+      this.emit('convert:item:progress', progressData)
     })
     return engine.start()
   }
@@ -603,7 +603,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       audioFile: tempAudioPath,
       outputFile: outputPath
     })
-    engine.on('process:item:progress', data => {
+    engine.on('convert:item:progress', data => {
       const type = data.type === 'importing' || data.type === 'writing' ? data.type : 'preprocess'
       onProgress?.(type, data.progress)
     })
