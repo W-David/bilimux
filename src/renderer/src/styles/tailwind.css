@@ -21,10 +21,6 @@
   @apply grid grid-cols-4 gap-x-3 gap-y-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-8;
 }
 
-@utility cover-zoom-img {
-  @apply h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-110;
-}
-
 /* 预览侧栏：右侧多留一点 padding，避免 overlay 滚动条压住简介/分集 */
 @utility preview-scroll {
   @apply min-h-0 flex-1 overflow-y-auto pr-4;

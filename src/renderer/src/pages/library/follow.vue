@@ -22,7 +22,7 @@
         v-for="item in state.items"
         :key="item.seasonId"
         :item="item"
-        :class="item.seasonId === selectedSeason?.seasonId ? 'ring-2 ring-pink-400/70 rounded-lg' : ''"
+        :selected="item.seasonId === selectedSeason?.seasonId"
         @select="selectSeason" />
     </div>
     <LibraryGridSkeleton

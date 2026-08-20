@@ -3,11 +3,13 @@
     type="button"
     class="flex w-full cursor-pointer flex-col gap-2 p-1 text-left"
     @click="emit('select', item)">
-    <div class="group relative aspect-2/3 overflow-hidden rounded-lg bg-gray-900">
+    <div
+      class="relative aspect-2/3 overflow-hidden rounded-lg bg-gray-900"
+      :class="selected ? 'outline-2 outline-offset-2 outline-pink-400' : ''">
       <img
         :src="safeCover(item.cover)"
         referrerpolicy="no-referrer"
-        class="cover-zoom-img"
+        class="h-full w-full object-cover"
         alt="" />
       <span
         v-if="item.badge"
@@ -21,7 +23,11 @@
       </span>
     </div>
     <div class="min-w-0 px-0.5">
-      <div class="line-clamp-1 text-sm text-[#f6f6f6] font-medium">{{ item.title }}</div>
+      <div
+        class="line-clamp-1 text-sm font-medium"
+        :class="selected ? 'text-pink-300' : 'text-[#f6f6f6]'">
+        {{ item.title }}
+      </div>
       <div class="mt-1 text-xs text-gray-500">{{ item.progress || '尚未观看' }}</div>
     </div>
   </button>
@@ -33,6 +39,7 @@ import type { BangumiFollowItem } from '@shared/types'
 
 defineProps<{
   item: BangumiFollowItem
+  selected?: boolean
 }>()
 
 const emit = defineEmits<{

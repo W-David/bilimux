@@ -9,7 +9,7 @@
         v-if="cover"
         :src="safeCover(cover)"
         referrerpolicy="no-referrer"
-        class="cover-zoom-img"
+        class="h-full w-full object-cover"
         alt="" />
       <div
         v-else

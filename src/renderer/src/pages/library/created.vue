@@ -42,7 +42,7 @@
         v-for="item in collection.items"
         :key="item.key"
         :video="item.video"
-        :class="item.key === collection.selectedKey ? 'ring-1 ring-pink-400/50' : ''"
+        :selected="item.key === collection.selectedKey"
         @select="collection.selectedKey = item.key" />
     </div>
     <LibraryGridSkeleton

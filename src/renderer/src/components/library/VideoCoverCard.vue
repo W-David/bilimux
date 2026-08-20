@@ -3,12 +3,14 @@
     type="button"
     class="flex w-full cursor-pointer flex-col gap-2 p-2 text-left rounded-lg"
     @click="emit('select')">
-    <div class="group relative aspect-video overflow-hidden rounded-lg bg-gray-900">
+    <div
+      class="relative aspect-video overflow-hidden rounded-lg bg-gray-900"
+      :class="selected ? 'outline-2 outline-offset-2 outline-pink-400' : ''">
       <img
         v-if="video.cover"
         :src="safeCover(video.cover)"
         referrerpolicy="no-referrer"
-        class="cover-zoom-img"
+        class="h-full w-full object-cover"
         alt="" />
       <div
         v-else
@@ -31,7 +33,11 @@
       </div>
     </div>
     <div class="min-w-0 px-0.5">
-      <div class="line-clamp-2 text-xs text-zinc leading-5">{{ video.title }}</div>
+      <div
+        class="line-clamp-2 text-xs leading-5"
+        :class="selected ? 'text-pink-300' : 'text-zinc'">
+        {{ video.title }}
+      </div>
       <div class="mt-1 flex items-center gap-1 text-xs text-gray-500">
         <span
           v-if="video.upper.name"
@@ -54,6 +60,7 @@ import { computed } from 'vue'
 
 const props = defineProps<{
   video: FavoriteResource
+  selected?: boolean
 }>()
 
 const emit = defineEmits<{
