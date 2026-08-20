@@ -75,7 +75,7 @@
 
     <div class="flex items-center justify-between">
       <label class="font-normal">替换重名文件</label>
-      <Switch v-model="replaceExistingFiles" />
+      <Switch v-model="preference['convert-config'].replaceExisting" />
     </div>
 
     <div class="flex items-center justify-between">
@@ -134,16 +134,6 @@ const concurrentValue = computed(() => String(clampConcurrent(preference.value['
 const onConcurrentChange = (value: string | number): void => {
   preference.value['convert-config'].concurrent = clampConcurrent(value)
 }
-
-/** 替换重名文件：同时控制 m4s 转换覆写与最终视频覆写两个开关 */
-const replaceExistingFiles = computed({
-  get: () =>
-    Boolean(preference.value['convert-config'].forceTransform || preference.value['convert-config'].forceComposition),
-  set: value => {
-    preference.value['convert-config'].forceTransform = value
-    preference.value['convert-config'].forceComposition = value
-  }
-})
 
 const selectCachePath = async (): Promise<void> => {
   const newPath = await openFileDialog({

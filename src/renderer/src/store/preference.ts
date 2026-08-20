@@ -11,8 +11,7 @@ export const usePreferenceStore = defineStore('preference', () => {
       cachePath: '',
       outputDir: '',
       gpacBinPath: '',
-      forceTransform: false,
-      forceComposition: false,
+      replaceExisting: false,
       concurrent: 1
     },
     'download-config': {

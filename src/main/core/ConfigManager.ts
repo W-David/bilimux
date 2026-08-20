@@ -42,8 +42,7 @@ export default class ConfigManager {
       cachePath,
       outputDir: convertOutputDir,
       gpacBinPath,
-      forceTransform: false,
-      forceComposition: false,
+      replaceExisting: false,
       concurrent: 1
     }
 
@@ -120,6 +119,19 @@ export default class ConfigManager {
         this.store.set('download-config', nextDownloadConfig)
         logger.info('[Config] 已补齐下载清晰度/编码配置')
       }
+    }
+
+    const convertForReplace = this.store.get('convert-config') as ConfigOptions & {
+      forceTransform?: boolean
+      forceComposition?: boolean
+    }
+    if (convertForReplace && ('forceTransform' in convertForReplace || 'forceComposition' in convertForReplace)) {
+      const { forceTransform, forceComposition, ...rest } = convertForReplace
+      this.store.set('convert-config', {
+        ...rest,
+        replaceExisting: Boolean(convertForReplace.replaceExisting || forceTransform || forceComposition)
+      })
+      logger.info('[Config] 已合并替换重名文件开关')
     }
 
     const lockedEnginePath = getEngineBinPath(this.context.platform)

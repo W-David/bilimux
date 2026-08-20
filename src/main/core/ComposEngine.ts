@@ -168,7 +168,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
    * @param bvs bvs列表
    */
   private async syntheticTask(bvs: VideoTaskInfo[], config: ConfigOptions): Promise<void> {
-    const { outputDir, forceTransform, forceComposition } = config
+    const { outputDir, replaceExisting } = config
     const gpacBinPath = getEngineBinPath(this.configManager.context.platform)
 
     const taskFn = async (bv: VideoTaskInfo, outputFilePath: string) => {
@@ -182,9 +182,9 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       // 转换 (Transform)
       // 视频
       const isVideoExist = await isExist(videoMp4Path)
-      if (!isVideoExist || forceTransform) {
+      if (!isVideoExist || replaceExisting) {
         await this.transformFile(videoM4sPath, videoMp4Path)
-        const message = `已转换视频${forceTransform ? '（覆盖）' : ''}: ${videoM4sPath} -> ${videoMp4Path}`
+        const message = `已转换视频${replaceExisting ? '（覆盖）' : ''}: ${videoM4sPath} -> ${videoMp4Path}`
         logger.debug(message)
         this.emit('process:item:progress', {
           bvid: bv.bvid,
@@ -203,9 +203,9 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
 
       // 音频
       const isAudioExist = await isExist(audioMp3Path)
-      if (!isAudioExist || forceTransform) {
+      if (!isAudioExist || replaceExisting) {
         await this.transformFile(audioM4sPath, audioMp3Path)
-        const message = `已转换音频${forceTransform ? '（覆盖）' : ''}: ${audioM4sPath} -> ${audioMp3Path}`
+        const message = `已转换音频${replaceExisting ? '（覆盖）' : ''}: ${audioM4sPath} -> ${audioMp3Path}`
         logger.debug(message)
         this.emit('process:item:progress', {
           bvid: bv.bvid,
@@ -224,14 +224,14 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
 
       // 合成 (Composition)
       const isOutputExist = await isExist(outputFilePath)
-      if (!isOutputExist || forceComposition) {
+      if (!isOutputExist || replaceExisting) {
         await this.compose(gpacBinPath, {
           bvInfo: bv,
           videoFile: videoMp4Path,
           audioFile: audioMp3Path,
           outputFile: outputFilePath
         })
-        const message = `已合成文件${forceComposition ? '（覆盖）' : ''}: ${outputFilePath}`
+        const message = `已合成文件${replaceExisting ? '（覆盖）' : ''}: ${outputFilePath}`
         logger.debug(message)
       } else {
         const message = `合成文件已存在,跳过: ${outputFilePath}`
@@ -239,7 +239,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       }
 
       const duration = new Date().getTime() - start
-      const skipped = isOutputExist && !forceComposition
+      const skipped = isOutputExist && !replaceExisting
       const stat = await fs.stat(outputFilePath).catch(() => null)
       // 合成成功且产物仍在时清理中间转换文件，避免缓存目录长期翻倍占用磁盘
       if (stat) {

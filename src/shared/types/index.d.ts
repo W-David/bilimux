@@ -372,8 +372,8 @@ type ConfigOptions = {
   cachePath: string
   outputDir: string
   gpacBinPath: string
-  forceTransform: boolean
-  forceComposition: boolean
+  /** 覆盖已存在的中间文件和成品 */
+  replaceExisting: boolean
   /** 并行转换任务数（1/2/4/8） */
   concurrent: number
 }
