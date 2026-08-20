@@ -8,9 +8,11 @@ import { chmod, mkdir, rename, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import { CookieJar } from 'tough-cookie'
-import UserAgent from 'user-agents'
 import { resetWbiKeys } from '../utils/wbi'
 import logger from './Logger'
+
+const DESKTOP_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 
 export type HttpGetJson = (url: string, options?: OptionsOfJSONResponseBody) => Promise<BiliResponseType>
 
@@ -34,14 +36,12 @@ export type DownloadFileOptions = {
 
 export default class HttpClient {
   cookieJar: CookieJar
-  userAgent: UserAgent
   client: Got
   private cookieFilePath: string
   private cookieSaveTimer: NodeJS.Timeout | null = null
   private cookieSaveChain: Promise<void> = Promise.resolve()
 
   constructor() {
-    this.userAgent = new UserAgent({ deviceCategory: 'desktop' })
     this.cookieFilePath = path.join(app.getPath('userData'), 'cookies.json')
     this.cookieJar = this.loadCookieJar()
     this.client = this.initGot()
@@ -51,7 +51,7 @@ export default class HttpClient {
     const client = got.extend({
       cookieJar: this.cookieJar,
       headers: {
-        'User-Agent': this.userAgent.toString(),
+        'User-Agent': DESKTOP_UA,
         Referer: DOMAIN
       },
       hooks: {

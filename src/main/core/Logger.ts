@@ -1,8 +1,8 @@
-import is from 'electron-is'
+import { app } from 'electron'
 import { type LogLevel } from 'electron-log'
 import logger from 'electron-log/main'
 
-const level: LogLevel = is.dev() ? 'verbose' : 'warn'
+const level: LogLevel = app.isPackaged ? 'warn' : 'verbose'
 
 logger.transports.console.level = level
 logger.transports.console.format = '{h}:{i}:{s} [{level}] {text}'

@@ -1,7 +1,6 @@
 import { IpcRendererEvents } from '@shared/ipc/events'
 import type { Pages } from '@shared/types'
 import { app, BrowserWindow, Menu, nativeImage, shell, Tray } from 'electron'
-import is from 'electron-is'
 import path from 'node:path'
 import { pages } from '../config/page'
 import ConfigManager from './ConfigManager'
@@ -62,7 +61,7 @@ export default class WindowManager {
     createdWindow.loadURL(page.url)
 
     // 开发模式打开 devtools
-    if (is.dev() && page.openDevTools) {
+    if (!app.isPackaged && page.openDevTools) {
       createdWindow.webContents.openDevTools({
         mode: 'undocked',
         activate: true
@@ -134,9 +133,9 @@ export default class WindowManager {
   initTray(): void {
     if (this.tray) return
 
-    const iconPath = is.dev()
-      ? path.join(app.getAppPath(), 'resources', 'bilimux.png')
-      : path.join(process.resourcesPath, 'resources', 'bilimux.png')
+    const iconPath = app.isPackaged
+      ? path.join(process.resourcesPath, 'resources', 'bilimux.png')
+      : path.join(app.getAppPath(), 'resources', 'bilimux.png')
     // macOS 菜单栏按原始尺寸绘制图标，必须缩到标准大小（16x16），否则 1024x1024 的 Logo 会占满菜单栏
     const image = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
     if (image.isEmpty()) {

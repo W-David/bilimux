@@ -1,5 +1,4 @@
 import { app } from 'electron'
-import is from 'electron-is'
 import fs from 'fs/promises'
 import path from 'path'
 import { ENGINE_BIN_MAP } from '../config/constants'
@@ -99,7 +98,7 @@ export function getProdEngineBinPath(platform: NodeJS.Platform): string {
  * @returns mp4box文件路径
  */
 export function getEngineBinPath(platform: NodeJS.Platform): string {
-  return is.dev() ? getDevEngineBinPath(platform) : getProdEngineBinPath(platform)
+  return app.isPackaged ? getProdEngineBinPath(platform) : getDevEngineBinPath(platform)
 }
 
 /**
