@@ -1,6 +1,5 @@
 <template>
-  <div
-    class="flex items-center gap-1 rounded-full border border-white/5 bg-white/6 py-1.5 px-2 shadow-inner shadow-black/20 backdrop-blur-md">
+  <div class="flex items-center gap-2">
     <DeleteTaskDialog
       :title="deleteTitle"
       :description="deleteDescription"
@@ -10,32 +9,35 @@
         type="button"
         aria-label="删除任务"
         :disabled="!canDelete"
-        class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent">
-        <Trash2Icon class="size-4 text-red-400 transition-colors hover:text-red-300" />
+        class="group flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent">
+        <Trash2Icon
+          class="size-4 text-red-400 transition-all duration-200 group-hover:scale-125 group-hover:text-red-300 group-disabled:scale-100" />
       </button>
     </DeleteTaskDialog>
     <button
       type="button"
       aria-label="打开文件所在位置"
       :disabled="!canReveal"
-      class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+      class="group flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
       @click="emit('reveal')">
-      <FolderOpenIcon class="size-4 text-gray-300 transition-colors hover:text-white" />
+      <FolderOpenIcon
+        class="size-4 text-gray-300 transition-all duration-200 group-hover:scale-125 group-hover:text-white group-disabled:scale-100" />
     </button>
     <button
       type="button"
       aria-label="文件详情"
-      class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10"
+      class="group flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10"
       @click="emit('details')">
-      <InfoIcon class="size-4 text-gray-300 transition-colors hover:text-white" />
+      <InfoIcon class="size-4 text-gray-300 transition-all duration-200 group-hover:scale-125 group-hover:text-white" />
     </button>
     <button
       v-if="canPlay"
       type="button"
       aria-label="打开文件"
-      class="flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10"
+      class="group flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10"
       @click="emit('play')">
-      <CirclePlayIcon class="size-4 text-gray-400 transition-colors hover:text-green-400" />
+      <CirclePlayIcon
+        class="size-4 text-gray-400 transition-all duration-200 group-hover:scale-125 group-hover:text-green-400" />
     </button>
     <slot
       v-else
