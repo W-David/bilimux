@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
-@import 'shadcn-vue/tailwind.css';
+@import './shadcn-variants.css';
 @import './transition.css';
 @import './tailwind.css';
 
