@@ -29,8 +29,6 @@ export default class Application {
   convertHistoryStore: ConvertHistoryStore
   downloadHistoryStore: DownloadHistoryStore
   downloadManager: DownloadManager
-  currentConvertRunId: string | null = null
-  currentConvertOrder = new Map<string, number>()
 
   constructor() {
     this.context = new Context()
@@ -99,37 +97,17 @@ export default class Application {
   initComposEngine(): void {
     this.composEngine.on('convert:item:start', data => {
       this.windowManager.sendCommandToAll('convert:item:start', data)
-      if (this.currentConvertRunId) {
-        this.convertHistoryStore.markStarted(
-          this.currentConvertRunId,
-          data.bv,
-          data.outputPath,
-          this.currentConvertOrder.get(data.bv.bvid) ?? 0
-        )
-      }
     })
     this.composEngine.on('convert:item:progress', data => {
       this.windowManager.sendCommandToAll('convert:item:progress', data)
     })
     this.composEngine.on('convert:item:end', data => {
       this.windowManager.sendCommandToAll('convert:item:end', data)
-      if (this.currentConvertRunId) {
-        this.convertHistoryStore.markEnded(this.currentConvertRunId, data.bvid, {
-          success: data.success,
-          message: data.message,
-          outputPath: data.outputPath,
-          durationMs: data.durationMs,
-          skipped: data.skipped
-        })
-      }
     })
-
     this.composEngine.on('convert:start', () => {
-      this.currentConvertRunId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
       this.windowManager.sendCommandToAll('convert:start')
     })
     this.composEngine.on('convert:ready', data => {
-      this.currentConvertOrder = new Map(data.bvs.map((bv, index) => [bv.bvid, index]))
       this.windowManager.sendCommandToAll('convert:ready', data)
     })
     this.composEngine.on('convert:broke', data => {

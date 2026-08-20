@@ -29,6 +29,8 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
   private historyStore: ConvertHistoryStore
   private isRunning = false
   private isPrescanning = false
+  private currentRunId: string | null = null
+  private currentOrder = new Map<string, number>()
 
   constructor(
     processQueue: ProcessQueue<ConvertTaskResult>,
@@ -120,6 +122,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
 
     this.isRunning = true
     try {
+      this.currentRunId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
       this.emit('convert:start')
 
       const config = this.configManager.store.get('convert-config')
@@ -255,6 +258,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
     return new Promise(resolve => {
       const count = { success: 0, fail: 0 }
 
+      this.currentOrder = new Map(bvs.map((bv, index) => [bv.bvid, index]))
       this.emit('convert:ready', {
         bvs: bvs
       })
@@ -266,13 +270,13 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
         const outputFilePath = path.join(outputDir, bv.fileInfo.fileName)
         this.processQueue
           .add(() => {
+            this.markItemStarted(bv, outputFilePath)
             this.emit('convert:item:start', { bv, outputPath: outputFilePath })
             return taskFn(bv, outputFilePath)
           })
           .then(({ duration, skipped, fileSize }) => {
             count.success += 1
-
-            this.emit('convert:item:end', {
+            const end = {
               bvid: bv.bvid,
               success: true,
               message: `耗时: ${duration} ms${skipped ? '（已跳过合成）' : ''}`,
@@ -280,18 +284,21 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
               durationMs: duration,
               skipped,
               fileSize
-            })
+            }
+            this.markItemEnded(end)
+            this.emit('convert:item:end', end)
           })
           .catch(error => {
             count.fail += 1
-
-            this.emit('convert:item:end', {
+            const end = {
               bvid: bv.bvid,
               success: false,
               message: error instanceof Error ? error.message : String(error),
               outputPath: outputFilePath,
               skipped: false
-            })
+            }
+            this.markItemEnded(end)
+            this.emit('convert:item:end', end)
           })
       })
       this.processQueue.onIdle().then(() => {
@@ -494,6 +501,29 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       logger.error(`获取文件信息失败: ${error instanceof Error ? error.message : String(error)}`)
       return null
     }
+  }
+
+  private markItemStarted(bv: VideoTaskInfo, outputPath: string): void {
+    if (!this.currentRunId) return
+    this.historyStore.markStarted(this.currentRunId, bv, outputPath, this.currentOrder.get(bv.bvid) ?? 0)
+  }
+
+  private markItemEnded(data: {
+    bvid: string
+    success: boolean
+    message: string
+    outputPath?: string
+    durationMs?: number
+    skipped?: boolean
+  }): void {
+    if (!this.currentRunId) return
+    this.historyStore.markEnded(this.currentRunId, data.bvid, {
+      success: data.success,
+      message: data.message,
+      outputPath: data.outputPath,
+      durationMs: data.durationMs,
+      skipped: data.skipped
+    })
   }
 
   /**
