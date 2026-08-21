@@ -112,7 +112,7 @@ export default class Engine extends EventEmitter<EngineEventMap> {
       const matchedKeyword = Object.keys(progressTypeStrategies).find(keyword => output.includes(keyword))
       const type = matchedKeyword ? progressTypeStrategies[matchedKeyword] : 'preprocess'
 
-      this.emit('process:item:progress', {
+      this.emit('convert:item:progress', {
         bvid: this.#options.bvInfo.bvid,
         type,
         progress

@@ -1,4 +1,4 @@
-import { loadConfigFromNativeStore, saveConfigToNativeStore } from '@renderer/api'
+import { emitter } from '@renderer/ipc'
 import { defineStore } from 'pinia'
 import { UserStore } from '@shared/types'
 import { reactive, toRaw, watch } from 'vue'
@@ -11,36 +11,54 @@ export const usePreferenceStore = defineStore('preference', () => {
       cachePath: '',
       outputDir: '',
       gpacBinPath: '',
-      forceTransform: false,
-      forceComposition: false,
-      genConfig: false
+      replaceExisting: false,
+      concurrent: 1
     },
     'download-config': {
       outputDir: '',
-      concurrent: 1
+      concurrent: 1,
+      qn: 80,
+      codec: 'avc'
     },
     'open-at-login': false,
     'auto-hide-window': false,
     'bind-close-to-hide': false,
     'log-level': 'verbose',
-    'user-info': null,
-    'favorites-data': null
+    'user-info': null
   })
 
-  // open-at-login, auto-hide-window 触发自动保存
-  watch([() => preference['open-at-login'], () => preference['auto-hide-window']], () => {
-    savePreference()
-  })
+  let applyingRemote = false
+  let saveTimer: ReturnType<typeof setTimeout> | null = null
 
   async function fetchPreference(): Promise<UserPreference> {
-    const config = await loadConfigFromNativeStore()
-    const assignPreference = Object.assign(preference, config)
-    return assignPreference
+    applyingRemote = true
+    try {
+      const config = await emitter.invoke('get-preference')
+      Object.assign(preference, config)
+      return preference
+    } finally {
+      applyingRemote = false
+    }
   }
 
   function savePreference(): void {
-    saveConfigToNativeStore(toRaw(preference))
+    if (saveTimer) {
+      clearTimeout(saveTimer)
+      saveTimer = null
+    }
+    emitter.send('save-preference', toRaw(preference))
   }
+
+  function scheduleSave(): void {
+    if (applyingRemote) return
+    if (saveTimer) clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => {
+      saveTimer = null
+      emitter.send('save-preference', toRaw(preference))
+    }, 300)
+  }
+
+  watch(preference, scheduleSave, { deep: true, flush: 'sync' })
 
   return { preference, fetchPreference, savePreference }
 })

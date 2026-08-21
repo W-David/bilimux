@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 /// <reference types="vue-router" />
 
+import type { Component } from 'vue'
 import { ElectronAPI } from '../../preload/index'
 
 declare global {
@@ -13,8 +14,16 @@ declare module 'vue-router' {
   interface RouteMeta {
     switchTransition?: boolean
     transition?: string
-    requireAuth?: boolean
-    activeMenu?: string
+    menu?: {
+      label: string
+      icon: Component
+      description?: string
+    }
+    tab?: {
+      label: string
+      icon: Component
+      description?: string
+    }
   }
 }
 

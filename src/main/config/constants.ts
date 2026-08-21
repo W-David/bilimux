@@ -1,7 +1,6 @@
 import { EngineBinMap } from '@shared/types'
 
 // 常量定义
-export const M4S_SUFFIX = '.m4s'
 export const MP4_SUFFIX = '.mp4'
 export const MP3_SUFFIX = '.mp3'
 export const OUTPUT_DIR_NAME = 'output'
@@ -9,7 +8,6 @@ export const CONVERT_DIR_NAME = 'convert'
 export const DOWNLOAD_DIR_NAME = 'download'
 export const PLAYURL_FILE_NAME = '.playurl'
 export const VIDEO_INFO_FILE_NAME = 'videoInfo.json'
-export const CONF_FILE_NAME = '.bilimux-conf.json'
 
 // 域名
 export const DOMAIN = 'https://www.bilibili.com'

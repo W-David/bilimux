@@ -1,7 +1,8 @@
+import { clampConcurrent } from '@shared/concurrent'
+import { clampDownloadCodec, clampDownloadQn } from '@shared/download'
 import { ConfigOptions, DownloadConfigOptions, UserStore } from '@shared/types'
 import Store from 'electron-store'
 import { app } from 'electron/main'
-import is from 'electron-is'
 import path from 'node:path'
 import { CONVERT_DIR_NAME, DOWNLOAD_DIR_NAME, OUTPUT_DIR_NAME } from '../config/constants'
 import { getEngineBinPath } from '../utils'
@@ -41,25 +42,25 @@ export default class ConfigManager {
       cachePath,
       outputDir: convertOutputDir,
       gpacBinPath,
-      forceTransform: false,
-      forceComposition: false,
-      genConfig: false
+      replaceExisting: false,
+      concurrent: 1
     }
 
     const defaultDownloadConfig: Required<DownloadConfigOptions> = {
       outputDir: downloadOutputDir,
-      concurrent: 1
+      concurrent: 1,
+      qn: 80,
+      codec: 'avc'
     }
 
     const defaultConfig: Required<UserStore> = {
       'user-info': null,
-      'favorites-data': null,
       'convert-config': defaultConvertConfig,
       'download-config': defaultDownloadConfig,
       'open-at-login': false,
       'auto-hide-window': false,
       'bind-close-to-hide': true,
-      'log-level': is.dev() ? 'verbose' : 'warn'
+      'log-level': app.isPackaged ? 'warn' : 'verbose'
     }
     return defaultConfig
   }
@@ -81,28 +82,77 @@ export default class ConfigManager {
       logger.info('[Config] 已迁移视频转换输出目录:', path.join(oldOutputDir, CONVERT_DIR_NAME))
     }
 
+    const latestConvertForConcurrent = this.store.get('convert-config')
+    if (latestConvertForConcurrent) {
+      const nextConcurrent = clampConcurrent(latestConvertForConcurrent.concurrent)
+      if (latestConvertForConcurrent.concurrent !== nextConcurrent) {
+        this.store.set('convert-config', {
+          ...latestConvertForConcurrent,
+          concurrent: nextConcurrent
+        })
+        logger.info('[Config] 已补齐并行转换数:', nextConcurrent)
+      }
+    }
+
     // 初始化下载配置（老版本没有该配置项）
     const downloadConfig = this.store.get('download-config')
     if (!downloadConfig) {
       this.store.set('download-config', {
         outputDir: path.join(cachePath, OUTPUT_DIR_NAME, DOWNLOAD_DIR_NAME),
-        concurrent: 1
+        concurrent: 1,
+        qn: 80,
+        codec: 'avc'
       })
       logger.info('[Config] 已初始化视频下载输出目录:', path.join(cachePath, OUTPUT_DIR_NAME, DOWNLOAD_DIR_NAME))
-    } else if (typeof downloadConfig.concurrent !== 'number') {
-      this.store.set('download-config', {
+    } else {
+      const nextDownloadConfig = {
         ...downloadConfig,
-        concurrent: 1
+        concurrent: clampConcurrent(downloadConfig.concurrent),
+        qn: clampDownloadQn(downloadConfig.qn),
+        codec: clampDownloadCodec(downloadConfig.codec)
+      }
+      if (
+        nextDownloadConfig.concurrent !== downloadConfig.concurrent ||
+        nextDownloadConfig.qn !== downloadConfig.qn ||
+        nextDownloadConfig.codec !== downloadConfig.codec
+      ) {
+        this.store.set('download-config', nextDownloadConfig)
+        logger.info('[Config] 已补齐下载清晰度/编码配置')
+      }
+    }
+
+    const convertForReplace = this.store.get('convert-config') as ConfigOptions & {
+      forceTransform?: boolean
+      forceComposition?: boolean
+    }
+    if (convertForReplace && ('forceTransform' in convertForReplace || 'forceComposition' in convertForReplace)) {
+      const { forceTransform, forceComposition, ...rest } = convertForReplace
+      this.store.set('convert-config', {
+        ...rest,
+        replaceExisting: Boolean(convertForReplace.replaceExisting || forceTransform || forceComposition)
       })
-      logger.info('[Config] 已初始化并行下载任务数配置')
+      logger.info('[Config] 已合并替换重名文件开关')
+    }
+
+    const lockedEnginePath = getEngineBinPath(this.context.platform)
+    const latestConvert = this.store.get('convert-config')
+    if (latestConvert && latestConvert.gpacBinPath !== lockedEnginePath) {
+      this.store.set('convert-config', {
+        ...latestConvert,
+        gpacBinPath: lockedEnginePath
+      })
     }
 
     // 登录 Cookie 迁移到独立的 cookies.json，清理旧配置中的残留
-    type LegacyStore = UserStore & { 'user-cookie'?: string }
+    type LegacyStore = UserStore & { 'user-cookie'?: string; 'favorites-data'?: unknown }
     const legacyStore = this.store as unknown as Store<LegacyStore>
     if (legacyStore.has('user-cookie')) {
       legacyStore.delete('user-cookie')
       logger.info('[Config] 登录 Cookie 已迁移到独立文件 cookies.json')
+    }
+    if (legacyStore.has('favorites-data')) {
+      legacyStore.delete('favorites-data')
+      logger.info('[Config] 已移除不再使用的收藏夹缓存字段')
     }
   }
 
@@ -113,7 +163,7 @@ export default class ConfigManager {
   onChangedListener(...params: Parameters<Store<UserStore>['onDidChange']>): void {
     const [key, callback] = params
     const unsubscribe = this.store.onDidChange(key, (nv, ov) => {
-      logger.info('检测到配置变化:', `${key}: ${ov} => ${nv}`)
+      logger.info('检测到配置变化:', `${key}: ${formatConfigValue(ov)} => ${formatConfigValue(nv)}`)
       callback(nv, ov)
     })
     this.#unsubscribe.push(unsubscribe)
@@ -121,5 +171,17 @@ export default class ConfigManager {
 
   removeAllChangedListener(): void {
     this.#unsubscribe.forEach(fn => fn())
+  }
+}
+
+function formatConfigValue(value: unknown): string {
+  if (value === undefined) return 'undefined'
+  if (value === null) return 'null'
+  if (typeof value !== 'object') return String(value)
+  try {
+    const json = JSON.stringify(value)
+    return json.length > 200 ? `${json.slice(0, 200)}…` : json
+  } catch {
+    return Object.prototype.toString.call(value)
   }
 }

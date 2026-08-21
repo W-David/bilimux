@@ -1,5 +1,4 @@
 import { app } from 'electron'
-import is from 'electron-is'
 import Application from './Application'
 import ExceptionHandler from './core/ExceptionHandler'
 
@@ -13,20 +12,16 @@ export default class Launcher {
   }
 
   makeSingleInstance(callback: () => void): void {
-    if (is.macOS()) {
-      callback && callback()
-      return
-    }
-
     const lock = app.requestSingleInstanceLock()
     if (!lock) {
       app.quit()
-    } else {
-      app.on('second-instance', () => {
-        this.application.windowManager.openWindow('main')
-      })
-      callback && callback()
+      return
     }
+
+    app.on('second-instance', () => {
+      this.application.windowManager.openWindow('main')
+    })
+    callback && callback()
   }
 
   init(): void {
@@ -34,17 +29,16 @@ export default class Launcher {
     this.exceptionHandler.setup()
     app.whenReady().then(() => {
       app.setAppUserModelId('com.rushwang.bilimux')
-      globalThis.application = this.application
       // 首次启动打开主窗口；macOS 的 activate 事件会复用同一窗口
       this.application.windowManager.openWindow('main')
       this.application.windowManager.initTray()
+      void this.application.prescanOnStartup()
       app.on('activate', () => {
-        globalThis.application.windowManager.openWindow('main')
+        this.application.windowManager.openWindow('main')
       })
     })
-    app.on('will-quit', () => {})
     app.on('window-all-closed', () => {
-      if (this.application.context['platform'] !== 'darwin') {
+      if (this.application.context.platform !== 'darwin') {
         app.quit()
       }
     })

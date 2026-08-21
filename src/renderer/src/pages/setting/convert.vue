@@ -1,32 +1,20 @@
 <template>
   <div class="flex flex-col gap-4 py-4">
-    <div class="flex flex-col gap-3">
-      <label class="font-normal">缓存目录 (B站下载目录)</label>
-      <InputGroup>
-        <InputGroupInput
-          v-model="preference['convert-config'].cachePath"
-          placeholder="选择缓存目录" />
-        <InputGroupButton @click="selectCachePath">
-          <FolderOpenIcon />
-        </InputGroupButton>
-      </InputGroup>
-    </div>
-
-    <div class="flex flex-col gap-3">
-      <label class="font-normal">输出目录</label>
-      <InputGroup>
-        <InputGroupInput
-          v-model="preference['convert-config'].outputDir"
-          placeholder="选择输出目录" />
-        <InputGroupButton @click="selectOutputDir">
-          <FolderOpenIcon />
-        </InputGroupButton>
-      </InputGroup>
-    </div>
-
-    <div class="flex flex-col gap-3">
-      <div class="flex items-center justify-start gap-4">
-        <label class="font-normal">内置 GPAC(Mp4box) 路径</label>
+    <PathField
+      v-model="preference['convert-config'].cachePath"
+      label="缓存目录 (B站下载目录)"
+      placeholder="选择缓存目录" />
+    <PathField
+      v-model="preference['convert-config'].outputDir"
+      label="输出目录"
+      placeholder="选择输出目录" />
+    <PathField
+      :model-value="preference['convert-config'].gpacBinPath"
+      label="内置 GPAC(Mp4box) 路径"
+      placeholder="系统默认路径"
+      disabled
+      action="reveal">
+      <template #label-extra>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -40,119 +28,47 @@
             <TooltipContent side="right">检测Mp4box是否正常</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-      </div>
-      <InputGroup>
-        <InputGroupInput
-          :model-value="preference['convert-config'].gpacBinPath"
-          disabled
-          placeholder="系统默认路径" />
-        <InputGroupButton @click="openGpacPath">
-          <FolderOpenIcon />
-        </InputGroupButton>
-      </InputGroup>
-    </div>
+      </template>
+    </PathField>
+
+    <ConcurrentSelect
+      v-model="preference['convert-config'].concurrent"
+      label="并行转换数"
+      placeholder="选择并行转换数" />
 
     <div class="flex items-center justify-between">
       <label class="font-normal">替换重名文件</label>
-      <Switch v-model="replaceExistingFiles" />
+      <Switch v-model="preference['convert-config'].replaceExisting" />
     </div>
 
-    <div class="flex items-center justify-between">
-      <label class="font-normal">清空转换历史</label>
-      <Button
-        size="sm"
-        variant="outline"
-        :disabled="clearingHistory"
-        @click="showClearDialog = true">
-        <Spinner
-          v-if="clearingHistory"
-          data-icon="inline-start" />
-        <Trash2Icon
-          v-else
-          data-icon="inline-start" />
-        清空
-      </Button>
-    </div>
-
-    <!-- 清空历史确认弹窗 -->
-    <AlertDialog v-model:open="showClearDialog">
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>清空转换历史</AlertDialogTitle>
-          <AlertDialogDescription>确定要清空全部转换历史吗？此操作不可恢复。</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>取消</AlertDialogCancel>
-          <AlertDialogAction @click="handleClearHistory">清空</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <ClearHistoryRow
+      label="清空转换历史"
+      dialog-title="清空转换历史"
+      dialog-description="确定要清空全部转换历史吗？此操作不可恢复。"
+      success-message="转换历史已清空"
+      :clear="convertStore.clearHistory" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { FolderOpen as FolderOpenIcon, Trash2 as Trash2Icon, Zap as ZapIcon } from '@lucide/vue'
-import { checkEngine, openFileDialog, openFolder } from '@renderer/api'
-import { mittbus } from '@renderer/ipc'
+import { Zap as ZapIcon } from '@lucide/vue'
+import { emitter, mittbus } from '@renderer/ipc'
 import { useConvertStore } from '@renderer/store/convert'
 import { usePreferenceStore } from '@renderer/store/preference'
 import { storeToRefs } from 'pinia'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
+import ClearHistoryRow from './ClearHistoryRow.vue'
+import ConcurrentSelect from './ConcurrentSelect.vue'
+import PathField from './PathField.vue'
 
 const convertStore = useConvertStore()
 const store = usePreferenceStore()
 const { preference } = storeToRefs(store)
 
 const isValidEngine = ref(true)
-const clearingHistory = ref(false)
-const showClearDialog = ref(false)
-
-/** 替换重名文件：同时控制 m4s 转换覆写与最终视频覆写两个开关 */
-const replaceExistingFiles = computed({
-  get: () =>
-    Boolean(preference.value['convert-config'].forceTransform || preference.value['convert-config'].forceComposition),
-  set: value => {
-    preference.value['convert-config'].forceTransform = value
-    preference.value['convert-config'].forceComposition = value
-  }
-})
-
-const selectCachePath = async (): Promise<void> => {
-  const newPath = await openFileDialog({
-    title: 'Select Directory',
-    properties: ['openDirectory', 'createDirectory'],
-    defaultPath: preference.value['convert-config'].cachePath,
-    buttonLabel: 'Select'
-  })
-  if (newPath) {
-    preference.value['convert-config'].cachePath = newPath
-  }
-}
-
-const selectOutputDir = async (): Promise<void> => {
-  const newPath = await openFileDialog({
-    title: 'Select Directory',
-    properties: ['openDirectory', 'createDirectory'],
-    defaultPath: preference.value['convert-config'].outputDir,
-    buttonLabel: 'Select'
-  })
-  if (newPath) {
-    preference.value['convert-config'].outputDir = newPath
-  }
-}
-
-const openGpacPath = async (): Promise<void> => {
-  const binPath = preference.value['convert-config'].gpacBinPath
-  return openFolder(binPath).catch(err => {
-    mittbus.emit('toast:add', {
-      severity: 'error',
-      message: err
-    })
-  })
-}
 
 const checkMp4Box = async (toastShow?: boolean): Promise<void> => {
-  const isValid = await checkEngine()
+  const isValid = await emitter.invoke('check-engine')
   isValidEngine.value = isValid
   if (toastShow) {
     mittbus.emit('toast:add', {
@@ -161,25 +77,4 @@ const checkMp4Box = async (toastShow?: boolean): Promise<void> => {
     })
   }
 }
-
-const handleClearHistory = async (): Promise<void> => {
-  showClearDialog.value = false
-  clearingHistory.value = true
-  try {
-    await convertStore.clearHistory()
-    mittbus.emit('toast:add', {
-      severity: 'success',
-      message: '转换历史已清空'
-    })
-  } catch (error) {
-    mittbus.emit('toast:add', {
-      severity: 'error',
-      message: error instanceof Error ? error.message : String(error)
-    })
-  } finally {
-    clearingHistory.value = false
-  }
-}
 </script>
-
-<style scoped></style>

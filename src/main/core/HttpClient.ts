@@ -1,26 +1,20 @@
 import { DOMAIN, ERROR_CODE } from '@main/config/constants'
 import { BiliResponseType } from '@shared/types'
-import type { Got, OptionsOfJSONResponseBody, OptionsOfTextResponseBody } from 'got'
+import type { Got, OptionsOfJSONResponseBody } from 'got'
 import got from 'got'
 import { app } from 'electron/main'
 import fs from 'node:fs'
-import { mkdir, rename, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, rename, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import { CookieJar } from 'tough-cookie'
-import UserAgent from 'user-agents'
 import { resetWbiKeys } from '../utils/wbi'
 import logger from './Logger'
 
-export interface HtmlResponseType {
-  statusCode: number
-  html: string
-  redirectUrl: string
-}
+const DESKTOP_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 
-export type HttpGetHtml = (url: string, options?: OptionsOfTextResponseBody) => Promise<HtmlResponseType>
 export type HttpGetJson = (url: string, options?: OptionsOfJSONResponseBody) => Promise<BiliResponseType>
-export type HttpPostJson = (url: string, options?: OptionsOfJSONResponseBody) => Promise<BiliResponseType>
 
 export type DownloadFileResponseInfo = {
   statusCode: number
@@ -42,29 +36,22 @@ export type DownloadFileOptions = {
 
 export default class HttpClient {
   cookieJar: CookieJar
-  userAgent: UserAgent
   client: Got
   private cookieFilePath: string
   private cookieSaveTimer: NodeJS.Timeout | null = null
   private cookieSaveChain: Promise<void> = Promise.resolve()
 
   constructor() {
-    this.userAgent = new UserAgent({ deviceCategory: 'desktop' })
     this.cookieFilePath = path.join(app.getPath('userData'), 'cookies.json')
     this.cookieJar = this.loadCookieJar()
     this.client = this.initGot()
   }
 
   private initGot(): Got {
-    if (this.client) {
-      return this.client
-    }
-
-    // 初始化实例并注入拦截器
     const client = got.extend({
       cookieJar: this.cookieJar,
       headers: {
-        'User-Agent': this.userAgent.toString(),
+        'User-Agent': DESKTOP_UA,
         Referer: DOMAIN
       },
       hooks: {
@@ -147,8 +134,9 @@ export default class HttpClient {
         if (!cookie) return
         await mkdir(path.dirname(this.cookieFilePath), { recursive: true })
         const tmpPath = `${this.cookieFilePath}.tmp`
-        await writeFile(tmpPath, JSON.stringify(cookie), 'utf8')
+        await writeFile(tmpPath, JSON.stringify(cookie), { encoding: 'utf8', mode: 0o600 })
         await rename(tmpPath, this.cookieFilePath)
+        await chmod(this.cookieFilePath, 0o600)
       })
       .catch(error => {
         logger.error('[Cookie] 写入 Cookie 文件失败:', error)
@@ -192,26 +180,6 @@ export default class HttpClient {
   }
 
   /**
-   * 获取Html页面
-   * @param url 请求地址
-   * @param options 请求选项
-   */
-  public getHtml: HttpGetHtml = async (url, options) => {
-    try {
-      const response = await this.client(url, { ...options, method: 'GET' })
-      return {
-        statusCode: response.statusCode,
-        html: response.body,
-        redirectUrl:
-          response.redirectUrls && response.redirectUrls.length > 0 ? response.redirectUrls[0].toString() : ''
-      }
-    } catch (error) {
-      logger.error(`[GET HTML]: ${url}`, error)
-      throw error
-    }
-  }
-
-  /**
    * 发送 GET 请求
    * @param url 请求地址
    * @param options 请求选项
@@ -222,21 +190,6 @@ export default class HttpClient {
       return response.body
     } catch (error) {
       logger.error(`[GET]: ${url}`, error)
-      throw error
-    }
-  }
-
-  /**
-   * 发送 POST 请求
-   * @param url 请求地址
-   * @param options 请求选项
-   */
-  public post: HttpPostJson = async (url, options) => {
-    try {
-      const response = await this.client<BiliResponseType>(url, { ...options, responseType: 'json', method: 'POST' })
-      return response.body
-    } catch (error) {
-      logger.error(`[POST]: ${url}`, error)
       throw error
     }
   }

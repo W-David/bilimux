@@ -53,6 +53,7 @@ class IpcEmitter<T extends IpcListenEventMap> {
    * Send an asynchronous message to the renderer process.
    */
   send<E extends keyof T>(sender: Electron.WebContents, channel: Extract<E, string>, ...args: T[E]): void {
+    if (sender.isDestroyed()) return
     sender.send(channel, ...args)
   }
 }

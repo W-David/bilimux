@@ -1,7 +1,6 @@
-import { shell } from 'electron'
 import { LogLevel } from 'electron-log'
-import { dialog } from 'electron/main'
-import type { DownloadConfigOptions } from '@shared/types'
+import { clampConcurrent } from '@shared/concurrent'
+import type { ConfigOptions, DownloadConfigOptions } from '@shared/types'
 import AutoLauncher from './core/AutoLauncher'
 import { ComposEngine, ConvertTaskResult } from './core/ComposEngine'
 import ConfigManager from './core/ConfigManager'
@@ -9,14 +8,13 @@ import Context from './core/Context'
 import ConvertHistoryStore from './core/ConvertHistoryStore'
 import DownloadHistoryStore from './core/DownloadHistoryStore'
 import DownloadManager from './core/DownloadManager'
-import type { HttpGetJson, HttpPostJson } from './core/HttpClient'
 import HttpClient from './core/HttpClient'
 import IPCManager from './core/IPCManager'
 import logger from './core/Logger'
 import ProcessQueue from './core/ProcessQueue'
 import UpdateManager from './core/UpdateManager'
 import WindowManager from './core/WindowManager'
-import { parseVideoType, resolveVideoMetaData } from './utils/url'
+import { registerIpcHandlers } from './ipc'
 
 export default class Application {
   context: Context
@@ -31,8 +29,6 @@ export default class Application {
   convertHistoryStore: ConvertHistoryStore
   downloadHistoryStore: DownloadHistoryStore
   downloadManager: DownloadManager
-  currentConvertRunId: string | null = null
-  currentConvertOrder = new Map<string, number>()
 
   constructor() {
     this.context = new Context()
@@ -50,9 +46,11 @@ export default class Application {
     this.downloadHistoryStore = new DownloadHistoryStore()
     this.convertHistoryStore = new ConvertHistoryStore()
 
-    this.processQueue = new ProcessQueue({ concurrency: 1 })
+    this.processQueue = new ProcessQueue({
+      concurrency: clampConcurrent(this.configManager.getStore()['convert-config'].concurrent)
+    })
 
-    this.composEngine = new ComposEngine(this.processQueue, this.configManager)
+    this.composEngine = new ComposEngine(this.processQueue, this.configManager, this.convertHistoryStore)
 
     this.initComposEngine()
 
@@ -70,11 +68,21 @@ export default class Application {
 
     this.handleConfigEvents()
 
-    this.handleIpcEvents()
-
-    this.handleIpcInvoke()
+    registerIpcHandlers(this)
 
     logger.info('Application 启动完成')
+  }
+
+  /**
+   * 窗口就绪后后台缓存扫描（含对账），不阻塞启动
+   */
+  public async prescanOnStartup(): Promise<void> {
+    try {
+      const result = await this.composEngine.prescan()
+      this.windowManager.sendCommandToAll('convert:prescan:done', result)
+    } catch (error) {
+      logger.error('启动缓存扫描失败', error)
+    }
   }
 
   setupLogger(): void {
@@ -87,46 +95,26 @@ export default class Application {
   }
 
   initComposEngine(): void {
-    this.composEngine.on('process:item:start', data => {
-      this.windowManager.sendCommandToAll('process:item:start', data)
-      if (this.currentConvertRunId) {
-        this.convertHistoryStore.markStarted(
-          this.currentConvertRunId,
-          data.bv,
-          data.outputPath,
-          this.currentConvertOrder.get(data.bv.bvid) ?? 0
-        )
-      }
+    this.composEngine.on('convert:item:start', data => {
+      this.windowManager.sendCommandToAll('convert:item:start', data)
     })
-    this.composEngine.on('process:item:progress', data => {
-      this.windowManager.sendCommandToAll('process:item:progress', data)
+    this.composEngine.on('convert:item:progress', data => {
+      this.windowManager.sendCommandToAll('convert:item:progress', data)
     })
-    this.composEngine.on('process:item:end', data => {
-      this.windowManager.sendCommandToAll('process:item:end', data)
-      if (this.currentConvertRunId) {
-        this.convertHistoryStore.markEnded(this.currentConvertRunId, data.bvid, {
-          success: data.success,
-          message: data.message,
-          outputPath: data.outputPath,
-          durationMs: data.durationMs,
-          skipped: data.skipped
-        })
-      }
+    this.composEngine.on('convert:item:end', data => {
+      this.windowManager.sendCommandToAll('convert:item:end', data)
     })
-
-    this.composEngine.on('process:start', () => {
-      this.currentConvertRunId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
-      this.windowManager.sendCommandToAll('process:start')
+    this.composEngine.on('convert:start', () => {
+      this.windowManager.sendCommandToAll('convert:start')
     })
-    this.composEngine.on('process:ready', data => {
-      this.currentConvertOrder = new Map(data.bvs.map((bv, index) => [bv.bvid, index]))
-      this.windowManager.sendCommandToAll('process:ready', data)
+    this.composEngine.on('convert:ready', data => {
+      this.windowManager.sendCommandToAll('convert:ready', data)
     })
-    this.composEngine.on('process:broke', data => {
-      this.windowManager.sendCommandToAll('process:broke', data)
+    this.composEngine.on('convert:broke', data => {
+      this.windowManager.sendCommandToAll('convert:broke', data)
     })
-    this.composEngine.on('process:success', data => {
-      this.windowManager.sendCommandToAll('process:success', data)
+    this.composEngine.on('convert:success', data => {
+      this.windowManager.sendCommandToAll('convert:success', data)
     })
   }
 
@@ -152,128 +140,13 @@ export default class Application {
     this.configManager.onChangedListener('bind-close-to-hide', val => {
       this.windowManager.setCloseToHide(Boolean(val))
     })
+    this.configManager.onChangedListener('convert-config', val => {
+      const convertConfig = val as ConfigOptions
+      this.processQueue.setConcurrency(clampConcurrent(convertConfig.concurrent))
+    })
     this.configManager.onChangedListener('download-config', val => {
       const downloadConfig = val as DownloadConfigOptions
       this.downloadManager.setConcurrency(downloadConfig.concurrent)
-    })
-  }
-
-  handleIpcEvents(): void {
-    this.ipcManager.mainIpc.on('save-preference', (_, config) => {
-      // Cookie 已由 HttpClient 独立管理（cookies.json），配置里不再包含该字段
-      this.configManager.store.set(config)
-      this.windowManager.sendCommandToAll('fetch-preference')
-      logger.debug('preference saved')
-    })
-    this.ipcManager.mainIpc.on('reset-preference', () => {
-      this.configManager.store.clear()
-      this.windowManager.sendCommandToAll('fetch-preference')
-      logger.debug('preference reseted')
-    })
-  }
-
-  handleIpcInvoke(): void {
-    this.ipcManager.mainIpc.handle('get-preference', async () => {
-      const config = this.configManager.store.store
-      return config
-    })
-    this.ipcManager.mainIpc.handle('open-file-dialog', (_, options) => {
-      return new Promise((resolve, reject) => {
-        dialog
-          .showOpenDialog(options)
-          .then(({ canceled, filePaths }) => {
-            resolve(canceled ? '' : filePaths[0])
-          })
-          .catch(err => {
-            const message = err instanceof Error ? err.message : String(err)
-            logger.error(message)
-            reject(message)
-          })
-      })
-    })
-    this.ipcManager.mainIpc.handle('start:process', async () => {
-      return this.composEngine.run()
-    })
-    this.ipcManager.mainIpc.handle('open-path', async (_, path: string) => {
-      return shell.openPath(path)
-    })
-    this.ipcManager.mainIpc.handle('open-folder', async (_, path: string) => {
-      return shell.showItemInFolder(path)
-    })
-    this.ipcManager.mainIpc.handle('open-log-file', async () => {
-      return shell.openPath(logger.transports.file.getFile().path)
-    })
-    this.ipcManager.mainIpc.handle('clear-log-file', () => {
-      return logger.transports.file.getFile().clear()
-    })
-    this.ipcManager.mainIpc.handle('get-app-version', event => {
-      this.updateManager.setSender(event.sender)
-      return this.context['appVersion']
-    })
-    this.ipcManager.mainIpc.handle('check-for-update', async event => {
-      this.updateManager.setSender(event.sender)
-      return this.updateManager.checkForUpdates()
-    })
-    this.ipcManager.mainIpc.handle('download-update', async () => {
-      return this.updateManager.downloadUpdate()
-    })
-    this.ipcManager.mainIpc.handle('quit-and-install', async () => {
-      return this.updateManager.quitAndInstall()
-    })
-    this.ipcManager.mainIpc.handle('check-engine', async () => {
-      return this.composEngine.checkEngine()
-    })
-    this.ipcManager.mainIpc.handle('download:video', (_, task) => {
-      this.downloadManager.start(task)
-    })
-    this.ipcManager.mainIpc.handle('download:pause', (_, bvid: string) => {
-      this.downloadManager.pause(bvid)
-    })
-    this.ipcManager.mainIpc.handle('download:resume', (_, bvid: string) => {
-      this.downloadManager.resume(bvid)
-    })
-    this.ipcManager.mainIpc.handle('download:history:list', (_, bvids: string[]) => {
-      return this.downloadHistoryStore.getMany(bvids)
-    })
-    this.ipcManager.mainIpc.handle('download:history:get', (_, bvid: string) => {
-      return this.downloadHistoryStore.getByBvid(bvid)
-    })
-    this.ipcManager.mainIpc.handle('download:history:clear', () => {
-      this.downloadHistoryStore.clear()
-    })
-    this.ipcManager.mainIpc.handle('persist-cookie', async () => {
-      await this.httpClient.saveCookieJar()
-    })
-    this.ipcManager.mainIpc.handle('get-cookie', async (_, key: string) => {
-      const cookie = await this.httpClient.getCookieKey(key)
-      return cookie
-    })
-    this.ipcManager.mainIpc.handle('logout', () => {
-      return this.httpClient.logout()
-    })
-    this.ipcManager.mainIpc.handle('convert:history:list', () => {
-      return this.convertHistoryStore.list()
-    })
-    this.ipcManager.mainIpc.handle('convert:history:remove', (_, bvid: string, filePath?: string) => {
-      this.convertHistoryStore.remove(bvid, filePath)
-    })
-    this.ipcManager.mainIpc.handle('convert:history:clear', () => {
-      this.convertHistoryStore.clear()
-    })
-    this.ipcManager.mainIpc.handle('http-get-video-metadata', async (_, url: string) => {
-      const [type, errMsg] = parseVideoType(url)
-      if (type) {
-        const { html } = await this.httpClient.getHtml(url)
-        return resolveVideoMetaData(html, type)
-      } else {
-        return [null, errMsg]
-      }
-    })
-    this.ipcManager.mainIpc.handle('http-get', async (_, ...params: Parameters<HttpGetJson>) => {
-      return this.httpClient.get(...params)
-    })
-    this.ipcManager.mainIpc.handle('http-post', async (_, ...params: Parameters<HttpPostJson>) => {
-      return this.httpClient.post(...params)
     })
   }
 }

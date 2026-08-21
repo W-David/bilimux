@@ -74,13 +74,13 @@ MP4Box path: `getEngineBinPath()` in `src/main/utils/index.ts` — dev uses `ext
 
 Typed contracts in `src/shared/ipc/events.d.ts` (`IpcMainHandleEvents`, `IpcMainListenEvents`, `IpcRendererEvents`). Main: `IPCManager` + handlers in `Application`. Renderer: `src/renderer/src/ipc/`. **Add/change channels in the shared events file first**, then wire both sides.
 
-Download flow: `DownloadManager` fetches `wbi/playurl` (Wbi signed via `src/main/utils/wbi.ts`), downloads DASH m4s or MP4 through `HttpClient.downloadFile`, and reuses `ComposEngine.mergeFiles` for m4s merging. Progress events: `download:item:start/progress/end`. Pause/resume is in-memory only (`download:pause`/`download:resume` IPC): partial files are kept, resume sends `Range` via `HttpClient.downloadFile`, and playurl is refreshed on retry so expired URLs restart from scratch. Download history is persisted in `userData/downloads.db` via `DownloadHistoryStore` (node:sqlite): start/complete/fail transitions write records, and renderer queries them through `download:history:list/get` IPC.
+Download flow: Favorites `medias.page` is the **分P count** (badge / 单P vs 多P card only), not a cid. Before starting, renderer loads `GET /x/player/pagelist?bvid=` (`src/renderer/src/services/video.ts`); empty list is an error — do **not** fall back to `view.data.cid` (that is P1 only). `DownloadManager` then fetches `wbi/playurl` (Wbi signed via `src/main/utils/wbi.ts`), picks DASH video by `download-config.qn` / `codec` (AVC first by default; do not take `dash.video[0]`), downloads DASH m4s or MP4 through `HttpClient.downloadFile`, and reuses `ComposEngine.mergeFiles` for m4s merging. Tasks are keyed by `bvid + cid` (one runtime / history row per 分P). Progress events: `download:item:start/progress/end` include `cid`. Pause/resume is in-memory only (`download:pause`/`download:resume` IPC): partial files are kept, resume sends `Range` via `HttpClient.downloadFile`, and playurl is refreshed on retry so expired URLs restart from scratch. `download:cancel` aborts the transfer, kills MP4Box during merge, and deletes the temp dir. Download history is persisted in `userData/downloads.db` via `DownloadHistoryStore` (node:sqlite, PK `(bvid, cid)`): start/complete/fail/cancel transitions write records, and renderer queries them through `download:history:list/get` IPC.
 
-Convert flow: `ComposEngine` emits `process:item:start/end` with `{ bvid, success, message, outputPath?, durationMs?, skipped? }`; `Application` persists finished items to `userData/converts.db` via `ConvertHistoryStore` and exposes `convert:history:list/clear` IPC. Renderer `store/convert.ts` merges in-memory tasks with the persisted history.
+Convert flow: `convert:prescan` reconciles output files and scans the cache (skips bvids already `completed`/`skipped`, upserts `scanned`). Startup runs the same pass in the background after the window opens. `convert:run` converts pending rows (`scanned`/`failed`/`interrupted`/`missing`). `ComposEngine` emits `convert:item:start/end` with `{ bvid, success, message, outputPath?, durationMs?, skipped? }` and persists start/end to `userData/converts.db` via `ConvertHistoryStore` (`bvid` PK). `Application` forwards those events and exposes `convert:history:list/remove/clear` IPC. Renderer `store/convert.ts` merges in-memory tasks with the persisted history.
 
 ### Persistence
 
-- electron-store (`ConfigManager`): `user-info`, `favorites-data`, `convert-config`, `download-config`.
+- electron-store (`ConfigManager`): `user-info`, `convert-config`, `download-config`.
 - node:sqlite: `userData/downloads.db` (`DownloadHistoryStore`) and `userData/converts.db` (`ConvertHistoryStore`).
 
 ### Renderer
@@ -88,8 +88,8 @@ Convert flow: `ComposEngine` emits `process:item:start/end` with `{ bvid, succes
 - Vue 3 + Pinia + vue-router **memory history** + Tailwind CSS v4 + shadcn-vue (Reka UI + lucide + vue-sonner)
 - shadcn-vue + local components auto-imported via `unplugin-vue-components` (dirs: `src/components`, `src/layout`, relative to the `src/renderer` root)
 - shadcn-vue config lives in root `components.json` (aliases `@renderer/components`, `@renderer/components/ui`, `@renderer/lib/utils`); generated UI components live in `src/renderer/src/components/ui/`; `cn` helper in `src/renderer/src/lib/utils.ts`; theme CSS variables in `src/renderer/src/styles/base.css` (dark-only, `.dark` on `<html>`, pink primary). Add/update components with `pnpm dlx shadcn-vue@latest add <component>`.
-- Pages: Convert (legacy), Convert Manager (`pages/convert/{index,complete,entire,unconverted}.vue`), Download (auth/task), Settings (`pages/setting/{index,normal,user,convert,download}.vue`), About
-- Pinia stores live in `store/` (`auth`, `favorites`, `download`, `convert`, `preference`, `update`); Bilibili data fetching lives in `services/{favorites,user}.ts`. One-shot favorites fetch (`fetchAllFavorites`) waits 500ms between folders to avoid risk control.
+- Pages: Library (`pages/library/{index,created,follow,cache}.vue`), Tasks (`pages/tasks/{index,list}.vue` + `unified.ts`), Settings (`pages/setting/{index,normal,convert,download}.vue`), About
+- Pinia stores live in `store/` (`auth`, `download`, `convert`, `library`, `preference`, `update`); Bilibili data fetching lives in `services/{library,user,video}.ts`.
 - Dark-only UI
 
 ### Build gotchas
@@ -103,6 +103,8 @@ Convert flow: `ComposEngine` emits `process:item:start/end` with `{ bvid, succes
   references) but their provenance is unverified.
 - macOS auto-update requires a `zip` artifact (`latest-mac.yml`), so keep both `dmg` and `zip` targets in
   `electron-builder.yml`; releasing only a dmg makes `electron-updater` fail with `ERR_UPDATER_ZIP_FILE_NOT_FOUND`.
+- macOS 安装包未签名，无法走 Squirrel.Mac 自动安装：`UpdateManager` 在 darwin 上检测到更新时直接打开
+  GitHub Releases 下载页（`update:manual-download`），不再下载/安装；Windows/Linux 保持自动更新。
 - `dev-app-update.yml` is a placeholder (`https://example.com/auto-updates`); the real update feed comes from
   `electron-builder.yml` `publish` + GitHub releases.
 - Dev `userData` is isolated in `src/main/index.ts` (`app.setPath('userData', …/bilimux-dev)` when `!app.isPackaged`), so
@@ -113,3 +115,11 @@ Convert flow: `ComposEngine` emits `process:item:start/end` with `{ bvid, succes
 - Prettier: single quotes, **no semicolons**, `printWidth: 120`, `trailingComma: 'none'`, `arrowParens: 'avoid'`
 - ESLint flat config (`eslint.config.mjs`); Vue SFCs require `lang="ts"` on `<script>`
 - Indent 2 spaces, LF (`.editorconfig`)
+
+## External references
+
+- **设计或改 B 站接口前，先到这里核对，不要凭记忆编 URL / 参数 / 错误码。** 本地 `/Users/codyw/GitWork/bilibili-API-collect`（[SocialSisterYi/bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect)，阅读页 https://socialsisteryi.github.io/bilibili-API-collect/）。
+  1. 先读该仓库 `/Users/codyw/GitWork/bilibili-API-collect/AGENTS.md`：任务 → 文档对照表、认证/鉴权、已失效路径。
+  2. 再打开对应 `docs/**/*.md`（登录、收藏、播放地址、Wbi、追番等），以文档里的地址、方法、参数表为准。
+  3. 划掉或标明「已失效 / 已下线」的不要再用；带 `/wbi/` 的新地址优先。
+  CC-BY-NC 4.0，仅学习测试，不是官方开放平台。

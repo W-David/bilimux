@@ -18,5 +18,6 @@
     "markdown-preview-enhanced": true
   },
   "typescript.tsserver.enableTracing": true,
-  "typescript.tsserver.watchOptions": "vscode"
+  "typescript.tsserver.watchOptions": "vscode",
+  "gitdoc.enabled": false
 }

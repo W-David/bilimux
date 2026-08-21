@@ -1,14 +1,4 @@
-import {
-  checkForUpdate,
-  downloadUpdate as downloadUpdateApi,
-  quitAndInstall as quitAndInstallApi,
-  subscribeUpdateAvailable,
-  subscribeUpdateDownloaded,
-  subscribeUpdateError,
-  subscribeUpdateNotAvailable,
-  subscribeUpdateProgress
-} from '@renderer/api'
-import { mittbus } from '@renderer/ipc'
+import { emitter, ipc, mittbus } from '@renderer/ipc'
 import logger from 'electron-log/renderer'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
@@ -33,7 +23,7 @@ export const useUpdateStore = defineStore('update', () => {
 
   const checkUpdates = async () => {
     try {
-      await checkForUpdate()
+      await emitter.invoke('check-for-update')
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       mittbus.emit('toast:add', {
@@ -47,7 +37,7 @@ export const useUpdateStore = defineStore('update', () => {
   const startDownload = async () => {
     downloading.value = true
     try {
-      await downloadUpdateApi()
+      await emitter.invoke('download-update')
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       mittbus.emit('toast:add', {
@@ -61,7 +51,7 @@ export const useUpdateStore = defineStore('update', () => {
 
   const quitAndInstall = async () => {
     try {
-      await quitAndInstallApi()
+      await emitter.invoke('quit-and-install')
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       mittbus.emit('toast:add', {
@@ -74,7 +64,7 @@ export const useUpdateStore = defineStore('update', () => {
 
   const init = () => {
     registerSubscribe(
-      subscribeUpdateAvailable(info => {
+      ipc.on('update:available', (_, info) => {
         logger.info('Update available:', info)
         updateAvailable.value = true
         updateVersion.value = info.version
@@ -82,20 +72,34 @@ export const useUpdateStore = defineStore('update', () => {
     )
 
     registerSubscribe(
-      subscribeUpdateNotAvailable(() => {
+      ipc.on('update:manual-download', (_, info) => {
+        logger.info('Update manual download:', info.version)
+        updateAvailable.value = false
+        mittbus.emit('toast:add', {
+          severity: 'success',
+          message: `发现新版本 v${info.version}`,
+          data: {
+            description: '已为你打开 GitHub 下载页面，请手动下载对应平台的安装包'
+          }
+        })
+      })
+    )
+
+    registerSubscribe(
+      ipc.on('update:not-available', () => {
         logger.info('Update not available')
         updateAvailable.value = false
       })
     )
 
     registerSubscribe(
-      subscribeUpdateProgress(progress => {
+      ipc.on('update:progress', (_, progress) => {
         downloadProgress.value = Math.round(progress.percent)
       })
     )
 
     registerSubscribe(
-      subscribeUpdateDownloaded(() => {
+      ipc.on('update:downloaded', () => {
         logger.info('Update downloaded')
         downloading.value = false
         updateDownloaded.value = true
@@ -103,7 +107,7 @@ export const useUpdateStore = defineStore('update', () => {
     )
 
     registerSubscribe(
-      subscribeUpdateError(err => {
+      ipc.on('update:error', (_, err) => {
         logger.error('Update error:', err)
         downloading.value = false
       })

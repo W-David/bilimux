@@ -6,8 +6,6 @@ directories:
 files:
   - 'out/**/*'
   - 'package.json'
-asarUnpack:
-  - extra/**
 win:
   icon: build/bilimux.ico
   executableName: bilimux

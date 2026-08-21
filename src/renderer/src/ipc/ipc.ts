@@ -12,7 +12,7 @@ export class IpcEmitter<T extends IpcEventMap> {
     channel: Extract<E, string>,
     ...args: Parameters<ExtractHandler<T>[E]>
   ): Promise<ReturnType<ExtractHandler<T>[E]>> {
-    return window.electron.ipcRenderer.invoke(channel, ...args)
+    return window.electron.ipcRenderer.invoke(channel, ...args) as Promise<ReturnType<ExtractHandler<T>[E]>>
   }
 }
 

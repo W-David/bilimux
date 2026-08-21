@@ -14,6 +14,7 @@ type HistoryRow = {
   uname: string
   group_title: string
   source_dir: string
+  cover_url: string
   output_path: string | null
   file_size: number
   status: ConvertHistoryStatus
@@ -48,6 +49,7 @@ export default class ConvertHistoryStore {
         uname TEXT NOT NULL DEFAULT '',
         group_title TEXT NOT NULL DEFAULT '',
         source_dir TEXT NOT NULL DEFAULT '',
+        cover_url TEXT NOT NULL DEFAULT '',
         output_path TEXT,
         file_size INTEGER NOT NULL DEFAULT 0,
         status TEXT NOT NULL DEFAULT 'processing',
@@ -63,6 +65,9 @@ export default class ConvertHistoryStore {
     if (!columns.some(column => column.name === 'run_seq')) {
       this.db.exec(`ALTER TABLE convert_history ADD COLUMN run_seq INTEGER NOT NULL DEFAULT 0`)
     }
+    if (!columns.some(column => column.name === 'cover_url')) {
+      this.db.exec(`ALTER TABLE convert_history ADD COLUMN cover_url TEXT NOT NULL DEFAULT ''`)
+    }
     this.reconcile()
   }
 
@@ -74,8 +79,8 @@ export default class ConvertHistoryStore {
     this.db
       .prepare(
         `INSERT INTO convert_history
-           (run_id, run_seq, bvid, type, title, uname, group_title, source_dir, output_path, file_size, status, error_message, duration_ms, started_at, completed_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'processing', '', NULL, ?, NULL, ?)
+           (run_id, run_seq, bvid, type, title, uname, group_title, source_dir, cover_url, output_path, file_size, status, error_message, duration_ms, started_at, completed_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 'processing', '', NULL, ?, NULL, ?)
          ON CONFLICT(bvid) DO UPDATE SET
            run_id = excluded.run_id,
            run_seq = excluded.run_seq,
@@ -84,6 +89,7 @@ export default class ConvertHistoryStore {
            uname = excluded.uname,
            group_title = excluded.group_title,
            source_dir = excluded.source_dir,
+           cover_url = excluded.cover_url,
            output_path = excluded.output_path,
            file_size = 0,
            status = 'processing',
@@ -102,6 +108,7 @@ export default class ConvertHistoryStore {
         bv.uname,
         bv.groupTitle,
         bv.fileInfo.dirPath,
+        bv.coverUrl || '',
         outputPath ?? null,
         now,
         now
@@ -146,7 +153,7 @@ export default class ConvertHistoryStore {
   public async list(): Promise<ConvertHistoryRecord[]> {
     const rows = this.db
       .prepare(
-        `SELECT rowid AS id, run_id, run_seq, bvid, type, title, uname, group_title, source_dir, output_path,
+        `SELECT rowid AS id, run_id, run_seq, bvid, type, title, uname, group_title, source_dir, cover_url, output_path,
                 file_size, status, error_message, duration_ms, started_at, completed_at, updated_at
          FROM convert_history
          ORDER BY
@@ -167,21 +174,85 @@ export default class ConvertHistoryStore {
     this.db.exec('DELETE FROM convert_history')
   }
 
+  public getFinishedBvids(): Set<string> {
+    const rows = this.db
+      .prepare(`SELECT bvid FROM convert_history WHERE status IN ('completed', 'skipped')`)
+      .all() as unknown as { bvid: string }[]
+    return new Set(rows.map(row => row.bvid))
+  }
+
   /**
-   * 删除单条转换记录，并删除对应产物文件
-   * @param bvid 任务 bvid
-   * @param filePath 优先删除的文件路径（历史记录里即为产物路径）
+   * 缓存扫描入库：新行写成 scanned；已是 scanned 的更新目录信息；完成/失败等不改状态
    */
-  public remove(bvid: string, filePath?: string): void {
+  public markScanned(bv: VideoTaskInfo, runSeq = 0): boolean {
+    const now = Date.now()
+    const result = this.db
+      .prepare(
+        `INSERT INTO convert_history
+           (run_id, run_seq, bvid, type, title, uname, group_title, source_dir, cover_url, output_path, file_size, status, error_message, duration_ms, started_at, completed_at, updated_at)
+         VALUES ('prescan', ?, ?, ?, ?, ?, ?, ?, ?, NULL, 0, 'scanned', '', NULL, NULL, NULL, ?)
+         ON CONFLICT(bvid) DO UPDATE SET
+           run_seq = excluded.run_seq,
+           type = excluded.type,
+           title = excluded.title,
+           uname = excluded.uname,
+           group_title = excluded.group_title,
+           source_dir = excluded.source_dir,
+           cover_url = excluded.cover_url,
+           updated_at = excluded.updated_at
+         WHERE convert_history.status = 'scanned'`
+      )
+      .run(runSeq, bv.bvid, bv.type, bv.title, bv.uname, bv.groupTitle, bv.fileInfo.dirPath, bv.coverUrl || '', now)
+    return result.changes > 0
+  }
+
+  public removeStaleScanned(keepBvids: string[]): void {
+    if (keepBvids.length === 0) {
+      this.db.exec(`DELETE FROM convert_history WHERE status = 'scanned'`)
+      return
+    }
+    const placeholders = keepBvids.map(() => '?').join(', ')
+    this.db
+      .prepare(`DELETE FROM convert_history WHERE status = 'scanned' AND bvid NOT IN (${placeholders})`)
+      .run(...keepBvids)
+  }
+
+  public listPendingConvert(): { bvid: string; sourceDir: string; status: ConvertHistoryStatus }[] {
+    return this.db
+      .prepare(
+        `SELECT bvid, source_dir AS sourceDir, status FROM convert_history
+         WHERE status IN ('scanned', 'failed', 'interrupted', 'missing')
+         ORDER BY run_seq ASC, rowid ASC`
+      )
+      .all() as unknown as { bvid: string; sourceDir: string; status: ConvertHistoryStatus }[]
+  }
+
+  public countWaitingConvert(): number {
+    const row = this.db
+      .prepare(`SELECT COUNT(*) AS count FROM convert_history WHERE status IN ('scanned', 'missing')`)
+      .get() as { count: number }
+    return row.count
+  }
+
+  public getOutputPath(bvid: string): string | null {
     const row = this.db.prepare(`SELECT output_path FROM convert_history WHERE bvid = ?`).get(bvid) as
       | { output_path: string | null }
       | undefined
-    const target = filePath ?? row?.output_path
-    if (target) {
-      try {
-        fs.rmSync(target, { force: true })
-      } catch {
-        // 文件可能已被移动/删除，忽略即可
+    return row?.output_path ?? null
+  }
+
+  /**
+   * 删除单条转换记录；deleteFile 为 true 时同时删除产物文件
+   */
+  public remove(bvid: string, deleteFile = false): void {
+    if (deleteFile) {
+      const target = this.getOutputPath(bvid)
+      if (target) {
+        try {
+          fs.rmSync(target, { force: true })
+        } catch {
+          // 文件可能已被移动/删除，忽略即可
+        }
       }
     }
     this.db.prepare(`DELETE FROM convert_history WHERE bvid = ?`).run(bvid)
@@ -200,7 +271,7 @@ export default class ConvertHistoryStore {
       .run(now, now)
 
     const rows = this.db
-      .prepare(`SELECT rowid AS id, output_path FROM convert_history WHERE status = 'completed'`)
+      .prepare(`SELECT rowid AS id, output_path FROM convert_history WHERE status IN ('completed', 'skipped')`)
       .all() as unknown as Pick<HistoryRow & { id: number }, 'id' | 'output_path'>[]
 
     for (const row of rows) {
@@ -218,7 +289,7 @@ export default class ConvertHistoryStore {
     let status = row.status
     if (row.output_path) {
       fileExists = existence.get(row.output_path) ?? false
-      if (status === 'completed' && !fileExists) {
+      if ((status === 'completed' || status === 'skipped') && !fileExists) {
         status = 'missing'
       }
     }
@@ -233,6 +304,7 @@ export default class ConvertHistoryStore {
       uname: row.uname,
       groupTitle: row.group_title,
       sourceDir: row.source_dir,
+      coverUrl: row.cover_url || '',
       outputPath: row.output_path,
       fileSize: row.file_size,
       status,

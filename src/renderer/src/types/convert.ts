@@ -1,0 +1,28 @@
+import type { ProgressStatus } from '@shared/types'
+
+type ConvertTaskStatus = ProgressStatus | 'skipped' | 'interrupted' | 'missing' | 'scanned'
+
+export interface ConvertTask {
+  id: string
+  fileName: string
+  filePath: string
+  status: ConvertTaskStatus
+  progress: number
+  finished: boolean
+  message: string
+  bvid: string
+  title: string
+  type?: string
+  uname?: string
+  groupTitle?: string
+  sourceDir?: string
+  coverUrl?: string
+  outputPath?: string
+  runId?: string
+  startedAt?: number | null
+  completedAt?: number | null
+  updatedAt?: number | null
+  durationMs?: number | null
+  fileSize?: number | null
+  fileExists?: boolean
+}

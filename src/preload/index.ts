@@ -1,76 +1,65 @@
-import { contextBridge, ipcRenderer, webFrame } from 'electron'
+import { isInvokeChannel, isReceiveChannel, isSendChannel } from '@shared/ipc/channels'
+import { contextBridge, ipcRenderer } from 'electron'
 
 export interface NodeProcess {
   readonly platform: NodeJS.Platform
   readonly versions: NodeJS.ProcessVersions
   readonly arch: NodeJS.Architecture
-  readonly env: NodeJS.ProcessEnv
 }
 
-export type IpcRendererAPI = Pick<
-  Electron.IpcRenderer,
-  'send' | 'sendSync' | 'sendToHost' | 'postMessage' | 'invoke'
-> & {
-  on(...args: Parameters<Electron.IpcRenderer['on']>): () => void
-  once(...args: Parameters<Electron.IpcRenderer['once']>): () => void
-  removeAllListeners(...args: Parameters<Electron.IpcRenderer['removeAllListeners']>): void
+export type IpcRendererAPI = {
+  send(channel: string, ...args: unknown[]): void
+  invoke(channel: string, ...args: unknown[]): Promise<unknown>
+  on(channel: string, listener: (event: Electron.IpcRendererEvent, ...args: unknown[]) => void): () => void
+  once(channel: string, listener: (event: Electron.IpcRendererEvent, ...args: unknown[]) => void): () => void
 }
 
 export interface ElectronAPI {
   ipcRenderer: IpcRendererAPI
-  webFrame: Pick<Electron.WebFrame, 'clearCache' | 'insertCSS' | 'setZoomFactor' | 'setZoomLevel'>
   process: NodeProcess
+}
+
+function assertInvokeChannel(channel: string): void {
+  if (!isInvokeChannel(channel)) {
+    throw new Error(`Blocked IPC invoke: ${channel}`)
+  }
+}
+
+function assertSendChannel(channel: string): void {
+  if (!isSendChannel(channel)) {
+    throw new Error(`Blocked IPC send: ${channel}`)
+  }
+}
+
+function assertReceiveChannel(channel: string): void {
+  if (!isReceiveChannel(channel)) {
+    throw new Error(`Blocked IPC listen: ${channel}`)
+  }
 }
 
 export const electronAPI: ElectronAPI = {
   ipcRenderer: {
     send(channel, ...args) {
+      assertSendChannel(channel)
       ipcRenderer.send(channel, ...args)
     },
-    sendSync(channel, ...args) {
-      return ipcRenderer.sendSync(channel, ...args)
-    },
-    sendToHost(channel, ...args) {
-      ipcRenderer.sendToHost(channel, ...args)
-    },
-    postMessage(channel, message, transfer) {
-      ipcRenderer.postMessage(channel, message, transfer)
-    },
     invoke(channel, ...args) {
+      assertInvokeChannel(channel)
       return ipcRenderer.invoke(channel, ...args)
     },
     on(channel, listener) {
+      assertReceiveChannel(channel)
       ipcRenderer.on(channel, listener)
       return () => {
         ipcRenderer.removeListener(channel, listener)
       }
     },
     once(channel, listener) {
+      assertReceiveChannel(channel)
       ipcRenderer.once(channel, listener)
       return () => {
         ipcRenderer.removeListener(channel, listener)
       }
-    },
-    removeAllListeners(channel) {
-      ipcRenderer.removeAllListeners(channel)
-    }
-  },
-  webFrame: {
-    insertCSS(css) {
-      return webFrame.insertCSS(css)
-    },
-    setZoomFactor(factor) {
-      if (typeof factor === 'number' && factor > 0) {
-        webFrame.setZoomFactor(factor)
-      }
-    },
-    setZoomLevel(level) {
-      if (typeof level === 'number') {
-        webFrame.setZoomLevel(level)
-      }
-    },
-    clearCache() {
-      webFrame.clearCache()
     }
   },
   process: {
@@ -82,9 +71,6 @@ export const electronAPI: ElectronAPI = {
     },
     get versions() {
       return process.versions
-    },
-    get env() {
-      return { ...process.env }
     }
   }
 }

@@ -1,16 +1,15 @@
 import { app, dialog } from 'electron'
-import is from 'electron-is'
 
 import logger from './Logger'
 
 export default class ExceptionHandler {
   showDialog: boolean
   constructor() {
-    this.showDialog = !is.dev()
+    this.showDialog = app.isPackaged
   }
 
   setup(): void {
-    if (is.dev()) {
+    if (!app.isPackaged) {
       return
     }
     const showDialog = this.showDialog

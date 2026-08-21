@@ -1,28 +1,30 @@
 import { Pages } from '@shared/types'
-import is from 'electron-is'
+import { app } from 'electron'
 import path from 'node:path'
 import { pathToFileURL } from 'url'
 
 const preloadPath = path.join(__dirname, '../preload/index.js')
+const isDev = !app.isPackaged
+const isMac = process.platform === 'darwin'
 
 export const pages: Pages = {
   // 主窗口
   main: {
     attrs: {
       title: 'bilimux',
-      width: 1024,
-      height: 768,
-      minWidth: 800,
-      minHeight: 600,
+      width: 1440,
+      height: 1000,
+      minWidth: 1280,
+      minHeight: 800,
       resizable: true,
-      transparent: is.macOS(),
-      vibrancy: is.macOS() ? 'fullscreen-ui' : undefined,
-      visualEffectState: is.macOS() ? 'active' : undefined,
+      transparent: isMac,
+      vibrancy: isMac ? 'fullscreen-ui' : undefined,
+      visualEffectState: isMac ? 'active' : undefined,
       titleBarStyle: 'hiddenInset', // macOS 上隐藏标题栏，仅显示交通灯按钮
       show: false, // 创建窗口时默认隐藏，等待 ready-to-show 事件后显示
       backgroundColor: '#000000ff', // 默认背景色
       webPreferences: {
-        devTools: is.dev(),
+        devTools: isDev,
         preload: preloadPath,
         contextIsolation: true, //启用上下文隔离
         sandbox: false
@@ -30,7 +32,7 @@ export const pages: Pages = {
     },
     openDevTools: true,
     url:
-      is.dev() && process.env['ELECTRON_RENDERER_URL']
+      isDev && process.env['ELECTRON_RENDERER_URL']
         ? process.env['ELECTRON_RENDERER_URL']
         : pathToFileURL(path.join(__dirname, '../renderer/index.html')).href
   }

@@ -6,16 +6,16 @@ import {
   Loader2 as Loader2Icon,
   RefreshCw as RefreshCwIcon
 } from '@lucide/vue'
-import { checkForUpdate, getAppVersion } from '@renderer/api'
-import { mittbus } from '@renderer/ipc'
+import { emitter, mittbus } from '@renderer/ipc'
 import logger from 'electron-log/renderer'
 import { computed, ref } from 'vue'
 
 const appVersion = ref('')
 const isChecking = ref(false)
+const isMac = window.electron.process.platform === 'darwin'
 
 const fetchAppVersion = () => {
-  getAppVersion()
+  emitter.invoke('get-app-version')
     .then(version => (appVersion.value = version))
     .catch(e => logger.error(e))
 }
@@ -37,8 +37,10 @@ const handleCheckUpdate = async () => {
 
   isChecking.value = true
   try {
-    const result = await checkForUpdate()
+    const result = await emitter.invoke('check-for-update')
     if (result?.isUpdateAvailable) {
+      // macOS 由主进程自动打开 GitHub 下载页，并通过 update:manual-download 提示，避免重复 toast
+      if (isMac) return
       mittbus.emit('toast:add', {
         severity: 'success',
         message: `发现新版本 v${result.updateInfo.version}`,
@@ -105,7 +107,7 @@ const versionList = computed(() => [
   <div class="h-full flex select-none items-center justify-center overflow-hidden">
     <div class="relative z-10 w-120">
       <!-- Header -->
-      <div class="flex flex-col items-center gap-6 pb-8 pt-10">
+      <div class="flex flex-col items-center gap-6 py-6">
         <div class="group relative cursor-default">
           <!-- Glow effects -->
           <div

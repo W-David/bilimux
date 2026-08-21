@@ -1,25 +1,42 @@
+import {
+  Bookmark as BookmarkIcon,
+  CircleCheck as CircleCheckIcon,
+  Clapperboard as ClapperboardIcon,
+  Download as DownloadIcon,
+  Film as FilmIcon,
+  HardDrive as HardDriveIcon,
+  Info as InfoIcon,
+  Library as LibraryIcon,
+  List as ListIcon,
+  ListTodo as ListTodoIcon,
+  Settings as SettingsIcon,
+  Tv as TvIcon
+} from '@lucide/vue'
 import Layout from '@renderer/layout/index.vue'
 import Main from '@renderer/layout/Main.vue'
 import About from '@renderer/pages/About.vue'
-import ConvertComplete from '@renderer/pages/convert/complete.vue'
-import ConvertEntire from '@renderer/pages/convert/entire.vue'
-import ConvertIndex from '@renderer/pages/convert/index.vue'
-import ConvertUnconverted from '@renderer/pages/convert/unconverted.vue'
-import Auth from '@renderer/pages/download/auth.vue'
-import Download from '@renderer/pages/download/index.vue'
-import Task from '@renderer/pages/download/task.vue'
+import LibraryCache from '@renderer/pages/library/cache.vue'
+import LibraryCreated from '@renderer/pages/library/created.vue'
+import LibraryFollow from '@renderer/pages/library/follow.vue'
+import LibraryIndex from '@renderer/pages/library/index.vue'
 import SettingConvert from '@renderer/pages/setting/convert.vue'
 import SettingDownload from '@renderer/pages/setting/download.vue'
 import SettingIndex from '@renderer/pages/setting/index.vue'
 import SettingNormal from '@renderer/pages/setting/normal.vue'
-import SettingUser from '@renderer/pages/setting/user.vue'
+import TasksIndex from '@renderer/pages/tasks/index.vue'
+import TaskList from '@renderer/pages/tasks/list.vue'
 import { useAuthStore } from '@renderer/store/auth'
-import { createMemoryHistory, createRouter, type RouteRecordNormalized, type RouteRecordRaw } from 'vue-router'
+import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-router'
+import { findChildIndex, sectionRecord } from './utils'
 
-// 转换管理页最后停留的分组，父路由重定向时使用，避免每次进入都被重置到“未完成”
-let lastConvertTabName = 'convert-unconverted'
-// 设置页最后停留的分组，父路由重定向时使用
+let lastLibraryTabName = 'library-created'
+let lastTasksTabName = 'tasks-all'
 let lastSettingTabName = 'prefer-normal'
+
+export function defaultLibraryTabName(authenticated: boolean): string {
+  if (!authenticated) return 'library-cache'
+  return lastLibraryTabName
+}
 
 const routes: RouteRecordRaw[] = [
   {
@@ -32,73 +49,84 @@ const routes: RouteRecordRaw[] = [
         component: Main,
         children: [
           {
-            path: 'convert',
-            name: 'convert',
-            component: ConvertIndex,
-            redirect: () => ({ name: lastConvertTabName }),
+            path: 'library',
+            name: 'library',
+            component: LibraryIndex,
+            redirect: () => ({ name: lastLibraryTabName }),
             meta: {
-              activeMenu: 'convert'
+              switchTransition: true,
+              menu: { label: '片库', icon: LibraryIcon, description: '收藏、追番和本机缓存' }
             },
             children: [
               {
-                path: 'entire',
-                name: 'convert-entire',
-                component: ConvertEntire,
+                path: 'created',
+                name: 'library-created',
+                component: LibraryCreated,
                 meta: {
-                  switchTransition: true,
-                  activeMenu: 'convert'
+                  tab: { label: '收藏', icon: BookmarkIcon }
                 }
               },
               {
-                path: 'complete',
-                name: 'convert-complete',
-                component: ConvertComplete,
+                path: 'bangumi',
+                name: 'library-bangumi',
+                component: LibraryFollow,
                 meta: {
-                  switchTransition: true,
-                  activeMenu: 'convert'
+                  tab: { label: '追番', icon: ClapperboardIcon }
                 }
               },
               {
-                path: 'unconverted',
-                name: 'convert-unconverted',
-                component: ConvertUnconverted,
+                path: 'cinema',
+                name: 'library-cinema',
+                component: LibraryFollow,
                 meta: {
-                  switchTransition: true,
-                  activeMenu: 'convert'
+                  tab: { label: '追剧', icon: TvIcon }
+                }
+              },
+              {
+                path: 'cache',
+                name: 'library-cache',
+                component: LibraryCache,
+                meta: {
+                  tab: { label: '本机缓存', icon: HardDriveIcon }
                 }
               }
             ]
           },
           {
-            path: 'download',
-            component: Download,
+            path: 'tasks',
+            name: 'tasks',
+            component: TasksIndex,
+            redirect: () => ({ name: lastTasksTabName }),
+            meta: {
+              switchTransition: true,
+              menu: { label: '任务', icon: ListTodoIcon, description: '下载与转换任务' }
+            },
             children: [
               {
-                path: 'auth',
-                name: 'download-auth',
-                component: Auth,
+                path: 'all',
+                name: 'tasks-all',
+                component: TaskList,
                 meta: {
-                  activeMenu: 'download'
+                  tab: { label: '全部', icon: ListIcon }
                 }
               },
               {
-                path: 'task',
-                name: 'download-task',
-                component: Task,
+                path: 'active',
+                name: 'tasks-active',
+                component: TaskList,
                 meta: {
-                  requireAuth: true,
-                  activeMenu: 'download'
+                  tab: { label: '进行中', icon: DownloadIcon }
+                }
+              },
+              {
+                path: 'complete',
+                name: 'tasks-complete',
+                component: TaskList,
+                meta: {
+                  tab: { label: '已完成', icon: CircleCheckIcon }
                 }
               }
-            ],
-            meta: {
-              activeMenu: 'download'
-            }
-          },
-          {
-            path: 'about',
-            name: 'about',
-            component: About
+            ]
           },
           {
             path: 'prefer',
@@ -106,7 +134,8 @@ const routes: RouteRecordRaw[] = [
             component: SettingIndex,
             redirect: () => ({ name: lastSettingTabName }),
             meta: {
-              activeMenu: 'prefer'
+              switchTransition: true,
+              menu: { label: '设置', icon: SettingsIcon, description: '设置' }
             },
             children: [
               {
@@ -114,17 +143,7 @@ const routes: RouteRecordRaw[] = [
                 name: 'prefer-normal',
                 component: SettingNormal,
                 meta: {
-                  switchTransition: true,
-                  activeMenu: 'prefer'
-                }
-              },
-              {
-                path: 'user',
-                name: 'prefer-user',
-                component: SettingUser,
-                meta: {
-                  switchTransition: true,
-                  activeMenu: 'prefer'
+                  tab: { label: '常规设置', icon: SettingsIcon }
                 }
               },
               {
@@ -132,8 +151,7 @@ const routes: RouteRecordRaw[] = [
                 name: 'prefer-convert',
                 component: SettingConvert,
                 meta: {
-                  switchTransition: true,
-                  activeMenu: 'prefer'
+                  tab: { label: '视频转换', icon: FilmIcon }
                 }
               },
               {
@@ -141,8 +159,15 @@ const routes: RouteRecordRaw[] = [
                 name: 'prefer-download',
                 component: SettingDownload,
                 meta: {
-                  switchTransition: true,
-                  activeMenu: 'prefer'
+                  tab: { label: '视频下载', icon: DownloadIcon }
+                }
+              },
+              {
+                path: 'about',
+                name: 'prefer-about',
+                component: About,
+                meta: {
+                  tab: { label: '关于', icon: InfoIcon }
                 }
               }
             ]
@@ -162,66 +187,45 @@ const router = createRouter({
   routes
 })
 
-/**
- * 按 router 定义顺序查找子记录在父级 children 中的下标，
- * 用于决定页面/分组切换的动画方向，不再依赖 meta.order。
- */
-function findChildIndex(parent: RouteRecordNormalized | undefined, target: RouteRecordNormalized | undefined): number {
-  if (!parent || !target) {
-    return 0
-  }
-  const index = parent.children.findIndex(child => {
-    if (child.name && target.name && child.name === target.name) {
-      return true
-    }
-    // children 里是原始配置记录（相对路径），target 是标准化记录（完整路径）
-    const childPath = child.path.startsWith('/') ? child.path : `${parent.path}/${child.path}`.replace(/\/+/g, '/')
-    return childPath === target.path
-  })
-  return index === -1 ? 0 : index
-}
-
 router.beforeEach(async to => {
   const authStore = useAuthStore()
-  if (to.meta.requireAuth && !authStore.isAuthenticated) {
-    // 等待启动时的登录态检查完成，避免首次进入下载页被误判为未登录
+  if (to.name === 'library') {
     await authStore.ensureReady()
-    if (!authStore.isAuthenticated) {
-      return { name: 'download-auth' }
-    }
+    return { name: defaultLibraryTabName(authStore.isAuthenticated) }
   }
   return
 })
 
 router.afterEach((to, from) => {
-  // 记录最后一次停留的转换/设置分组，供父路由重定向回到原分组
   if (to.meta.switchTransition && typeof to.name === 'string') {
-    if (to.meta.activeMenu === 'prefer') {
+    const section = sectionRecord(to)
+    if (section?.name === 'prefer') {
       lastSettingTabName = to.name
-    } else {
-      lastConvertTabName = to.name
+    } else if (section?.name === 'library' && to.meta.tab) {
+      lastLibraryTabName = to.name
+    } else if (section?.name === 'tasks' && to.meta.tab) {
+      lastTasksTabName = to.name
     }
   }
 
-  // 首次进入或不完整的路由不做过渡
   if (to.matched.length < 3 || from.matched.length < 3) {
     return
   }
 
-  // 菜单级顺序：Main.children 里页面记录的下标
-  const toPageIndex = findChildIndex(to.matched[1], to.matched[2])
-  const fromPageIndex = findChildIndex(from.matched[1], from.matched[2])
+  const toSection = sectionRecord(to)
+  const fromSection = sectionRecord(from)
+  const toPageIndex = findChildIndex(to.matched[1], toSection)
+  const fromPageIndex = findChildIndex(from.matched[1], fromSection)
 
-  if (from.meta.switchTransition && to.meta.switchTransition) {
-    // 只有同一个分组（设置页 ↔ 设置页 / 转换管理 ↔ 转换管理）才使用左右滑动
-    if (to.meta.activeMenu && to.meta.activeMenu === from.meta.activeMenu) {
-      // 分组内顺序：分组容器 children 里子页记录的下标
-      const toGroupIndex = findChildIndex(to.matched[2], to.matched[3])
-      const fromGroupIndex = findChildIndex(from.matched[2], from.matched[3])
-      to.meta.transition = toGroupIndex >= fromGroupIndex ? 'slide-left' : 'slide-right'
-    } else {
-      to.meta.transition = toPageIndex >= fromPageIndex ? 'slide-up' : 'slide-down'
-    }
+  if (
+    from.meta.switchTransition &&
+    to.meta.switchTransition &&
+    toSection?.name &&
+    toSection.name === fromSection?.name
+  ) {
+    const toGroupIndex = findChildIndex(toSection, to.matched[3])
+    const fromGroupIndex = findChildIndex(fromSection, from.matched[3])
+    to.meta.transition = toGroupIndex >= fromGroupIndex ? 'slide-left' : 'slide-right'
   } else {
     to.meta.transition = toPageIndex >= fromPageIndex ? 'slide-up' : 'slide-down'
   }

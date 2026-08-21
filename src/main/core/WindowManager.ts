@@ -1,8 +1,6 @@
 import { IpcRendererEvents } from '@shared/ipc/events'
 import type { Pages } from '@shared/types'
-import { app, BrowserWindow, Menu, nativeImage, shell, Tray, WebContents } from 'electron'
-import is from 'electron-is'
-import EventEmitter from 'node:events'
+import { app, BrowserWindow, Menu, nativeImage, shell, Tray } from 'electron'
 import path from 'node:path'
 import { pages } from '../config/page'
 import ConfigManager from './ConfigManager'
@@ -11,7 +9,7 @@ import logger from './Logger'
 
 type Windows = { [k: keyof Pages]: BrowserWindow | null }
 
-export default class WindowManager extends EventEmitter {
+export default class WindowManager {
   // windows 窗口集合
   windows: Windows
   // 程序 Quit 标识
@@ -24,16 +22,17 @@ export default class WindowManager extends EventEmitter {
   ipcManager: IPCManager
   // 托盘实例（保持引用防止被 GC）
   tray: Tray | null
+  // 失焦隐藏是否已绑定，避免 openWindow / 配置变更重复注册
+  private windowBlurBound: boolean
 
   constructor(configManager: ConfigManager, ipcManager: IPCManager) {
-    super()
-
     this.configManager = configManager
     this.ipcManager = ipcManager
     this.windows = {}
     this.willQuit = false
     this.closeToHide = this.configManager.store.get('bind-close-to-hide') ?? true
     this.tray = null
+    this.windowBlurBound = false
     app.on('before-quit', () => {
       this.configManager.removeAllChangedListener()
       this.unbindWindowBlur()
@@ -45,16 +44,7 @@ export default class WindowManager extends EventEmitter {
   }
 
   getPageOptions<T extends keyof Pages>(pageName: T): Pages[T] {
-    const result = pages[pageName]
-
-    // const { width, height } = screen.getPrimaryDisplay().workAreaSize
-    // const widthScale = width >= 1280 ? 1 : 0.875
-    // const heightScale = height >= 800 ? 1 : 0.875
-
-    // result.attrs.width = result.attrs.width ? result.attrs.width * widthScale : 1280
-    // result.attrs.height = result.attrs.height ? result.attrs.height * heightScale : 720
-
-    return result
+    return pages[pageName]
   }
 
   openWindow<T extends keyof Pages>(pageName: T): BrowserWindow {
@@ -71,7 +61,7 @@ export default class WindowManager extends EventEmitter {
     createdWindow.loadURL(page.url)
 
     // 开发模式打开 devtools
-    if (is.dev() && page.openDevTools) {
+    if (!app.isPackaged && page.openDevTools) {
       createdWindow.webContents.openDevTools({
         mode: 'undocked',
         activate: true
@@ -107,9 +97,21 @@ export default class WindowManager extends EventEmitter {
       this.windows[pageName] = null
     })
 
-    //  阻止在应用中打开外链，外链使用默认浏览器打开
+    const appUrl = page.url
+    createdWindow.webContents.on('will-navigate', (event, url) => {
+      if (!isAllowedNavigation(url, appUrl)) {
+        event.preventDefault()
+      }
+    })
+    createdWindow.webContents.on('will-redirect', (event, url) => {
+      if (!isAllowedNavigation(url, appUrl)) {
+        event.preventDefault()
+      }
+    })
     createdWindow.webContents.setWindowOpenHandler(({ url }) => {
-      shell.openExternal(url)
+      if (url.startsWith('https://')) {
+        void shell.openExternal(url)
+      }
       return { action: 'deny' }
     })
 
@@ -131,9 +133,9 @@ export default class WindowManager extends EventEmitter {
   initTray(): void {
     if (this.tray) return
 
-    const iconPath = is.dev()
-      ? path.join(app.getAppPath(), 'resources', 'bilimux.png')
-      : path.join(process.resourcesPath, 'resources', 'bilimux.png')
+    const iconPath = app.isPackaged
+      ? path.join(process.resourcesPath, 'resources', 'bilimux.png')
+      : path.join(app.getAppPath(), 'resources', 'bilimux.png')
     // macOS 菜单栏按原始尺寸绘制图标，必须缩到标准大小（16x16），否则 1024x1024 的 Logo 会占满菜单栏
     const image = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
     if (image.isEmpty()) {
@@ -168,23 +170,19 @@ export default class WindowManager extends EventEmitter {
   }
 
   bindWindowBlur() {
+    if (this.windowBlurBound) return
     app.on('browser-window-blur', this.onWindowBlur)
+    this.windowBlurBound = true
   }
 
   unbindWindowBlur() {
+    if (!this.windowBlurBound) return
     app.removeListener('browser-window-blur', this.onWindowBlur)
+    this.windowBlurBound = false
   }
 
   getWindowList(): BrowserWindow[] {
     return Object.values(this.windows).filter(window => !!window)
-  }
-
-  sendCommandTo<T extends keyof IpcRendererEvents>(
-    webContents: WebContents,
-    command: Extract<T, string>,
-    ...args: IpcRendererEvents[T]
-  ): void {
-    this.ipcManager.mainEmitter.send(webContents, command, ...args)
   }
 
   sendCommandToAll<T extends keyof IpcRendererEvents>(
@@ -192,11 +190,25 @@ export default class WindowManager extends EventEmitter {
     ...args: IpcRendererEvents[T]
   ): void {
     this.getWindowList().forEach(window => {
+      if (window.isDestroyed() || window.webContents.isDestroyed()) return
       this.ipcManager.mainEmitter.send(window.webContents, command, ...args)
     })
   }
 
   setWillQuit(value: boolean): void {
     this.willQuit = value
+  }
+}
+
+function isAllowedNavigation(url: string, appUrl: string): boolean {
+  try {
+    const next = new URL(url)
+    const app = new URL(appUrl)
+    if (next.protocol === 'file:' && app.protocol === 'file:') {
+      return path.normalize(decodeURIComponent(next.pathname)) === path.normalize(decodeURIComponent(app.pathname))
+    }
+    return next.origin === app.origin
+  } catch {
+    return false
   }
 }

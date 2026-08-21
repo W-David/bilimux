@@ -1,7 +1,11 @@
 <template>
-  <div class="flex items-center gap-4">
+  <div
+    class="flex items-center"
+    :class="compact ? '' : 'gap-4'">
     <!-- 环形进度 -->
-    <div class="relative size-12 shrink-0">
+    <div
+      class="relative shrink-0"
+      :class="compact ? 'size-10' : 'size-12'">
       <svg
         class="size-full -rotate-90"
         viewBox="0 0 36 36">
@@ -11,7 +15,7 @@
           r="15.9"
           fill="none"
           stroke-width="3"
-          class="stroke-gray-800" />
+          class="stroke-white/25" />
         <circle
           cx="18"
           cy="18"
@@ -19,17 +23,21 @@
           fill="none"
           stroke-width="3"
           stroke-linecap="round"
-          class="stroke-pink-500 transition-all duration-300"
+          class="stroke-pink-400 transition-all duration-300"
           :stroke-dasharray="circumference"
           :stroke-dashoffset="dashOffset" />
       </svg>
-      <span class="absolute inset-0 flex items-center justify-center text-[11px] font-semibold text-pink-400">
+      <span
+        class="absolute inset-0 flex items-center justify-center font-semibold text-white"
+        :class="compact ? 'text-[10px]' : 'text-[11px]'">
         {{ Math.round(percent) }}%
       </span>
     </div>
 
     <!-- 文字信息 -->
-    <div class="min-w-0 flex-1">
+    <div
+      v-if="title || description"
+      class="min-w-0 flex-1">
       <div
         v-if="title"
         class="truncate text-sm font-medium text-gray-200">
@@ -52,11 +60,13 @@ const props = withDefaults(
     percent?: number
     title?: string
     description?: string
+    compact?: boolean
   }>(),
   {
     percent: 0,
     title: '',
-    description: ''
+    description: '',
+    compact: false
   }
 )
 
