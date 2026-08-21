@@ -2,16 +2,13 @@
   <Dialog
     :open="authStore.loginOpen"
     @update:open="onOpenChange">
-    <DialogContent class="w-[22rem] max-w-[22rem] gap-2 p-6 sm:max-w-[22rem]">
-      <DialogHeader class="text-center sm:text-center">
+    <DialogContent class="w-80 gap-3 p-6">
+      <DialogHeader class="text-center">
         <DialogTitle>扫码登录 B 站</DialogTitle>
-        <DialogDescription>登录后可查看收藏、追番和追剧。本机缓存不需要登录。</DialogDescription>
+        <DialogDescription>查看收藏、追番和追剧</DialogDescription>
       </DialogHeader>
       <div class="py-2">
-        <Qrcode
-          v-if="authStore.loginOpen"
-          auto-start
-          @success="authStore.closeLogin()" />
+        <Qrcode auto-start />
       </div>
     </DialogContent>
   </Dialog>
