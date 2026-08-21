@@ -25,3 +25,18 @@
 @utility preview-scroll {
   @apply min-h-0 flex-1 overflow-y-auto p-4;
 }
+
+@utility h-headbar {
+  height: var(--headbar-height);
+}
+
+@utility draggable {
+  -webkit-app-region: drag;
+  user-select: none;
+  app-region: drag;
+}
+
+@utility no-drag {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}

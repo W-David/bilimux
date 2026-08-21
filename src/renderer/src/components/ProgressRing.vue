@@ -29,7 +29,7 @@
       </svg>
       <span
         class="absolute inset-0 flex items-center justify-center font-semibold text-white"
-        :class="compact ? 'text-[10px]' : 'text-[11px]'">
+        :class="compact ? 'text-2xs' : 'text-caption'">
         {{ Math.round(percent) }}%
       </span>
     </div>

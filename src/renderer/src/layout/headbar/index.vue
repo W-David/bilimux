@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="tabs.length"
-    class="draggable flex h-[var(--headbar-height)] shrink-0 items-stretch border-b border-[#1f1f1f] bg-[#181818] px-4">
+    class="draggable flex h-headbar shrink-0 items-stretch border-b border-secondary bg-background px-4">
     <div class="flex h-full items-stretch">
       <HeadbarItem
         v-for="item in tabs"

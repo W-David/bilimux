@@ -28,9 +28,9 @@
         </div>
       </div>
     </div>
-    <div class="h-14 shrink-0 flex items-center px-4 border-t border-[#1f1f1f]">
+    <div class="h-14 shrink-0 flex items-center px-4 border-t border-secondary">
       <Skeleton class="h-7 w-30 rounded-lg" />
-      <Skeleton class="ml-auto h-[26px] w-20 rounded-full" />
+      <Skeleton class="ml-auto h-6.5 w-20 rounded-full" />
     </div>
   </div>
   <div
@@ -58,7 +58,7 @@
           v-if="upName"
           class="inline-flex items-center gap-1">
           <span
-            class="h-4 w-6 flex items-center justify-center rounded-sm bg-pink-400/20 text-[9px] text-pink-400 font-bold">
+            class="h-4 w-6 flex items-center justify-center rounded-sm bg-pink-400/20 text-3xs text-pink-400 font-bold">
             UP
           </span>
           {{ upName }}
@@ -155,7 +155,7 @@
       </div>
     </div>
 
-    <div class="h-14 shrink-0 flex items-center px-4 border-t border-[#1f1f1f]">
+    <div class="h-14 shrink-0 flex items-center px-4 border-t border-secondary">
       <div
         v-if="invalid"
         class="text-xs text-gray-400">

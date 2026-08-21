@@ -25,17 +25,17 @@
         </span>
         <span
           v-if="userLevel !== undefined"
-          class="shrink-0 rounded-sm bg-pink-400/15 px-1.5 py-0.5 text-[10px] text-pink-400 font-bold">
+          class="shrink-0 rounded-sm bg-pink-400/15 px-1.5 py-0.5 text-2xs text-pink-400 font-bold">
           LV{{ userLevel }}
         </span>
         <span
           v-if="isVip"
-          class="shrink-0 rounded-sm bg-violet-400/15 px-1.5 py-0.5 text-[10px] text-violet-300 font-bold">
+          class="shrink-0 rounded-sm bg-violet-400/15 px-1.5 py-0.5 text-2xs text-violet-300 font-bold">
           {{ vipLabel }}
         </span>
         <span
           v-if="isSeniorMember"
-          class="shrink-0 rounded-sm bg-sky-400/15 px-1.5 py-0.5 text-[10px] text-sky-300 font-bold">
+          class="shrink-0 rounded-sm bg-sky-400/15 px-1.5 py-0.5 text-2xs text-sky-300 font-bold">
           硬核会员
         </span>
       </div>

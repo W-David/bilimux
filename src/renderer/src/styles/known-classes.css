@@ -1,0 +1,35 @@
+/* 由 scripts/fix-tailwind-warnings.mjs 生成：登记非工具类，避免 Tailwind 插件报未知类 */
+@layer components {
+  .is-busy {
+  }
+
+  .is-disabled {
+  }
+
+  .is-paused {
+  }
+
+  .is-sm {
+  }
+
+  .progress-capsule {
+  }
+
+  .progress-capsule__cancel {
+  }
+
+  .progress-capsule__content {
+  }
+
+  .progress-capsule__fill {
+  }
+
+  .progress-capsule__main {
+  }
+
+  .progress-capsule__x {
+  }
+
+  .toaster {
+  }
+}

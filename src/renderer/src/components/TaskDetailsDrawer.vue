@@ -29,7 +29,7 @@
                 <td class="w-24 py-2 pr-3 align-top whitespace-nowrap text-gray-500 text-xs">
                   {{ row.label }}
                 </td>
-                <td class="py-2 text-right break-all text-gray-300 text-[10px]">
+                <td class="py-2 text-right break-all text-gray-300 text-2xs">
                   {{ row.value }}
                 </td>
               </tr>

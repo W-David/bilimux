@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full bg-[#1f1f1f]">
+  <div class="h-full bg-secondary">
     <div class="h-full flex flex-col items-center px-2 pb-4 pt-14">
       <div class="flex w-full flex-col items-center gap-2">
         <SidebarItem
@@ -23,7 +23,7 @@
         </Avatar>
         <span
           v-else
-          class="size-8 flex items-center justify-center rounded-full border border-white/10 bg-[#2a2a2a] text-[11px] text-gray-300">
+          class="size-8 flex items-center justify-center rounded-full border border-white/10 bg-[#2a2a2a] text-caption text-gray-300">
           {{ identityInitial }}
         </span>
         <span

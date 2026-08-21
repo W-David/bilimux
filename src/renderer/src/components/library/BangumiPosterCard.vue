@@ -13,12 +13,12 @@
         alt="" />
       <span
         v-if="item.badge"
-        class="absolute top-1.5 right-1.5 rounded-sm bg-sky-500 px-1 py-0.5 text-[10px] text-white">
+        class="absolute top-1.5 right-1.5 rounded-sm bg-sky-500 px-1 py-0.5 text-2xs text-white">
         {{ item.badge }}
       </span>
       <span
         v-if="item.newEpIndexShow"
-        class="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/75 to-transparent px-1.5 pb-1.5 pt-6 text-right text-[11px] text-white/90">
+        class="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/75 to-transparent px-1.5 pb-1.5 pt-6 text-right text-caption text-white/90">
         {{ item.newEpIndexShow }}
       </span>
     </div>
