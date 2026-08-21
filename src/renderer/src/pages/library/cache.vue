@@ -1,6 +1,6 @@
 <template>
   <div class="relative h-full min-h-0">
-    <div class="h-full overflow-y-auto px-4 py-4">
+    <div class="h-full overflow-x-hidden overflow-y-auto px-4 py-4">
       <LibraryGridSkeleton
         v-if="busy && !items.length"
         variant="video"

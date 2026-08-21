@@ -1,4 +1,4 @@
-import { app } from 'electron'
+import { app, Menu } from 'electron'
 import Application from './Application'
 import ExceptionHandler from './core/ExceptionHandler'
 
@@ -29,6 +29,9 @@ export default class Launcher {
     this.exceptionHandler.setup()
     app.whenReady().then(() => {
       app.setAppUserModelId('com.rushwang.bilimux')
+      if (process.platform !== 'darwin') {
+        Menu.setApplicationMenu(null)
+      }
       // 首次启动打开主窗口；macOS 的 activate 事件会复用同一窗口
       this.application.windowManager.openWindow('main')
       this.application.windowManager.initTray()

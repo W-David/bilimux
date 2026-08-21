@@ -1,7 +1,7 @@
 <template>
   <aside
     ref="rootRef"
-    class="h-full overflow-y-auto border-r border-secondary bg-[#161616] p-4"
+    class="h-full min-w-0 overflow-x-hidden overflow-y-auto border-r border-secondary bg-[#161616] p-4"
     @scroll="onScroll">
     <div class="px-2 pb-2 text-caption text-gray-500">{{ folders.length }} 个收藏夹</div>
     <button

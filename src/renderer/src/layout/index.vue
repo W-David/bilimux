@@ -23,14 +23,14 @@ onMounted(() => {
     <LoginDialog />
     <UserProfileDialog />
     <div
-      class="grid h-full w-full"
+      class="grid h-full w-full min-w-0"
       :style="{ 'grid-template-columns': 'var(--sidebar-width) 1fr' }">
-      <div class="h-full overflow-hidden">
+      <div class="h-full min-w-0 overflow-x-hidden">
         <Sidebar></Sidebar>
       </div>
       <div class="flex h-full min-w-0 flex-col overflow-hidden">
         <Headbar />
-        <div class="min-h-0 flex-1 overflow-y-auto">
+        <div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
           <RouterView></RouterView>
         </div>
       </div>

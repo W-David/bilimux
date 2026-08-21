@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full w-full overflow-y-auto">
+  <div class="h-full w-full overflow-x-hidden overflow-y-auto">
     <div
       v-if="items.length === 0"
       class="h-full flex flex-col items-center justify-center gap-3 text-gray-400">
