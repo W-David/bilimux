@@ -389,11 +389,28 @@ type VideoViewDetail = {
   owner: FavoriteUpper
 }
 
+// 合集数据源（收藏夹 / 追番）
+type CollectionSource =
+  | { type: 'folder'; folder: FavoriteFolder }
+  | { type: 'bangumi'; item: BangumiFollowItem; catalog: 'bangumi' | 'cinema' }
+
+// 合集媒体项
+type CollectionMedia = {
+  key: string
+  video: FavoriteResource
+  folderName: string
+  kind: 'ugc' | 'ogv'
+  epId?: number
+  cid?: number
+}
+
 export type {
   BangumiEpisode,
   BangumiFollowItem,
   BiliResponseType,
   BiliVideoPage,
+  CollectionMedia,
+  CollectionSource,
   ComposEventMap,
   CompositionOptions,
   ConfigOptions,

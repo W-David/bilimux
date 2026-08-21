@@ -1,4 +1,4 @@
-import type { CollectionMedia, CollectionSource } from '@renderer/components/library/types'
+import type { CollectionMedia, CollectionSource } from '@shared/types'
 import {
   episodeToResource,
   fetchBangumiEpisodes,

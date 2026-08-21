@@ -176,7 +176,7 @@
 
 <script setup lang="ts">
 import { CirclePlay as CirclePlayIcon, Download as DownloadIcon } from '@lucide/vue'
-import type { CollectionMedia } from '@renderer/components/library/types'
+import type { CollectionMedia } from '@shared/types'
 import ProgressCapsule from '@renderer/components/ProgressCapsule.vue'
 import { emitter, mittbus } from '@renderer/ipc'
 import { fetchVideoDetail } from '@renderer/services/library'
