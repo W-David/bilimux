@@ -78,8 +78,8 @@
         <div v-else>
           <p
             v-if="intro"
-            class="whitespace-pre-wrap text-xs text-zinc-400 leading-6">
-            {{ intro }}
+            class="min-w-0 overflow-x-hidden whitespace-pre-wrap wrap-anywhere text-xs text-zinc-400 leading-6">
+            {{ introText }}
           </p>
           <p
             v-else
@@ -284,6 +284,7 @@ const intro = computed(() => {
   if (isSeason.value) return props.evaluate || props.items[0]?.video.intro || ''
   return introOverride.value || video.value?.intro || ''
 })
+const introText = computed(() => intro.value.replace(/\r\n?/g, '\n').replace(/\n{3,}/g, '\n\n'))
 const dateText = computed(() => formatDate(dateOverride.value || video.value?.pubtime || video.value?.ctime))
 const seasonSubtitle = computed(() => {
   if (!props.season) return ''
