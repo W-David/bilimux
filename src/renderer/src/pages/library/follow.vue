@@ -49,13 +49,15 @@ import LibraryPreviewPanel from '@renderer/components/library/LibraryPreviewPane
 import { useCollectionSource } from '@renderer/composables/useCollectionSource'
 import { useAuthStore } from '@renderer/store/auth'
 import { useLibraryStore, type LibraryTab } from '@renderer/store/library'
+import { usePreferenceStore } from '@renderer/store/preference'
 import type { BangumiFollowItem } from '@shared/types'
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onActivated, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
 const authStore = useAuthStore()
 const libraryStore = useLibraryStore()
+const preferenceStore = usePreferenceStore()
 const collection = reactive(useCollectionSource())
 const selectedSeason = ref<BangumiFollowItem | null>(null)
 
@@ -69,14 +71,20 @@ const selectSeason = (item: BangumiFollowItem): void => {
   collection.open({ type: 'bangumi', item, catalog: catalog.value })
 }
 
+const loadTab = (): void => {
+  if (!authStore.isAuthenticated) return
+  if (!preferenceStore.preference['user-info']?.mid) return
+  void libraryStore.ensureTab(tab.value)
+}
+
 const refresh = (): void => {
   void libraryStore.refreshTab(tab.value)
 }
 
-watch(tab, id => {
+watch(tab, () => {
   selectedSeason.value = null
   collection.clear()
-  if (authStore.isAuthenticated) void libraryStore.ensureTab(id)
+  loadTab()
 })
 
 watch(
@@ -95,13 +103,10 @@ watch(
 )
 
 watch(
-  () => authStore.isAuthenticated,
-  ready => {
-    if (ready) void libraryStore.ensureTab(tab.value)
-  }
+  () => [authStore.isAuthenticated, preferenceStore.preference['user-info']?.mid] as const,
+  loadTab
 )
 
-onMounted(() => {
-  if (authStore.isAuthenticated) void libraryStore.ensureTab(tab.value)
-})
+onMounted(loadTab)
+onActivated(loadTab)
 </script>

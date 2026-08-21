@@ -22,6 +22,20 @@ BiliMux 是跨平台桌面应用，支持 Windows、macOS、Linux：
 - **转换缓存**：扫描 B 站客户端已下载的缓存（音视频分离的 m4s），一键合成 MP4
 - **下载片单**：登录后下载自己的收藏、追番、追剧，自动合成 MP4
 
+## 预览
+
+**片库 · 收藏**
+
+<img src="docs/screenshots/library-favorites.png" alt="片库收藏" width="900" />
+
+**片库 · 追番**
+
+<img src="docs/screenshots/library-bangumi.png" alt="片库追番" width="900" />
+
+**片库 · 本机缓存**
+
+<img src="docs/screenshots/library-cache.png" alt="本机缓存" width="900" />
+
 ## 安装
 
 到 [Releases](https://github.com/W-David/bilimux/releases) 下载对应安装包：
