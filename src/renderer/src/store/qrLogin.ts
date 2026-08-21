@@ -2,6 +2,7 @@ import { checkQrCodeLoginStatus, getQrCode } from '@renderer/api/network'
 import { emitter, mittbus } from '@renderer/ipc'
 import { fetchCurrentUserInfo } from '@renderer/services/user'
 import { useAuthStore } from '@renderer/store/auth'
+import { useLibraryStore } from '@renderer/store/library'
 import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
 import QRCode from 'qrcode'
@@ -99,9 +100,7 @@ export const useQrLoginStore = defineStore('qrLogin', () => {
       const preferenceStore = usePreferenceStore()
       preferenceStore.preference['user-info'] = userInfo
       preferenceStore.savePreference()
-      void import('@renderer/store/library').then(({ useLibraryStore }) => {
-        useLibraryStore().reset()
-      })
+      useLibraryStore().reset()
     } catch (error) {
       logger.error('登录后获取用户信息失败:', error)
     }
@@ -123,14 +122,14 @@ export const useQrLoginStore = defineStore('qrLogin', () => {
           status.value = 'success'
           stopPolling()
           stopTick()
-          const authStore = useAuthStore()
-          authStore.isAuthenticated = true
           try {
             await emitter.invoke('persist-cookie')
           } catch (error) {
             logger.error('持久化登录 Cookie 失败:', error)
           }
           await persistUserInfoOnLogin()
+          const authStore = useAuthStore()
+          authStore.isAuthenticated = true
           authStore.closeLogin()
           resetSession()
           break

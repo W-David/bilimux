@@ -66,14 +66,22 @@ import VideoCoverCard from '@renderer/components/library/VideoCoverCard.vue'
 import { useCollectionSource } from '@renderer/composables/useCollectionSource'
 import { useAuthStore } from '@renderer/store/auth'
 import { useLibraryStore } from '@renderer/store/library'
+import { usePreferenceStore } from '@renderer/store/preference'
 import type { FavoriteFolder } from '@shared/types'
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onActivated, onMounted, reactive, ref, watch } from 'vue'
 
 const authStore = useAuthStore()
 const libraryStore = useLibraryStore()
+const preferenceStore = usePreferenceStore()
 const collection = reactive(useCollectionSource())
 const selectedFolder = ref<FavoriteFolder | null>(null)
 const created = computed(() => libraryStore.created)
+
+const loadTab = (): void => {
+  if (!authStore.isAuthenticated) return
+  if (!preferenceStore.preference['user-info']?.mid) return
+  void libraryStore.ensureTab('created')
+}
 
 const selectFolder = (folder: FavoriteFolder): void => {
   selectedFolder.value = folder
@@ -100,13 +108,10 @@ watch(
 )
 
 watch(
-  () => authStore.isAuthenticated,
-  ready => {
-    if (ready) void libraryStore.ensureTab('created')
-  }
+  () => [authStore.isAuthenticated, preferenceStore.preference['user-info']?.mid] as const,
+  loadTab
 )
 
-onMounted(() => {
-  if (authStore.isAuthenticated) void libraryStore.ensureTab('created')
-})
+onMounted(loadTab)
+onActivated(loadTab)
 </script>
