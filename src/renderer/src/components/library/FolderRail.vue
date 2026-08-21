@@ -1,14 +1,14 @@
 <template>
   <aside
     ref="rootRef"
-    class="h-full overflow-y-auto border-r border-[#1f1f1f] bg-[#161616] p-4"
+    class="h-full overflow-y-auto border-r border-secondary bg-[#161616] p-4"
     @scroll="onScroll">
-    <div class="px-2 pb-2 text-[11px] text-gray-500">{{ folders.length }} 个收藏夹</div>
+    <div class="px-2 pb-2 text-caption text-gray-500">{{ folders.length }} 个收藏夹</div>
     <button
       v-for="folder in folders"
       :key="folder.id"
       type="button"
-      class="relative mb-1 grid w-full grid-cols-[40px_1fr] items-center gap-3 rounded-lg p-2 text-left border-l-2 border-l-transparent transform-all duration-200"
+      class="relative mb-1 grid w-full grid-cols-[40px_1fr] items-center gap-3 rounded-lg p-2 text-left border-l-2 border-l-transparent transition-all duration-200"
       :class="folder.id === selectedId ? 'bg-pink-400/10 border-l-pink-400!' : 'hover:bg-white/5'"
       @click="emit('select', folder)">
       <!-- <span
@@ -30,20 +30,20 @@
       <div class="min-w-0">
         <div
           class="truncate text-xs"
-          :class="folder.id === selectedId ? 'text-pink-300' : 'text-[#e5e7eb]'">
+          :class="folder.id === selectedId ? 'text-pink-300' : 'text-foreground'">
           {{ folder.title }}
           <span
             v-if="isPrivateFolder(folder)"
-            class="ml-1 rounded border border-white/10 px-1 text-[9px] text-gray-400">
+            class="ml-1 rounded border border-white/10 px-1 text-3xs text-gray-400">
             私密
           </span>
         </div>
-        <div class="mt-0.5 text-[10px] text-gray-500">{{ folder.media_count }} 个内容</div>
+        <div class="mt-0.5 text-2xs text-gray-500">{{ folder.media_count }} 个内容</div>
       </div>
     </button>
     <div
       v-if="loadingMore"
-      class="px-2 py-2 text-center text-[11px] text-gray-500">
+      class="px-2 py-2 text-center text-caption text-gray-500">
       加载更多…
     </div>
   </aside>

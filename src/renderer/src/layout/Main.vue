@@ -1,5 +1,5 @@
 <template>
-  <div class="relative h-full flex flex-col overflow-auto bg-[#181818]">
+  <div class="relative h-full flex flex-col overflow-auto bg-background">
     <RouterView v-slot="{ Component, route }">
       <Transition
         :name="route.meta.transition"

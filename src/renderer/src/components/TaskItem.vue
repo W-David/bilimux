@@ -15,7 +15,7 @@
         </div>
         <span
           v-if="partBadge"
-          class="absolute top-1 right-1 rounded-sm bg-black/60 px-1 py-0.5 text-[10px] text-gray-50">
+          class="absolute top-1 right-1 rounded-sm bg-black/60 px-1 py-0.5 text-2xs text-gray-50">
           {{ partBadge }}
         </span>
         <div class="absolute top-1.5 left-1.5 size-4.5 flex justify-center items-center bg-black/65 rounded-[3px]">
@@ -32,7 +32,7 @@
         <div class="min-w-0 flex items-center gap-1 text-xs text-gray-400">
           <span
             v-if="upName"
-            class="h-4 w-6 flex shrink-0 items-center justify-center rounded-sm bg-pink-400/20 text-[9px] text-pink-400 font-bold leading-none">
+            class="h-4 w-6 flex shrink-0 items-center justify-center rounded-sm bg-pink-400/20 text-3xs text-pink-400 font-bold leading-none">
             UP
           </span>
           <span

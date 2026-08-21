@@ -19,7 +19,7 @@
         </div>
       </div>
 
-      <Separator class="bg-[#1f1f1f]" />
+      <Separator class="bg-secondary" />
 
       <div class="flex flex-col p-2">
         <button

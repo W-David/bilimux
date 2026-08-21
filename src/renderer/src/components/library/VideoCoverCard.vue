@@ -19,12 +19,12 @@
       </div>
       <div
         v-if="badge.label"
-        class="absolute top-1.5 left-1.5 rounded-sm px-1.5 py-0.5 text-[10px] text-white"
+        class="absolute top-1.5 left-1.5 rounded-sm px-1.5 py-0.5 text-2xs text-white"
         :class="badge.status === 'completed' ? 'bg-green-600/80' : 'bg-pink-500/85'">
         {{ badge.label }}
       </div>
       <div
-        class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 bg-linear-to-t from-black/70 to-transparent px-1.5 pb-1.5 pt-6 text-[10px] text-white/90">
+        class="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 bg-linear-to-t from-black/70 to-transparent px-1.5 pb-1.5 pt-6 text-2xs text-white/90">
         <span class="flex min-w-0 items-center gap-2">
           <span v-if="playText">▶ {{ playText }}</span>
           <span v-if="danmakuText">💬 {{ danmakuText }}</span>

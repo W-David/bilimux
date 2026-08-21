@@ -33,7 +33,7 @@
     </div>
     <div class="min-w-0 flex flex-col flex-1">
       <div class="line-clamp-2 text-xs text-zinc leading-5 flex-1">{{ task.title }}</div>
-      <div class="mt-1.5 flex min-w-0 items-center gap-1.5 text-[10px] text-gray-500 shrink-0">
+      <div class="mt-1.5 flex min-w-0 items-center gap-1.5 text-2xs text-gray-500 shrink-0">
         <template v-if="task.uname">
           <span class="min-w-0 truncate">{{ task.uname }}</span>
         </template>

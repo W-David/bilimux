@@ -14,7 +14,7 @@
       <component
         :is="icon"
         class="size-5" />
-      <span class="text-[11px] leading-none">{{ label }}</span>
+      <span class="text-caption leading-none">{{ label }}</span>
     </a>
   </RouterLink>
 </template>
