@@ -19,5 +19,5 @@
   },
   "typescript.tsserver.enableTracing": true,
   "typescript.tsserver.watchOptions": "vscode",
-  "gitdoc.enabled": true
+  "gitdoc.enabled": false
 }
