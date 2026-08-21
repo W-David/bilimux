@@ -1,6 +1,6 @@
 {
   "name": "bilimux",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "packageManager": "pnpm@11.18.0",
   "description": "B 站缓存视频一键转 MP4，支持收藏夹下载",
   "license": "MIT",
