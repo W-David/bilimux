@@ -9,17 +9,16 @@ import {
   Library as LibraryIcon,
   List as ListIcon,
   ListTodo as ListTodoIcon,
-  Loader as LoaderIcon,
   Settings as SettingsIcon,
   Tv as TvIcon
 } from '@lucide/vue'
 import Layout from '@renderer/layout/index.vue'
 import Main from '@renderer/layout/Main.vue'
+import About from '@renderer/pages/About.vue'
 import LibraryCache from '@renderer/pages/library/cache.vue'
 import LibraryCreated from '@renderer/pages/library/created.vue'
 import LibraryFollow from '@renderer/pages/library/follow.vue'
 import LibraryIndex from '@renderer/pages/library/index.vue'
-import About from '@renderer/pages/About.vue'
 import SettingConvert from '@renderer/pages/setting/convert.vue'
 import SettingDownload from '@renderer/pages/setting/download.vue'
 import SettingIndex from '@renderer/pages/setting/index.vue'
@@ -116,7 +115,7 @@ const routes: RouteRecordRaw[] = [
                 name: 'tasks-active',
                 component: TaskList,
                 meta: {
-                  tab: { label: '进行中', icon: LoaderIcon }
+                  tab: { label: '进行中', icon: DownloadIcon }
                 }
               },
               {

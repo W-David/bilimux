@@ -1,10 +1,10 @@
 <template>
   <button
     type="button"
-    class="card-border group flex w-full flex-col overflow-hidden rounded-xl text-left shadow-lg shadow-black/40 transition-colors duration-200"
+    class="group flex w-full flex-col gap-2 overflow-hidden rounded-xl text-left transition-colors duration-200 p-2"
     :class="playable ? 'cursor-pointer hover:bg-white/4' : 'cursor-default'"
     @click="onClick">
-    <div class="relative aspect-video overflow-hidden bg-gray-900">
+    <div class="relative aspect-video overflow-hidden bg-gray-900 rounded-lg">
       <img
         v-if="cover"
         :src="safeCover(cover)"
@@ -31,14 +31,10 @@
         </div>
       </div>
     </div>
-    <div class="min-w-0 px-2.5 py-2 flex flex-col flex-1">
+    <div class="min-w-0 flex flex-col flex-1">
       <div class="line-clamp-2 text-xs text-zinc leading-5 flex-1">{{ task.title }}</div>
       <div class="mt-1.5 flex min-w-0 items-center gap-1.5 text-[10px] text-gray-500 shrink-0">
         <template v-if="task.uname">
-          <span
-            class="h-4 w-6 flex shrink-0 items-center justify-center rounded-sm bg-pink-400/20 text-[9px] text-pink-400 font-bold leading-none">
-            UP
-          </span>
           <span class="min-w-0 truncate">{{ task.uname }}</span>
         </template>
         <span

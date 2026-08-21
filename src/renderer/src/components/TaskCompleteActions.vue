@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-center gap-2">
+  <div class="flex items-center gap-2 bg-white/4 px-2 py-1 rounded-full">
     <DeleteTaskDialog
       :title="deleteTitle"
       :description="deleteDescription"

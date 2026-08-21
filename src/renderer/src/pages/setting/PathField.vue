@@ -19,7 +19,8 @@
 
 <script setup lang="ts">
 import { FolderOpen as FolderOpenIcon } from '@lucide/vue'
-import { emitter, mittbus } from '@renderer/ipc'
+import { emitter } from '@renderer/ipc'
+import { revealLocalPath } from '@renderer/utils/open-file'
 
 const props = withDefaults(
   defineProps<{
@@ -43,14 +44,7 @@ const emit = defineEmits<{
 
 const onButton = async (): Promise<void> => {
   if (props.action === 'reveal') {
-    try {
-      await emitter.invoke('open-folder', props.modelValue)
-    } catch (error) {
-      mittbus.emit('toast:add', {
-        severity: 'error',
-        message: error instanceof Error ? error.message : String(error)
-      })
-    }
+    await revealLocalPath(props.modelValue, '找不到这个文件夹，可能已被删除或移动')
     return
   }
 

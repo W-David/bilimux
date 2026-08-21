@@ -46,9 +46,9 @@
 import { HardDrive as HardDriveIcon, RefreshCcwDot as RefreshCwIcon } from '@lucide/vue'
 import CacheCoverCard from '@renderer/components/library/CacheCoverCard.vue'
 import LibraryGridSkeleton from '@renderer/components/library/LibraryGridSkeleton.vue'
-import { emitter, mittbus } from '@renderer/ipc'
 import { useConvertStore } from '@renderer/store/convert'
 import type { ConvertTask } from '@renderer/types/convert'
+import { openLocalPath } from '@renderer/utils/open-file'
 import { computed } from 'vue'
 
 const convertStore = useConvertStore()
@@ -60,13 +60,6 @@ const scanAndConvert = (): void => {
 }
 
 const playTask = async (task: ConvertTask): Promise<void> => {
-  if (!task.outputPath) return
-  const errMessage = await emitter.invoke('open-path', task.outputPath)
-  if (errMessage) {
-    mittbus.emit('toast:add', {
-      severity: 'error',
-      message: errMessage
-    })
-  }
+  await openLocalPath(task.outputPath || '')
 }
 </script>

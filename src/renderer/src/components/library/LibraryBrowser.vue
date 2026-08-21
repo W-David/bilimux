@@ -38,7 +38,7 @@
             :class="loading ? 'animate-spin' : ''" />
         </button>
       </div>
-      <aside class="min-h-0 overflow-hidden border-l border-[#1f1f1f] bg-[#141414] p-4 pr-0">
+      <aside class="min-h-0 overflow-hidden border-l border-[#1f1f1f] bg-[#141414]">
         <slot name="preview" />
       </aside>
     </template>

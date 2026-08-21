@@ -18,10 +18,10 @@
 
 /* 缓存 */
 @utility cache-video-grid {
-  @apply grid grid-cols-4 gap-x-3 gap-y-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-8;
+  @apply grid grid-cols-4 gap-x-1 gap-y-2 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-8;
 }
 
 /* 预览侧栏：右侧多留一点 padding，避免 overlay 滚动条压住简介/分集 */
 @utility preview-scroll {
-  @apply min-h-0 flex-1 overflow-y-auto pr-4;
+  @apply min-h-0 flex-1 overflow-y-auto p-4;
 }

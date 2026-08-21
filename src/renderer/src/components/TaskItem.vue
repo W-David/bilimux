@@ -126,7 +126,7 @@ import DownloadStatus from '@renderer/components/DownloadStatus.vue'
 import TaskCompleteActions from '@renderer/components/TaskCompleteActions.vue'
 import TaskDetailsDrawer from '@renderer/components/TaskDetailsDrawer.vue'
 import { convertDetailRows, downloadDetailRows } from '@renderer/components/taskDetails'
-import { emitter, mittbus } from '@renderer/ipc'
+import { openLocalPath, revealLocalPath } from '@renderer/utils/open-file'
 import type { UnifiedTask } from '@renderer/pages/tasks/unified'
 import { useConvertStore } from '@renderer/store/convert'
 import { useDownloadStore } from '@renderer/store/download'
@@ -251,37 +251,10 @@ const handleDelete = async (deleteFile: boolean): Promise<void> => {
 }
 
 const openFileLocation = async (): Promise<void> => {
-  if (!outputTarget.value) {
-    mittbus.emit('toast:add', {
-      severity: 'warn',
-      message: '文件路径不存在'
-    })
-    return
-  }
-  try {
-    await emitter.invoke('open-folder', outputTarget.value)
-  } catch (error) {
-    mittbus.emit('toast:add', {
-      severity: 'error',
-      message: error instanceof Error ? error.message : String(error)
-    })
-  }
+  await revealLocalPath(outputTarget.value)
 }
 
 const openTaskFile = async (): Promise<void> => {
-  if (!outputTarget.value) {
-    mittbus.emit('toast:add', {
-      severity: 'warn',
-      message: '文件路径不存在'
-    })
-    return
-  }
-  const errMessage = await emitter.invoke('open-path', outputTarget.value)
-  if (errMessage) {
-    mittbus.emit('toast:add', {
-      severity: 'error',
-      message: errMessage
-    })
-  }
+  await openLocalPath(outputTarget.value)
 }
 </script>

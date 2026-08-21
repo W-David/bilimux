@@ -2,7 +2,7 @@
   <Dialog
     :open="authStore.profileOpen"
     @update:open="onOpenChange">
-    <DialogContent class="w-[22rem] max-w-[22rem] gap-0 overflow-hidden p-0 sm:max-w-[22rem]">
+    <DialogContent class="w-88 gap-0 overflow-hidden p-0">
       <DialogHeader class="sr-only">
         <DialogTitle>用户信息</DialogTitle>
         <DialogDescription>查看账号信息，刷新或退出登录</DialogDescription>

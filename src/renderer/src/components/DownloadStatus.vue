@@ -38,8 +38,9 @@ import {
   X as XIcon
 } from '@lucide/vue'
 import ProgressCapsule from '@renderer/components/ProgressCapsule.vue'
-import { emitter, mittbus } from '@renderer/ipc'
+import { emitter } from '@renderer/ipc'
 import { useDownloadStore } from '@renderer/store/download'
+import { openLocalPath } from '@renderer/utils/open-file'
 import type { BiliVideoPage, FavoriteResource } from '@shared/types'
 import { computed } from 'vue'
 
@@ -131,13 +132,6 @@ const handleCancel = (): void => {
 }
 
 const play = async (): Promise<void> => {
-  if (!outputPath.value) return
-  const errMessage = await emitter.invoke('open-path', outputPath.value)
-  if (errMessage) {
-    mittbus.emit('toast:add', {
-      severity: 'error',
-      message: errMessage
-    })
-  }
+  await openLocalPath(outputPath.value)
 }
 </script>

@@ -1,10 +1,37 @@
 <template>
   <div
     v-if="!ready"
-    class="flex h-full flex-col">
-    <Skeleton class="aspect-video w-full shrink-0 rounded-xl" />
-    <Skeleton class="mt-3 h-6 w-4/5" />
-    <Skeleton class="mt-3 h-4 w-36" />
+    class="flex h-full min-h-0 flex-col">
+    <div class="preview-scroll">
+      <Skeleton class="aspect-video w-full shrink-0 rounded-xl" />
+      <Skeleton class="mt-3 h-6 w-4/5" />
+      <Skeleton class="mt-3 h-4 w-28" />
+      <div class="mt-3 p-2 border-t border-[#252525]">
+        <div class="leading-8 text-sm font-bold text-left">简介</div>
+        <div class="flex flex-col gap-2 py-2">
+          <Skeleton class="h-4 w-full" />
+          <Skeleton class="h-4 w-11/12" />
+          <Skeleton class="h-4 w-2/3" />
+        </div>
+      </div>
+      <div class="mt-1.5 p-2 border-t border-[#252525]">
+        <div class="leading-8 text-sm font-bold text-left">分集</div>
+        <div class="flex flex-col gap-2">
+          <div class="h-8 flex items-center justify-between">
+            <Skeleton class="h-4 w-36" />
+            <Skeleton class="h-4 w-16" />
+          </div>
+          <Skeleton
+            v-for="n in 4"
+            :key="n"
+            class="h-8 w-full rounded-md" />
+        </div>
+      </div>
+    </div>
+    <div class="h-14 shrink-0 flex items-center px-4 border-t border-[#1f1f1f]">
+      <Skeleton class="h-7 w-30 rounded-lg" />
+      <Skeleton class="ml-auto h-[26px] w-20 rounded-full" />
+    </div>
   </div>
   <div
     v-else
@@ -43,8 +70,10 @@
         <div class="leading-8 text-sm font-bold text-left">简介</div>
         <div
           v-if="introLoading"
-          class="py-2 text-xs text-gray-600">
-          正在获取简介
+          class="flex flex-col gap-2 py-2">
+          <Skeleton class="h-4 w-full" />
+          <Skeleton class="h-4 w-11/12" />
+          <Skeleton class="h-4 w-2/3" />
         </div>
         <div v-else>
           <p
@@ -66,42 +95,58 @@
         <div class="leading-8 text-sm font-bold text-left">分集</div>
         <div
           v-if="episodesLoading"
-          class="py-2 text-xs text-gray-600">
-          正在获取分集…
+          class="flex flex-col gap-2">
+          <div class="h-8 flex items-center justify-between">
+            <Skeleton class="h-4 w-36" />
+            <Skeleton class="h-4 w-16" />
+          </div>
+          <Skeleton
+            v-for="n in episodeSkeletonCount"
+            :key="n"
+            class="h-8 w-full rounded-md" />
         </div>
         <div
           v-else
           class="flex flex-col gap-2">
-          <div class="flex items-center justify-between">
-            <span class="text-xs text-gray-500">{{ episodeSummary }}</span>
+          <div class="h-8 flex items-center justify-between gap-2">
+            <div class="min-w-0 flex items-center gap-1.5 text-xs text-gray-400">
+              <component
+                :is="episodeStatusIcon"
+                class="size-3.5 shrink-0"
+                :class="fullyDownloaded ? 'text-green-400' : hasActiveDownload ? 'text-pink-400' : 'text-gray-500'" />
+              <span class="truncate">{{ episodeSummary }}</span>
+            </div>
             <button
+              v-if="showSelectAll"
               type="button"
-              class="text-xs text-pink-400"
+              class="shrink-0 text-xs text-pink-400"
               @click="toggleAll">
-              {{ allSelectableChecked ? '取消全选' : '全选' }}
+              {{ allSelectableChecked ? '取消全选' : '全选未下载' }}
             </button>
           </div>
           <div
             v-for="row in episodeRows"
             :key="row.key"
-            class="flex items-center px-1 py-2 not-last:border-b border-[#1f1f1f] text-xs">
-            <Checkbox
-              :model-value="row.checked"
-              :disabled="row.disabled"
-              @update:model-value="checked => toggleEpisode(row.key, Boolean(checked))" />
-            <span class="min-w-0 flex-1 truncate text-gray-300 ml-2">{{ row.label }}</span>
-            <div
-              v-if="row.active"
-              class="flex size-6 shrink-0 items-center justify-center"
+            class="flex w-full items-center h-8 gap-2 rounded-md border px-2 text-xs transition-colors"
+            :class="episodeRowClass(row)"
+            @click="onEpisodeRowClick(row)">
+            <span
+              class="min-w-0 flex-1 truncate"
+              :class="row.checked ? 'text-[#f6f6f6]' : 'text-gray-300'">
+              {{ row.label }}
+            </span>
+            <span
+              v-show="row.active"
+              class="flex shrink-0 items-center justify-center"
               aria-label="下载中">
-              <DownloadIcon class="size-4 text-pink-400" />
-            </div>
+              <Loader class="animate-pulse size-4 text-gray-400"></Loader>
+            </span>
             <button
-              v-else-if="row.downloaded"
+              v-show="row.downloaded"
               type="button"
+              class="group flex shrink-0 items-center justify-center"
               aria-label="播放"
-              class="group flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10"
-              @click="playEpisode(row.key)">
+              @click.stop="playEpisode(row.key)">
               <CirclePlayIcon
                 class="size-4 text-gray-400 transition-all duration-200 group-hover:scale-110 group-hover:text-green-400" />
             </button>
@@ -110,19 +155,22 @@
       </div>
     </div>
 
-    <div class="shrink-0 pt-4 pr-4 border-t border-[#1f1f1f]">
+    <div class="h-14 shrink-0 flex items-center px-4 border-t border-[#1f1f1f]">
       <div
         v-if="invalid"
-        class="rounded-lg bg-white/5 px-3 py-2 text-xs text-gray-400">
+        class="text-xs text-gray-400">
         该视频已失效，无法下载
       </div>
       <div
         v-else
-        class="flex items-center gap-2">
+        class="flex w-full items-center gap-2">
+        <Skeleton
+          v-if="showFooterDownload && qualitiesLoading"
+          class="h-7 w-30 shrink-0 rounded-lg" />
         <Select
-          v-if="showDownloadButton"
+          v-else-if="showFooterDownload"
           :model-value="qnValue"
-          :disabled="qualitiesLoading"
+          :disabled="qualityDisabled"
           @update:model-value="onQnChange">
           <SelectTrigger
             size="sm"
@@ -146,25 +194,14 @@
           </SelectContent>
         </Select>
         <div class="ml-auto flex items-center gap-2">
-          <Button
-            v-if="playable"
-            size="sm"
-            variant="outline"
-            @click="play">
-            播放
-          </Button>
-          <div
-            v-if="showDownloadingHint && !showEpisodes"
-            class="flex size-7 shrink-0 items-center justify-center"
-            aria-label="下载中">
-            <DownloadIcon class="size-4 text-pink-400" />
-          </div>
+          <Skeleton
+            v-if="showFooterDownload && pagesLoading"
+            class="h-6.5 w-20 shrink-0 rounded-full" />
           <ProgressCapsule
-            v-if="showDownloadButton"
+            v-else-if="showFooterDownload"
             size="sm"
             :label="downloadLabel"
             :disabled="downloadDisabled"
-            :loading="pagesLoading"
             :icon="DownloadIcon"
             :aria-label="downloadLabel"
             @click="downloadSelected" />
@@ -175,10 +212,15 @@
 </template>
 
 <script setup lang="ts">
-import { CirclePlay as CirclePlayIcon, Download as DownloadIcon } from '@lucide/vue'
-import type { CollectionMedia } from '@shared/types'
+import {
+  CircleCheck as CircleCheckIcon,
+  CirclePlay as CirclePlayIcon,
+  Download as DownloadIcon,
+  Loader
+} from '@lucide/vue'
 import ProgressCapsule from '@renderer/components/ProgressCapsule.vue'
-import { emitter, mittbus } from '@renderer/ipc'
+import { mittbus } from '@renderer/ipc'
+import { openLocalPath } from '@renderer/utils/open-file'
 import { fetchVideoDetail } from '@renderer/services/library'
 import { useDownloadStore } from '@renderer/store/download'
 import { usePreferenceStore } from '@renderer/store/preference'
@@ -190,7 +232,7 @@ import {
   pickPreferredDownloadQn,
   type DownloadQn
 } from '@shared/download'
-import type { BangumiFollowItem, BiliVideoPage } from '@shared/types'
+import type { BangumiFollowItem, BiliVideoPage, CollectionMedia } from '@shared/types'
 import { computed, ref, watch } from 'vue'
 
 type EpisodeRow = {
@@ -261,9 +303,14 @@ const isMultiPart = computed(() => {
   if (pages.value.length > 1) return true
   return (Number(video.value?.page) || 0) > 1
 })
-const showEpisodes = computed(() => isSeason.value || isMultiPart.value)
+const showEpisodes = computed(() => isSeason.value || Boolean(video.value))
 const introLoading = computed(() => (isSeason.value ? props.loading : detailLoading.value))
 const episodesLoading = computed(() => (isSeason.value ? props.loading : pagesLoading.value))
+const episodeSkeletonCount = computed(() => {
+  if (isSeason.value) return 6
+  const count = Number(video.value?.page) || 1
+  return Math.min(8, Math.max(1, count))
+})
 const qnValue = computed(() => (availableQns.value.includes(selectedQn.value) ? String(selectedQn.value) : undefined))
 const qnOptions = computed(() => {
   if (!availableQns.value.length) return []
@@ -318,10 +365,35 @@ const episodeRows = computed<EpisodeRow[]>(() => {
   })
 })
 
-const episodeSummary = computed(() => {
-  const selected = episodeRows.value.filter(row => row.checked).length
-  if (isSeason.value) return `共 ${props.items.length} 话 / 已选 ${selected}`
-  return `共 ${pages.value.length} P / 已选 ${selected} P`
+const episodeUnit = computed(() => (isSeason.value ? '话' : 'P'))
+
+const episodeTotal = computed(() => {
+  if (isSeason.value) return props.items.length
+  return pages.value.length
+})
+
+const downloadedCount = computed(() => episodeRows.value.filter(row => row.downloaded).length)
+
+const episodeSummary = computed(
+  () => `已下载 ${downloadedCount.value}${episodeUnit.value} / 共 ${episodeTotal.value}${episodeUnit.value}`
+)
+
+const episodeStatusIcon = computed(() => {
+  if (fullyDownloaded.value) return CircleCheckIcon
+  return DownloadIcon
+})
+
+const hasActiveDownload = computed(() => {
+  if (isSeason.value) return props.items.some(item => isOgvActive(item))
+  if (!video.value) return false
+  return pages.value.some(page => downloadStore.isCidActive(video.value!.bvid, page.cid))
+})
+
+const showSelectAll = computed(() => {
+  if (fullyDownloaded.value) return false
+  if (episodeTotal.value <= 1) return false
+  if (isSeason.value) return selectableSeasonItems.value.length > 0
+  return selectableCids.value.length > 0
 })
 
 const selectableCids = computed(() => {
@@ -352,30 +424,22 @@ const canEnqueue = computed(() => {
     return selectedKeys.value.some(key => selectableSeasonItems.value.some(item => item.key === key))
   }
   if (!video.value) return false
-  if (pages.value.length <= 1) {
-    const cid = pages.value[0]?.cid
-    return Boolean(cid) && !downloadStore.isCidActive(video.value.bvid, cid) && !isPartDownloaded(video.value.bvid, cid)
-  }
   return selectedCids.value.some(cid => selectableCids.value.includes(cid))
 })
 
 const downloadDisabled = computed(() => {
   if (qualitiesLoading.value) return true
-  if (isSeason.value) return !canEnqueue.value
-  return pagesLoading.value || !canEnqueue.value
+  if (pagesLoading.value) return true
+  return !canEnqueue.value
 })
 
-const showDownloadingHint = computed(() => {
-  if (isSeason.value) return props.items.some(item => isOgvActive(item))
-  if (!video.value) return false
-  return pages.value.some(page => downloadStore.isCidActive(video.value!.bvid, page.cid))
+const qualityDisabled = computed(() => {
+  if (qualitiesLoading.value) return true
+  if (fullyDownloaded.value) return true
+  return !canEnqueue.value
 })
 
-const playable = computed(() => {
-  if (isSeason.value) return props.items.some(item => item.cid && isPartDownloaded(item.video.bvid, item.cid))
-  if (!video.value) return false
-  return pages.value.some(page => isPartDownloaded(video.value!.bvid, page.cid))
-})
+const showFooterDownload = computed(() => showEpisodes.value || !fullyDownloaded.value)
 
 const fullyDownloaded = computed(() => {
   if (isSeason.value) {
@@ -384,11 +448,6 @@ const fullyDownloaded = computed(() => {
   }
   if (!video.value || !pages.value.length) return false
   return pages.value.every(page => isPartDownloaded(video.value!.bvid, page.cid))
-})
-
-const showDownloadButton = computed(() => {
-  if (fullyDownloaded.value) return false
-  return canEnqueue.value || pagesLoading.value || qualitiesLoading.value
 })
 
 const applyQualities = (qns: DownloadQn[]): void => {
@@ -419,24 +478,31 @@ const onQnChange = (value: unknown): void => {
   selectedQn.value = qn
 }
 
-const toggleEpisode = (key: string, checked: boolean): void => {
+const episodeRowClass = (row: EpisodeRow): string => {
+  if (row.disabled) return 'border-transparent bg-white/4'
+  if (row.checked) return 'cursor-pointer border-pink-400 bg-pink-400/10'
+  return 'cursor-pointer border-transparent hover:border-white/15 bg-white/4'
+}
+
+const onEpisodeRowClick = (row: EpisodeRow): void => {
+  if (row.disabled) return
+  toggleEpisode(row.key)
+}
+
+const toggleEpisode = (key: string): void => {
   const row = episodeRows.value.find(item => item.key === key)
   if (row?.disabled) return
   if (isSeason.value) {
-    if (checked) {
-      if (!selectedKeys.value.includes(key)) selectedKeys.value = [...selectedKeys.value, key]
-      return
-    }
-    selectedKeys.value = selectedKeys.value.filter(item => item !== key)
+    selectedKeys.value = selectedKeys.value.includes(key)
+      ? selectedKeys.value.filter(item => item !== key)
+      : [...selectedKeys.value, key]
     return
   }
   const cid = Number(key)
   if (!Number.isFinite(cid)) return
-  if (checked) {
-    if (!selectedCids.value.includes(cid)) selectedCids.value = [...selectedCids.value, cid]
-    return
-  }
-  selectedCids.value = selectedCids.value.filter(item => item !== cid)
+  selectedCids.value = selectedCids.value.includes(cid)
+    ? selectedCids.value.filter(item => item !== cid)
+    : [...selectedCids.value, cid]
 }
 
 const toggleAll = (): void => {
@@ -477,29 +543,19 @@ const downloadSelected = (): void => {
   const current = props.payload
   if (!current) return
   const list = pages.value.length ? pages.value : []
-  const targets =
-    list.length <= 1
-      ? list
-      : list.filter(
-          page =>
-            selectedCids.value.includes(page.cid) &&
-            !downloadStore.isCidActive(current.video.bvid, page.cid) &&
-            !isPartDownloaded(current.video.bvid, page.cid)
-        )
+  const targets = list.filter(
+    page =>
+      selectedCids.value.includes(page.cid) &&
+      !downloadStore.isCidActive(current.video.bvid, page.cid) &&
+      !isPartDownloaded(current.video.bvid, page.cid)
+  )
   for (const page of targets) {
     downloadStore.enqueuePart(current.video, current.folderName, page, list.length || 1, { kind: 'ugc', qn })
   }
 }
 
 const openLocalFile = async (path: string): Promise<void> => {
-  if (!path) return
-  const errMessage = await emitter.invoke('open-path', path)
-  if (errMessage) {
-    mittbus.emit('toast:add', {
-      severity: 'error',
-      message: errMessage
-    })
-  }
+  await openLocalPath(path)
 }
 
 const playEpisode = async (key: string): Promise<void> => {
@@ -512,18 +568,6 @@ const playEpisode = async (key: string): Promise<void> => {
   const cid = Number(key)
   if (!Number.isFinite(cid)) return
   await openLocalFile(downloadStore.getItem(video.value.bvid, cid).outputPath)
-}
-
-const play = async (): Promise<void> => {
-  let path = ''
-  if (isSeason.value) {
-    const item = props.items.find(entry => entry.cid && isPartDownloaded(entry.video.bvid, entry.cid))
-    path = item ? playPathOf(item) : ''
-  } else if (video.value) {
-    const page = pages.value.find(item => isPartDownloaded(video.value!.bvid, item.cid))
-    path = page ? downloadStore.getItem(video.value.bvid, page.cid).outputPath : ''
-  }
-  await openLocalFile(path)
 }
 
 watch(
@@ -547,13 +591,6 @@ watch(
     try {
       const list = await downloadStore.loadPages(payload.video.bvid)
       if (seq !== loadSeq) return
-      selectedCids.value = list
-        .filter(
-          page =>
-            !downloadStore.isCidCompleted(payload.video.bvid, page.cid) &&
-            !downloadStore.isCidActive(payload.video.bvid, page.cid)
-        )
-        .map(page => page.cid)
       const cid = list[0]?.cid
       if (cid) {
         void loadQualitiesFor(seq, { bvid: payload.video.bvid, cid, kind: 'ugc' })
@@ -606,11 +643,9 @@ watch(
 )
 
 watch(
-  () => props.items,
-  list => {
-    selectedKeys.value = list
-      .filter(item => !isOgvActive(item) && !(item.cid && isPartDownloaded(item.video.bvid, item.cid)))
-      .map(item => item.key)
+  () => props.season?.seasonId,
+  () => {
+    selectedKeys.value = []
   }
 )
 </script>

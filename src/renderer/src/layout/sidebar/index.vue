@@ -27,7 +27,7 @@
           {{ identityInitial }}
         </span>
         <span
-          class="max-w-full truncate text-[12px] leading-none"
+          class="max-w-full truncate text-xs leading-none"
           :class="authStore.isAuthenticated ? 'text-gray-300' : 'text-pink-400'">
           {{ identityLabel }}
         </span>
@@ -53,8 +53,8 @@ const menus = getChildMenus(main)
 
 const user = computed(() => preferenceStore.preference['user-info'])
 const userFace = computed(() => user.value?.face || '')
-const identityLabel = computed(() => (authStore.isAuthenticated ? user.value?.uname || '已登录' : '登录'))
-const identityInitial = computed(() => (identityLabel.value === '登录' ? '未' : identityLabel.value.slice(0, 1)))
+const identityLabel = computed(() => (authStore.isAuthenticated ? user.value?.uname || '已登录' : '未登录'))
+const identityInitial = computed(() => (!authStore.isAuthenticated ? '未' : identityLabel.value.slice(0, 1)))
 
 const onIdentityClick = (): void => {
   if (authStore.isAuthenticated) {

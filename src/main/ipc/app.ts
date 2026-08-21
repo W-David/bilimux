@@ -2,7 +2,8 @@ import { BrowserWindow, shell } from 'electron'
 import { dialog } from 'electron/main'
 import type Application from '../Application'
 import logger from '../core/Logger'
-import { assertAllowedPath, getAllowedUserRoots } from '../utils/allowed-path'
+import { getAllowedUserRoots } from '../utils/allowed-path'
+import { openAllowedPath } from '../utils/open-local'
 
 export function registerAppIpc(app: Application): void {
   app.ipcManager.mainIpc.handle('open-file-dialog', (event, options) => {
@@ -19,14 +20,12 @@ export function registerAppIpc(app: Application): void {
 
   app.ipcManager.mainIpc.handle('open-path', async (_, targetPath: string) => {
     const roots = getAllowedUserRoots(app.configManager, app.context.platform)
-    const allowed = assertAllowedPath(targetPath, roots)
-    return shell.openPath(allowed)
+    return openAllowedPath(targetPath, roots, 'open')
   })
 
   app.ipcManager.mainIpc.handle('open-folder', async (_, targetPath: string) => {
     const roots = getAllowedUserRoots(app.configManager, app.context.platform)
-    const allowed = assertAllowedPath(targetPath, roots)
-    shell.showItemInFolder(allowed)
+    return openAllowedPath(targetPath, roots, 'reveal')
   })
 
   app.ipcManager.mainIpc.handle('open-log-file', async () => {

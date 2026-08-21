@@ -6,7 +6,7 @@
     <a
       :href="href"
       :draggable="false"
-      class="no-drag relative flex h-full cursor-pointer items-center justify-center gap-2 px-5 text-sm transition-colors [&_*]:pointer-events-none"
+      class="no-drag relative flex h-full cursor-pointer items-center justify-center gap-2 px-5 text-sm transition-colors **:pointer-events-none"
       :class="isActive ? 'text-pink-400' : 'text-zinc-400 hover:text-gray-200'"
       @click="navigate">
       <component

@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { CircleCheck as CircleCheckIcon, Inbox as InboxIcon, Loader as LoaderIcon } from '@lucide/vue'
+import { CircleCheck as CircleCheckIcon, DownloadIcon, Inbox as InboxIcon } from '@lucide/vue'
 import TaskItem from '@renderer/components/TaskItem.vue'
 import { useDownloadStore } from '@renderer/store/download'
 import { computed, type Component } from 'vue'
@@ -51,7 +51,7 @@ const emptyText = computed(() => {
 })
 
 const emptyIcon = computed<Component>(() => {
-  if (lane.value === 'active') return LoaderIcon
+  if (lane.value === 'active') return DownloadIcon
   if (lane.value === 'complete') return CircleCheckIcon
   return InboxIcon
 })
