@@ -23,7 +23,7 @@
 
 /* 预览侧栏：右侧多留一点 padding，避免 overlay 滚动条压住简介/分集 */
 @utility preview-scroll {
-  @apply min-h-0 flex-1 overflow-y-auto p-4;
+  @apply min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4;
 }
 
 @utility h-headbar {

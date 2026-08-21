@@ -19,7 +19,7 @@
           </DialogClose>
         </header>
 
-        <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+        <div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-5 py-4">
           <table class="w-full">
             <tbody>
               <tr

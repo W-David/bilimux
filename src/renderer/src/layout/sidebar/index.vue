@@ -1,7 +1,7 @@
 <template>
-  <div class="h-full bg-secondary">
-    <div class="h-full flex flex-col items-center px-2 pb-4 pt-14">
-      <div class="flex w-full flex-col items-center gap-2">
+  <div class="h-full min-w-0 overflow-x-hidden bg-secondary">
+    <div class="h-full min-w-0 flex flex-col items-center px-2 pb-4 pt-14">
+      <div class="flex w-full min-w-0 flex-col items-center gap-2">
         <SidebarItem
           v-for="item in menus"
           :key="String(item.name)"
@@ -10,7 +10,7 @@
       <div class="flex-1"></div>
       <button
         type="button"
-        class="no-drag w-full cursor-pointer rounded-xl px-1 py-2.5 flex flex-col items-center gap-3 text-gray-400 transition-colors hover:bg-white/5 hover:text-gray-200 **:pointer-events-none"
+        class="no-drag w-full min-w-0 cursor-pointer rounded-xl px-1 py-2.5 flex flex-col items-center gap-3 text-gray-400 transition-colors hover:bg-white/5 hover:text-gray-200 **:pointer-events-none"
         :aria-label="identityLabel"
         @click="onIdentityClick">
         <Avatar
@@ -27,7 +27,7 @@
           {{ identityInitial }}
         </span>
         <span
-          class="max-w-full truncate text-xs leading-none"
+          class="block w-full min-w-0 truncate text-center text-xs leading-none"
           :class="authStore.isAuthenticated ? 'text-gray-300' : 'text-pink-400'">
           {{ identityLabel }}
         </span>

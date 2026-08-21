@@ -1,7 +1,7 @@
 <template>
   <div class="mx-auto h-full w-full flex flex-col text-sm">
     <!-- 分组视图（KeepAlive 缓存） -->
-    <div class="min-h-0 flex-1 overflow-y-auto px-6">
+    <div class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-6">
       <RouterView v-slot="{ Component, route: currentRoute }">
         <Transition
           :name="route.meta.transition || 'fade'"

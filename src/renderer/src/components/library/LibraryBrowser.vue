@@ -4,7 +4,7 @@
     :title="loginTitle" />
   <div
     v-else
-    class="relative h-full min-h-0 grid"
+    class="relative h-full min-h-0 min-w-0 grid"
     :class="hasRail ? 'grid-cols-[232px_1fr_350px]' : 'grid-cols-[1fr_350px]'">
     <div
       v-if="error && !loading"
@@ -20,10 +20,10 @@
     </div>
     <template v-else>
       <slot name="rail" />
-      <div class="relative min-h-0">
+      <div class="relative min-h-0 min-w-0">
         <div
           ref="gridRoot"
-          class="h-full overflow-y-auto px-4 py-4"
+          class="h-full overflow-x-hidden overflow-y-auto px-4 py-4"
           @scroll="onGridScroll">
           <slot />
         </div>
