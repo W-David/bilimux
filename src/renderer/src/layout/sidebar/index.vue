@@ -1,6 +1,17 @@
 <template>
   <div class="h-full min-w-0 overflow-x-hidden bg-secondary">
-    <div class="h-full min-w-0 flex flex-col items-center px-2 pb-4 pt-14">
+    <div
+      class="h-full min-w-0 flex flex-col items-center px-2 pb-4"
+      :class="isMac ? 'pt-(--headbar-height)' : ''">
+      <div
+        v-if="!isMac"
+        class="draggable h-headbar flex w-full shrink-0 items-center justify-center">
+        <img
+          src="@renderer/assets/bilimux.svg"
+          alt=""
+          aria-hidden="true"
+          class="size-10 pointer-events-none select-none" />
+      </div>
       <div class="flex w-full min-w-0 flex-col items-center gap-2">
         <SidebarItem
           v-for="item in menus"
@@ -48,6 +59,7 @@ import SidebarItem from './Item.vue'
 const router = useRouter()
 const authStore = useAuthStore()
 const preferenceStore = usePreferenceStore()
+const isMac = window.electron.process.platform === 'darwin'
 const main = router.getRoutes().find(record => record.name === 'main')
 const menus = getChildMenus(main)
 

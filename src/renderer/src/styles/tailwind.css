@@ -30,6 +30,11 @@
   height: var(--headbar-height);
 }
 
+/* 系统按钮区宽度 + 16px；无 overlay 时就是 1rem */
+@utility titlebar-end-pad {
+  padding-right: calc(1rem + max(0px, 100vw - env(titlebar-area-x, 100vw) - env(titlebar-area-width, 0px)));
+}
+
 @utility draggable {
   -webkit-app-region: drag;
   user-select: none;
