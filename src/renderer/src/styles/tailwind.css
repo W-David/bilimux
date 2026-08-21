@@ -18,7 +18,7 @@
 
 /* 缓存 */
 @utility cache-video-grid {
-  @apply grid grid-cols-4 gap-x-4 gap-y-5 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-8;
+  @apply grid grid-cols-4 gap-x-3 gap-y-4 xl:grid-cols-5 2xl:grid-cols-6 3xl:grid-cols-8;
 }
 
 /* 预览侧栏：右侧多留一点 padding，避免 overlay 滚动条压住简介/分集 */
