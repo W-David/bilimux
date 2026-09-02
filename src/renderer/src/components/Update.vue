@@ -19,7 +19,7 @@ onUnmounted(() => {
 <template>
   <div
     v-if="updateAvailable"
-    class="fixed right-4 top-4 z-50 h-8 w-25 select-none">
+    class="no-drag fixed bottom-4 z-50 h-8 w-25 select-none left-[calc(var(--sidebar-width)+1rem)]">
     <div
       class="relative h-full w-full cursor-pointer overflow-hidden backdrop-blur ring-1 ring-pink-400/40 hover:ring-pink-400 text-sm text-pink-400 transition-all duration-300 flex items-center justify-center gap-2 bg-pink-400/10 rounded-full"
       :class="{ 'bg-transparent pointer-events-none': downloading }">
