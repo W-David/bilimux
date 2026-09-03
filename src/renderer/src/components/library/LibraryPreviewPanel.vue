@@ -155,7 +155,9 @@
       </div>
     </div>
 
-    <div class="h-14 shrink-0 flex items-center px-4 border-t border-secondary">
+    <div
+      v-if="invalid || showFooterDownload"
+      class="h-14 shrink-0 flex items-center px-4 border-t border-secondary">
       <div
         v-if="invalid"
         class="text-xs text-gray-400">
@@ -440,7 +442,7 @@ const qualityDisabled = computed(() => {
   return !canEnqueue.value
 })
 
-const showFooterDownload = computed(() => showEpisodes.value || !fullyDownloaded.value)
+const showFooterDownload = computed(() => !fullyDownloaded.value)
 
 const fullyDownloaded = computed(() => {
   if (isSeason.value) {
@@ -530,12 +532,12 @@ const downloadSelected = (): void => {
         item.folderName,
         {
           cid: item.cid!,
-          page: 1,
-          part: item.video.title,
+          page: item.index ?? 1,
+          part: item.partTitle || '',
           duration: item.video.duration
         },
-        1,
-        { kind: 'ogv', epId: item.epId, qn }
+        props.items.length || 1,
+        { kind: 'ogv', epId: item.epId, qn, ogvCategory: item.ogvCategory ?? 'bangumi' }
       )
     }
     return

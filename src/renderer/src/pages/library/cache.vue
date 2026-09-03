@@ -9,7 +9,7 @@
         v-else-if="!items.length"
         class="h-full flex flex-col items-center justify-center gap-3 text-gray-400">
         <HardDriveIcon class="size-10" />
-        <span class="text-sm">还没有扫描过客户端缓存</span>
+        <span class="text-sm">{{ emptyCopy }}</span>
         <Button
           size="sm"
           variant="outline"
@@ -21,8 +21,13 @@
       <div
         v-else
         class="cache-video-grid">
+        <div
+          v-if="!visibleItems.length"
+          class="col-span-full flex h-64 items-center justify-center text-sm text-gray-500">
+          没有符合筛选条件的内容
+        </div>
         <CacheCoverCard
-          v-for="item in items"
+          v-for="item in visibleItems"
           :key="item.id"
           :task="item"
           @play="playTask(item)" />
@@ -47,13 +52,23 @@ import { HardDrive as HardDriveIcon, RefreshCcwDot as RefreshCwIcon } from '@luc
 import CacheCoverCard from '@renderer/components/library/CacheCoverCard.vue'
 import LibraryGridSkeleton from '@renderer/components/library/LibraryGridSkeleton.vue'
 import { useConvertStore } from '@renderer/store/convert'
+import { useLibraryStore } from '@renderer/store/library'
 import type { ConvertTask } from '@renderer/types/convert'
 import { openLocalPath } from '@renderer/utils/open-file'
+import { convertStatusToDownloadFilter, matchesLibraryDownloadFilter } from '@shared/library-filter'
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 
+const route = useRoute()
 const convertStore = useConvertStore()
+const libraryStore = useLibraryStore()
 const items = computed(() => convertStore.entireList)
 const busy = computed(() => convertStore.runStatus === 'scanning' || convertStore.runStatus === 'processing')
+const filter = computed(() => libraryStore.filterFor(route.name))
+const visibleItems = computed(() =>
+  items.value.filter(item => matchesLibraryDownloadFilter(filter.value, convertStatusToDownloadFilter(item.status)))
+)
+const emptyCopy = computed(() => (convertStore.hasScanned ? '缓存目录里没有可显示的视频' : '还没有扫描过客户端缓存'))
 
 const scanAndConvert = (): void => {
   void convertStore.scanAndConvert()

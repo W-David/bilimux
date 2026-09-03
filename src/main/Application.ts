@@ -5,6 +5,7 @@ import AutoLauncher from './core/AutoLauncher'
 import { ComposEngine, ConvertTaskResult } from './core/ComposEngine'
 import ConfigManager from './core/ConfigManager'
 import Context from './core/Context'
+import CookieSession from './core/CookieSession'
 import ConvertHistoryStore from './core/ConvertHistoryStore'
 import DownloadHistoryStore from './core/DownloadHistoryStore'
 import DownloadManager from './core/DownloadManager'
@@ -25,6 +26,7 @@ export default class Application {
   composEngine: ComposEngine
   updateManager: UpdateManager
   httpClient: HttpClient
+  cookieSession: CookieSession
   processQueue: ProcessQueue<ConvertTaskResult>
   convertHistoryStore: ConvertHistoryStore
   downloadHistoryStore: DownloadHistoryStore
@@ -42,6 +44,7 @@ export default class Application {
     this.ipcManager = new IPCManager()
 
     this.httpClient = new HttpClient()
+    this.cookieSession = new CookieSession(this.httpClient)
 
     this.downloadHistoryStore = new DownloadHistoryStore()
     this.convertHistoryStore = new ConvertHistoryStore()

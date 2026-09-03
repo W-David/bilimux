@@ -1,4 +1,3 @@
-import { checkAuthStatus } from '@renderer/api/network'
 import { emitter, mittbus } from '@renderer/ipc'
 import { usePreferenceStore } from '@renderer/store/preference'
 import logger from 'electron-log/renderer'
@@ -28,7 +27,6 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     /**
      * 清掉登录态与本地用户缓存，并离开需要登录的页面。
-     * Cookie 刷新接口放到后续波次；这里先明确要求重新扫码。
      */
     async invalidateSession(message?: string) {
       this.isAuthenticated = false
@@ -54,30 +52,13 @@ export const useAuthStore = defineStore('auth', {
       this.profileOpen = false
     },
     async refreshAuth() {
-      const biliJct = await emitter.invoke('get-cookie')
-      if (!biliJct) {
-        logger.error('bili_jct cookie not found')
-        await this.invalidateSession('登录状态已失效，请重新扫码登录')
+      const result = await emitter.invoke('auth:ensure')
+      if (!result.ok) {
+        await this.invalidateSession(result.message || '登录状态已失效，请重新扫码登录')
         return
       }
-      const res = await checkAuthStatus({
-        searchParams: {
-          csrf: biliJct.value
-        }
-      })
-      if (res.code !== 0 || !res.data) {
-        await this.invalidateSession('登录状态已失效，请重新扫码登录')
-        return
-      }
-      const { refresh } = res.data
-      // refresh 为 true 时，需要刷新 cookie；完整刷新流程放到后续波次
-      if (refresh) {
-        logger.debug('需要刷新Cookie')
-        await this.invalidateSession('登录状态已过期，请重新扫码登录')
-      } else {
-        this.isAuthenticated = true
-        logger.debug('用户已登录,使用当前Cookie')
-      }
+      this.isAuthenticated = true
+      logger.debug('用户已登录')
     },
     /**
      * 确保登录态完成首次检查；并发调用共享同一次检查

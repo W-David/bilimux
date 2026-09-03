@@ -17,7 +17,9 @@ import { DownloadEventMap, DownloadProgressStatus, DownloadTaskKey, DownloadVide
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { createDirIfNotExist, sanitizeFileName } from '../utils'
+import { sanitizeFileName } from '@shared/filename'
+import { buildOutputLayout } from '@shared/output-path'
+import { createDirIfNotExist } from '../utils'
 import { getWbiSignedParams } from '../utils/wbi'
 import { ComposEngine } from './ComposEngine'
 import ConfigManager from './ConfigManager'
@@ -237,11 +239,17 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
   private createRuntime(task: DownloadVideoTask): TaskRuntime {
     const downloadConfig = this.configManager.getStore()['download-config']
     const outputDir = downloadConfig.outputDir
-    const titlePart = sanitizeFileName(task.title)
-    const partSuffix =
-      task.pages > 1 || task.page > 1 ? `-P${task.page}-${sanitizeFileName(task.part || `P${task.page}`)}` : ''
-    const finalPath = path.join(outputDir, `[${task.bvid}]-[${task.uname}]-${titlePart}${partSuffix}.mp4`)
-    const folderDir = path.dirname(finalPath)
+    const workTitle = task.kind === 'ogv' ? task.folderName || task.title : task.title
+    const layout = buildOutputLayout({
+      title: workTitle,
+      part: task.part,
+      page: task.page,
+      pages: task.pages,
+      kind: task.kind ?? 'ugc',
+      ogvCategory: task.ogvCategory
+    })
+    const folderDir = layout.directory ? path.join(outputDir, sanitizeFileName(layout.directory)) : outputDir
+    const finalPath = path.join(folderDir, `${sanitizeFileName(layout.fileStem)}.mp4`)
 
     return {
       task,

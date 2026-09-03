@@ -20,6 +20,8 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "vue-tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "pnpm typecheck:node && pnpm typecheck:web",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "start": "electron-vite preview",
     "dev": "electron-vite dev --watch",
     "build": "pnpm typecheck && electron-vite build",
@@ -68,6 +70,7 @@
     "unplugin-vue-components": "^30.0.0",
     "vite": "^7.1.6",
     "vite-plugin-vue-devtools": "^8.2.1",
+    "vitest": "^3.2.7",
     "vue-eslint-parser": "^10.2.0",
     "vue-tsc": "^3.0.7"
   }

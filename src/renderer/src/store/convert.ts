@@ -31,6 +31,7 @@ export const useConvertStore = defineStore('convert', () => {
   const errorMessage = ref('')
   const successCount = ref(0)
   const failCount = ref(0)
+  const hasScanned = ref(false)
 
   const liveBvids = computed(() => new Set(tasks.value.keys()))
 
@@ -78,6 +79,7 @@ export const useConvertStore = defineStore('convert', () => {
       historyVersion += 1
       tasks.value = new Map()
       await loadHistory()
+      hasScanned.value = true
       if (!result.cacheOk) {
         runStatus.value = 'error'
         errorMessage.value = result.message || '缓存扫描失败'
@@ -309,6 +311,7 @@ export const useConvertStore = defineStore('convert', () => {
     })
 
     ipc.on('convert:prescan:done', () => {
+      hasScanned.value = true
       void loadHistory()
     })
   }
@@ -320,6 +323,7 @@ export const useConvertStore = defineStore('convert', () => {
     errorMessage,
     successCount,
     failCount,
+    hasScanned,
     entireList,
     prescan,
     scanAndConvert,

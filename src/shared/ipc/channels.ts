@@ -27,6 +27,7 @@ export const INVOKE_CHANNELS = [
   'download:history:remove',
   'download:history:clear',
   'persist-cookie',
+  'auth:ensure',
   'http-get'
 ] as const
 

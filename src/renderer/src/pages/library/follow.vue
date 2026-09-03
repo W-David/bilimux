@@ -16,10 +16,15 @@
       {{ catalog === 'cinema' ? '暂无追剧' : '暂无追番' }}
     </div>
     <div
+      v-else-if="!visibleItems.length"
+      class="flex h-full items-center justify-center text-sm text-gray-500">
+      没有符合筛选条件的内容
+    </div>
+    <div
       v-else
       class="library-poster-grid">
       <BangumiPosterCard
-        v-for="item in state.items"
+        v-for="item in visibleItems"
         :key="item.seasonId"
         :item="item"
         :selected="item.seasonId === selectedSeason?.seasonId"
@@ -48,8 +53,10 @@ import LibraryGridSkeleton from '@renderer/components/library/LibraryGridSkeleto
 import LibraryPreviewPanel from '@renderer/components/library/LibraryPreviewPanel.vue'
 import { useCollectionSource } from '@renderer/composables/useCollectionSource'
 import { useAuthStore } from '@renderer/store/auth'
+import { useDownloadStore } from '@renderer/store/download'
 import { useLibraryStore, type LibraryTab } from '@renderer/store/library'
 import { usePreferenceStore } from '@renderer/store/preference'
+import { downloadFilterStatusFromBadge, matchesLibraryDownloadFilter } from '@shared/library-filter'
 import type { BangumiFollowItem } from '@shared/types'
 import { computed, onActivated, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -65,6 +72,14 @@ const catalog = computed<'bangumi' | 'cinema'>(() => (route.name === 'library-ci
 const tab = computed<LibraryTab>(() => catalog.value)
 const state = computed(() => (catalog.value === 'cinema' ? libraryStore.cinema : libraryStore.bangumi))
 const evaluate = computed(() => collection.selectedItem?.video.intro || collection.items[0]?.video.intro || '')
+const downloadStore = useDownloadStore()
+const filter = computed(() => libraryStore.filterFor(route.name))
+const visibleItems = computed(() =>
+  state.value.items.filter(item => {
+    const badge = downloadStore.workBadge(item.title, item.totalCount)
+    return matchesLibraryDownloadFilter(filter.value, downloadFilterStatusFromBadge(badge))
+  })
+)
 
 const selectSeason = (item: BangumiFollowItem): void => {
   selectedSeason.value = item
@@ -102,10 +117,7 @@ watch(
   { immediate: true }
 )
 
-watch(
-  () => [authStore.isAuthenticated, preferenceStore.preference['user-info']?.mid] as const,
-  loadTab
-)
+watch(() => [authStore.isAuthenticated, preferenceStore.preference['user-info']?.mid] as const, loadTab)
 
 onMounted(loadTab)
 onActivated(loadTab)

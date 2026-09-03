@@ -48,7 +48,8 @@ type IpcMainHandleEvents = {
   'download:history:get': (key: DownloadTaskKey) => DownloadHistoryRecord | null
   'download:history:remove': (key: DownloadTaskKey, deleteFile?: boolean) => void
   'download:history:clear': () => void
-  'persist-cookie': () => void
+  'persist-cookie': (refreshToken?: string) => void
+  'auth:ensure': () => { ok: boolean; message?: string }
   'http-get': (url: string, options?: BiliHttpGetOptions) => BiliResponseType
 }
 

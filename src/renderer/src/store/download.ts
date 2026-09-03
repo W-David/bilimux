@@ -25,6 +25,7 @@ export type DownloadTaskRow = {
   history: DownloadHistoryRecord | null
   kind?: 'ugc' | 'ogv'
   epId?: number
+  ogvCategory?: 'bangumi' | 'cinema'
 }
 
 type VideoBadge = {
@@ -179,7 +180,7 @@ export const useDownloadStore = defineStore('download', () => {
     folderName: string,
     page: BiliVideoPage,
     pagesTotal: number,
-    extra?: { kind?: 'ugc' | 'ogv'; epId?: number }
+    extra?: { kind?: 'ugc' | 'ogv'; epId?: number; ogvCategory?: 'bangumi' | 'cinema' }
   ): void {
     snapshots[downloadTaskId(video.bvid, page.cid)] = {
       video: {
@@ -191,7 +192,8 @@ export const useDownloadStore = defineStore('download', () => {
       page,
       pagesTotal,
       kind: extra?.kind ?? 'ugc',
-      epId: extra?.epId
+      epId: extra?.epId,
+      ogvCategory: extra?.ogvCategory
     }
   }
 
@@ -289,6 +291,40 @@ export const useDownloadStore = defineStore('download', () => {
     return rows
   })
 
+  function workBadge(folderName: string, expectedCount = 0): VideoBadge {
+    const seen = new Set<string>()
+    const keys: Array<{ bvid: string; cid: number }> = []
+    const add = (bvid: string, cid: number): void => {
+      const id = downloadTaskId(bvid, cid)
+      if (seen.has(id)) return
+      seen.add(id)
+      keys.push({ bvid, cid })
+    }
+    for (const record of history.value) {
+      if (record.folderName === folderName) add(record.bvid, record.cid)
+    }
+    for (const [key, snap] of Object.entries(snapshots)) {
+      if (snap.folderName !== folderName) continue
+      const parsed = parseTaskKey(key)
+      if (parsed) add(parsed.bvid, parsed.cid)
+    }
+
+    let active = 0
+    let completed = 0
+    for (const key of keys) {
+      const lane = partLane(key.bvid, key.cid)
+      if (lane === 'active') active += 1
+      if (lane === 'completed') completed += 1
+    }
+
+    if (active > 0) return { status: 'active', label: '下载中' }
+    if (expectedCount > 0 && completed >= expectedCount && completed > 0) {
+      return { status: 'completed', label: '已下载完成' }
+    }
+    if (completed > 0) return { status: 'partial', label: `已下载 ${completed}/${expectedCount || '?'}` }
+    return { status: 'idle', label: '' }
+  }
+
   function videoBadge(bvid: string, expectedPages = 0): VideoBadge {
     const loaded = pagesByBvid[bvid]
     const cids = new Set<number>()
@@ -329,7 +365,7 @@ export const useDownloadStore = defineStore('download', () => {
     folderName: string,
     page: BiliVideoPage,
     pagesTotal: number,
-    extra?: { kind?: 'ugc' | 'ogv'; epId?: number; qn?: number }
+    extra?: { kind?: 'ugc' | 'ogv'; epId?: number; qn?: number; ogvCategory?: 'bangumi' | 'cinema' }
   ): boolean {
     const item = getItem(video.bvid, page.cid)
     if (ACTIVE_STATUS.has(item.status) || item.status === 'success') return false
@@ -337,19 +373,21 @@ export const useDownloadStore = defineStore('download', () => {
     const previousSnap = snapshots[downloadTaskId(video.bvid, page.cid)]
     const kind = extra?.kind ?? previousSnap?.kind ?? 'ugc'
     const epId = extra?.epId ?? previousSnap?.epId
-    rememberTask(video, folderName, page, pagesTotal, { kind, epId })
+    const ogvCategory = extra?.ogvCategory ?? previousSnap?.ogvCategory
+    rememberTask(video, folderName, page, pagesTotal, { kind, epId, ogvCategory })
     emitter.invoke('download:video', {
       bvid: video.bvid,
       cid: page.cid,
       page: page.page,
       pages: pagesTotal,
       part: page.part,
-      title: video.title,
+      title: kind === 'ogv' ? folderName || video.title : video.title,
       uname: video.upper.name,
       folderName,
       coverUrl: video.cover,
       kind,
       epId,
+      ogvCategory,
       qn: extra?.qn
     })
     item.status = 'waiting'
@@ -510,6 +548,7 @@ export const useDownloadStore = defineStore('download', () => {
     history,
     partLane,
     videoBadge,
+    workBadge,
     isCidActive,
     isCidCompleted,
     rememberTask,

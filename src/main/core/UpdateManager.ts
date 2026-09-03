@@ -28,7 +28,7 @@ export default class UpdateManager {
   private setupListeners() {
     autoUpdater.on('update-available', info => {
       if (process.platform === 'darwin') {
-        void this.openManualDownloadPage(info)
+        this.sendToRenderer('update:manual-download', info)
         return
       }
       this.sendToRenderer('update:available', info)
@@ -51,10 +51,10 @@ export default class UpdateManager {
     })
   }
 
-  private async openManualDownloadPage(info: UpdateInfo) {
+  private async openManualDownloadPage(info?: UpdateInfo) {
     try {
       await shell.openExternal(RELEASE_PAGE_URL)
-      this.sendToRenderer('update:manual-download', info)
+      if (info) this.sendToRenderer('update:manual-download', info)
     } catch (error) {
       logger.error('Open update download page failed:', error)
       this.sendToRenderer('update:error', error instanceof Error ? error.message : String(error))
@@ -73,9 +73,7 @@ export default class UpdateManager {
 
   downloadUpdate() {
     if (process.platform === 'darwin') {
-      const error = new Error('macOS 请前往 GitHub 下载页面手动安装')
-      this.sendToRenderer('update:error', error.message)
-      return Promise.reject(error)
+      return this.openManualDownloadPage().then(() => [])
     }
     return autoUpdater.downloadUpdate()
   }

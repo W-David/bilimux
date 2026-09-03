@@ -35,13 +35,17 @@ export function useCollectionSource() {
     try {
       if (source.value.type === 'bangumi') {
         const season = await fetchBangumiEpisodes(source.value.item.seasonId)
-        items.value = season.episodes.map(episode => ({
+        const catalog = source.value.catalog
+        items.value = season.episodes.map((episode, index) => ({
           key: `ep-${episode.epId}`,
           video: episodeToResource(episode, season.title, season.evaluate, season.upper),
           folderName: season.title,
           kind: 'ogv' as const,
           epId: episode.epId,
-          cid: episode.cid
+          cid: episode.cid,
+          ogvCategory: catalog,
+          index: index + 1,
+          partTitle: episode.longTitle || ''
         }))
         hasMore.value = false
         pn.value = 1

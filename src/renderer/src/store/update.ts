@@ -35,7 +35,8 @@ export const useUpdateStore = defineStore('update', () => {
   }
 
   const startDownload = async () => {
-    downloading.value = true
+    const isMac = window.electron.process.platform === 'darwin'
+    if (!isMac) downloading.value = true
     try {
       await emitter.invoke('download-update')
     } catch (error) {
@@ -74,12 +75,13 @@ export const useUpdateStore = defineStore('update', () => {
     registerSubscribe(
       ipc.on('update:manual-download', (_, info) => {
         logger.info('Update manual download:', info.version)
-        updateAvailable.value = false
+        updateAvailable.value = true
+        updateVersion.value = info.version
         mittbus.emit('toast:add', {
           severity: 'success',
           message: `发现新版本 v${info.version}`,
           data: {
-            description: '已为你打开 GitHub 下载页面，请手动下载对应平台的安装包'
+            description: 'macOS 未签名，请点击左下角按钮打开 GitHub 下载安装包'
           }
         })
       })

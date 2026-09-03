@@ -5,11 +5,19 @@ import {
   fetchCreatedFolderPage
 } from '@renderer/services/library'
 import { usePreferenceStore } from '@renderer/store/preference'
+import { type LibraryDownloadFilter, type LibraryFilterTab, isLibraryFilterTab } from '@shared/library-filter'
 import type { BangumiFollowItem, FavoriteFolder } from '@shared/types'
 import { defineStore } from 'pinia'
 import { reactive } from 'vue'
 
 export type LibraryTab = 'created' | 'bangumi' | 'cinema'
+
+const DEFAULT_FILTERS: Record<LibraryFilterTab, LibraryDownloadFilter> = {
+  'library-created': 'all',
+  'library-bangumi': 'all',
+  'library-cinema': 'all',
+  'library-cache': 'all'
+}
 
 type PagedState<T> = {
   items: T[]
@@ -43,6 +51,17 @@ export const useLibraryStore = defineStore('library', () => {
   const created = reactive<PagedState<FavoriteFolder>>(emptyPage())
   const bangumi = reactive<PagedState<BangumiFollowItem>>(emptyPage())
   const cinema = reactive<PagedState<BangumiFollowItem>>(emptyPage())
+  const filters = reactive<Record<LibraryFilterTab, LibraryDownloadFilter>>({ ...DEFAULT_FILTERS })
+
+  function filterFor(name: unknown): LibraryDownloadFilter {
+    if (!isLibraryFilterTab(name)) return 'all'
+    return filters[name]
+  }
+
+  function setFilter(name: unknown, next: LibraryDownloadFilter): void {
+    if (!isLibraryFilterTab(name)) return
+    filters[name] = next
+  }
 
   function pageOf(tab: LibraryTab): PagedState<FavoriteFolder> | PagedState<BangumiFollowItem> {
     if (tab === 'created') return created
@@ -116,7 +135,20 @@ export const useLibraryStore = defineStore('library', () => {
     Object.assign(created, emptyPage())
     Object.assign(bangumi, emptyPage())
     Object.assign(cinema, emptyPage())
+    Object.assign(filters, DEFAULT_FILTERS)
   }
 
-  return { created, bangumi, cinema, pageOf, ensureTab, refreshTab, loadMore, reset }
+  return {
+    created,
+    bangumi,
+    cinema,
+    filters,
+    filterFor,
+    setFilter,
+    pageOf,
+    ensureTab,
+    refreshTab,
+    loadMore,
+    reset
+  }
 })

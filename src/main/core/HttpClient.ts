@@ -194,6 +194,20 @@ export default class HttpClient {
     }
   }
 
+  public async getText(url: string): Promise<string> {
+    const response = await this.client(url, { method: 'GET', responseType: 'text' })
+    return String(response.body ?? '')
+  }
+
+  public async postForm<T>(url: string, form: Record<string, string>): Promise<BiliResponseType<T>> {
+    const response = await this.client<BiliResponseType<T>>(url, {
+      method: 'POST',
+      form,
+      responseType: 'json'
+    })
+    return response.body
+  }
+
   /**
    * 下载文件到本地
    * @param url 文件地址

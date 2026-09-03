@@ -81,8 +81,17 @@
           @details="detailsOpen = true"
           @play="openTaskFile">
           <template #fail>
+            <button
+              v-if="canRetryDownload"
+              type="button"
+              aria-label="重试下载"
+              class="group flex size-6 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-white/10"
+              @click="retryDownload">
+              <RotateCcwIcon
+                class="size-4 text-pink-400 transition-all duration-200 group-hover:scale-110 group-hover:text-pink-300" />
+            </button>
             <div
-              v-if="isDownload"
+              v-else-if="isDownload"
               class="size-6 rounded-full shrink-0 flex items-center justify-center bg-red-500/10 text-red-400 ring-1 ring-red-500/20">
               <CircleAlertIcon class="size-3" />
             </div>
@@ -119,6 +128,7 @@ import {
   Hourglass as HourglassIcon,
   Import as ImportIcon,
   PencilLine as PencilLineIcon,
+  RotateCcw as RotateCcwIcon,
   SkipForward as SkipForwardIcon,
   Tv as TvIcon
 } from '@lucide/vue'
@@ -130,6 +140,7 @@ import { openLocalPath, revealLocalPath } from '@renderer/utils/open-file'
 import type { UnifiedTask } from '@renderer/pages/tasks/unified'
 import { useConvertStore } from '@renderer/store/convert'
 import { useDownloadStore } from '@renderer/store/download'
+import { formatPartBadge } from '@shared/output-path'
 import { safeCover } from '@renderer/utils/media'
 import { computed, ref } from 'vue'
 
@@ -156,15 +167,23 @@ const upName = computed(() => {
 const partBadge = computed(() => {
   if (props.item.kind !== 'download') return ''
   const row = props.item.row
-  if (row.pagesTotal > 1 || row.page.page > 1) return `P${row.page.page}`
-  return ''
+  return formatPartBadge({
+    title: row.video.title,
+    part: row.page.part,
+    page: row.page.page,
+    pages: row.pagesTotal,
+    kind: row.kind,
+    ogvCategory: row.ogvCategory
+  })
 })
 const metaText = computed(() => {
   if (props.item.kind === 'download') {
     const row = props.item.row
-    if (!(row.pagesTotal > 1 || row.page.page > 1) && !row.page.part) return ''
+    const badge = partBadge.value
     const name = row.page.part?.trim()
-    return name ? `P${row.page.page} ${name}` : `P${row.page.page}`
+    if (!badge && !name) return ''
+    if (name && name !== badge) return badge ? `${badge} ${name}` : name
+    return badge
   }
   return props.item.task.bvid || ''
 })
@@ -241,6 +260,23 @@ const convertStatusIcon = computed(() => {
       return HourglassIcon
   }
 })
+
+const canRetryDownload = computed(() => {
+  if (props.item.kind !== 'download') return false
+  if (downloadItem.value.status === 'fail') return true
+  const historyStatus = props.item.row.history?.status
+  return historyStatus === 'failed' || historyStatus === 'interrupted' || historyStatus === 'cancelled'
+})
+
+const retryDownload = (): void => {
+  if (props.item.kind !== 'download') return
+  const row = props.item.row
+  downloadStore.enqueuePart(row.video, row.folderName, row.page, row.pagesTotal, {
+    kind: row.kind,
+    epId: row.epId,
+    ogvCategory: row.ogvCategory
+  })
+}
 
 const handleDelete = async (deleteFile: boolean): Promise<void> => {
   if (props.item.kind === 'download') {
