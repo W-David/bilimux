@@ -327,8 +327,14 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
 
       if (runtime.mode === 'dash' && runtime.tempDir) {
         await createDirIfNotExist(runtime.tempDir)
-        await this.downloadStream(runtime, 'video')
-        await this.downloadStream(runtime, 'audio')
+        try {
+          await Promise.all([this.downloadStream(runtime, 'video'), this.downloadStream(runtime, 'audio')])
+        } catch (error) {
+          if (!this.isPaused(runtime) && !runtime.cancelled) {
+            runtime.abort?.abort()
+          }
+          throw error
+        }
 
         this.throwIfCancelled(runtime)
         runtime.stage = 'merge'
@@ -561,10 +567,10 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
           await this.httpClient.downloadFile(
             url,
             current.destPath,
-            (percent, received, total) => {
+            (_percent, received, total) => {
               current.received = received
               current.total = total
-              this.emitProgress(runtime, 'downloading', this.streamOverallProgress(runtime, kind, percent))
+              this.emitProgress(runtime, 'downloading', this.currentProgress(runtime))
             },
             {
               offset,
@@ -586,6 +592,11 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
           logger.info(`下载完成: ${runtime.task.bvid}:${runtime.task.cid} ${kind}`)
           return
         } catch (error) {
+          const code = (error as NodeJS.ErrnoException).code
+          if (code === 'RANGE_NOT_SATISFIABLE' && current.received > 0) {
+            current.completed = true
+            return
+          }
           if (runtime.cancelled || error instanceof DownloadCancelledError) {
             await this.syncReceivedFromFile(current)
             throw new DownloadCancelledError()
@@ -599,7 +610,6 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
             throw error
           }
 
-          const code = (error as NodeJS.ErrnoException).code
           if (code === 'RANGE_NOT_SUPPORTED' || code === 'RESUME_MISMATCH') {
             await this.resetStream(current)
             lastError = error
@@ -748,10 +758,5 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
     const videoProgress = video && video.total > 0 ? Math.min(50, Math.round((video.received / video.total) * 50)) : 0
     const audioProgress = audio && audio.total > 0 ? Math.min(50, Math.round((audio.received / audio.total) * 50)) : 0
     return videoProgress + audioProgress
-  }
-
-  private streamOverallProgress(runtime: TaskRuntime, kind: StreamKind, streamPercent: number): number {
-    if (runtime.mode !== 'dash') return streamPercent
-    return kind === 'video' ? Math.round(streamPercent / 2) : 50 + Math.round(streamPercent / 2)
   }
 }

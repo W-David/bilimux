@@ -256,6 +256,14 @@ export default class HttpClient {
       const rangeMatch = typeof contentRange === 'string' ? /^bytes \d+-\d+\/(\d+|\*)$/.exec(contentRange) : null
       const totalSize = rangeMatch && rangeMatch[1] !== '*' ? Number(rangeMatch[1]) : contentLength + offset
 
+      // 本地文件已经覆盖全部字节：Range 起点越界
+      if (offset > 0 && response.statusCode === 416) {
+        const error = new Error('本地文件已完整')
+        ;(error as NodeJS.ErrnoException).code = 'RANGE_NOT_SATISFIABLE'
+        downloadStream.destroy(error)
+        return
+      }
+
       // 请求了 Range 却返回 200：服务器不支持断点续传，必须从头下载
       if (offset > 0 && response.statusCode === 200) {
         const error = new Error('服务器不支持 Range，需要从头下载')
