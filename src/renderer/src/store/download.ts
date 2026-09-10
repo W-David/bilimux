@@ -133,6 +133,7 @@ function syntheticVideo(record: DownloadHistoryRecord, favorite?: FavoriteResour
  */
 export const useDownloadStore = defineStore('download', () => {
   const items = reactive<Record<string, DownloadItemState>>({})
+  const cidsByBvid = reactive<Record<string, number[]>>({})
   const pagesByBvid = reactive<Record<string, BiliVideoPage[]>>({})
   const pagesLoading = reactive<Record<string, boolean>>({})
   const pagesInflight = new Map<string, Promise<BiliVideoPage[]>>()
@@ -151,8 +152,15 @@ export const useDownloadStore = defineStore('download', () => {
     return map
   })
 
+  function trackCid(bvid: string, cid: number): void {
+    const current = cidsByBvid[bvid]
+    if (current?.includes(cid)) return
+    cidsByBvid[bvid] = current ? [...current, cid] : [cid]
+  }
+
   function getItem(bvid: string, cid: number): DownloadItemState {
     const key = downloadTaskId(bvid, cid)
+    trackCid(bvid, cid)
     let item = items[key]
     if (!item) {
       item = emptyItem()
@@ -300,51 +308,13 @@ export const useDownloadStore = defineStore('download', () => {
     return rows
   })
 
-  function workBadge(folderName: string, expectedCount = 0): VideoBadge {
-    const seen = new Set<string>()
-    const keys: Array<{ bvid: string; cid: number }> = []
-    const add = (bvid: string, cid: number): void => {
-      const id = downloadTaskId(bvid, cid)
-      if (seen.has(id)) return
-      seen.add(id)
-      keys.push({ bvid, cid })
-    }
-    for (const record of history.value) {
-      if (record.folderName === folderName) add(record.bvid, record.cid)
-    }
-    for (const [key, snap] of Object.entries(snapshots)) {
-      if (snap.folderName !== folderName) continue
-      const parsed = parseTaskKey(key)
-      if (parsed) add(parsed.bvid, parsed.cid)
-    }
-
-    let active = 0
-    let completed = 0
-    for (const key of keys) {
-      const lane = partLane(key.bvid, key.cid)
-      if (lane === 'active') active += 1
-      if (lane === 'completed') completed += 1
-    }
-
-    if (active > 0) return { status: 'active', label: '下载中' }
-    if (expectedCount > 0 && completed >= expectedCount && completed > 0) {
-      return { status: 'completed', label: '已下载完成' }
-    }
-    if (completed > 0) return { status: 'partial', label: `已下载 ${completed}/${expectedCount || '?'}` }
-    return { status: 'idle', label: '' }
-  }
-
   function videoBadge(bvid: string, expectedPages = 0): VideoBadge {
     const loaded = pagesByBvid[bvid]
-    const cids = new Set<number>()
+    const cids = new Set<number>(cidsByBvid[bvid] ?? [])
     if (loaded?.length) {
       for (const page of loaded) cids.add(page.cid)
     }
     for (const record of historyMap.value.get(bvid) ?? []) cids.add(record.cid)
-    for (const key of Object.keys(items)) {
-      const parsed = parseTaskKey(key)
-      if (parsed?.bvid === bvid) cids.add(parsed.cid)
-    }
 
     let active = 0
     let completed = 0
@@ -489,6 +459,7 @@ export const useDownloadStore = defineStore('download', () => {
     const request = fetchVideoPages(bvid)
       .then(pages => {
         pagesByBvid[bvid] = pages
+        for (const page of pages) trackCid(bvid, page.cid)
         return pages
       })
       .finally(() => {
@@ -506,6 +477,7 @@ export const useDownloadStore = defineStore('download', () => {
       if (version !== historyLoadVersion) return
       history.value = records
       for (const record of records) {
+        trackCid(record.bvid, record.cid)
         applyHistoryToState(getItem(record.bvid, record.cid), record)
       }
     } catch (error) {
@@ -557,7 +529,6 @@ export const useDownloadStore = defineStore('download', () => {
     history,
     partLane,
     videoBadge,
-    workBadge,
     isCidActive,
     isCidCompleted,
     rememberTask,

@@ -1,40 +1,26 @@
-export const LIBRARY_DOWNLOAD_FILTERS = [
-  { value: 'downloaded', label: '已下载' },
-  { value: 'undownloaded', label: '未下载' },
-  { value: 'downloading', label: '正在下载' },
-  { value: 'all', label: '全部' }
+export const LIBRARY_CACHE_FILTERS = [
+  { value: 'all', label: '全部' },
+  { value: 'downloaded', label: '已完成' },
+  { value: 'undownloaded', label: '待转换' }
 ] as const
 
-export type LibraryDownloadFilter = (typeof LIBRARY_DOWNLOAD_FILTERS)[number]['value']
+export type LibraryCacheFilter = (typeof LIBRARY_CACHE_FILTERS)[number]['value']
 
-export type LibraryDownloadStatus = 'downloaded' | 'undownloaded' | 'downloading'
+export const DEFAULT_LIBRARY_CACHE_FILTER: LibraryCacheFilter = 'all'
 
-export type LibraryFilterTab = 'library-created' | 'library-bangumi' | 'library-cinema' | 'library-cache'
+export type LibraryCacheStatus = 'downloaded' | 'undownloaded'
 
-export function isLibraryFilterTab(name: unknown): name is LibraryFilterTab {
-  return (
-    name === 'library-created' || name === 'library-bangumi' || name === 'library-cinema' || name === 'library-cache'
-  )
+export function isLibraryCacheFilter(value: unknown): value is LibraryCacheFilter {
+  return LIBRARY_CACHE_FILTERS.some(option => option.value === value)
 }
 
-export function downloadFilterStatusFromBadge(badge: {
-  status: 'idle' | 'active' | 'partial' | 'completed'
-}): LibraryDownloadStatus {
-  if (badge.status === 'active') return 'downloading'
-  if (badge.status === 'completed') return 'downloaded'
-  return 'undownloaded'
-}
-
-export function matchesLibraryDownloadFilter(filter: LibraryDownloadFilter, status: LibraryDownloadStatus): boolean {
+export function matchesLibraryCacheFilter(filter: LibraryCacheFilter, status: LibraryCacheStatus): boolean {
   if (filter === 'all') return true
   return filter === status
 }
 
-const CONVERT_DOWNLOADING = new Set(['waiting', 'preprocess', 'importing', 'writing'])
-const CONVERT_DOWNLOADED = new Set(['success', 'skipped'])
+const CONVERT_DONE = new Set(['success', 'skipped'])
 
-export function convertStatusToDownloadFilter(status: string): LibraryDownloadStatus {
-  if (CONVERT_DOWNLOADING.has(status)) return 'downloading'
-  if (CONVERT_DOWNLOADED.has(status)) return 'downloaded'
-  return 'undownloaded'
+export function convertStatusToCacheFilter(status: string): LibraryCacheStatus {
+  return CONVERT_DONE.has(status) ? 'downloaded' : 'undownloaded'
 }

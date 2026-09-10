@@ -1,38 +1,58 @@
 <template>
-  <ToggleGroup
-    type="single"
-    size="sm"
-    variant="outline"
-    class="no-drag h-8"
-    :model-value="model"
-    @update:model-value="onChange">
-    <ToggleGroupItem
-      v-for="option in LIBRARY_DOWNLOAD_FILTERS"
-      :key="option.value"
-      :value="option.value"
-      class="h-8 px-2.5 text-xs">
-      {{ option.label }}
-    </ToggleGroupItem>
-  </ToggleGroup>
+  <div
+    class="flex items-center gap-2.5 select-none px-2"
+    role="radiogroup"
+    :aria-label="ariaLabel">
+    <ListFilterIcon
+      class="size-3.5 shrink-0 text-zinc-500"
+      aria-hidden="true" />
+    <div class="flex items-center gap-4">
+      <button
+        v-for="option in options"
+        :key="option.value"
+        type="button"
+        role="radio"
+        class="cursor-pointer text-sm transition-colors"
+        :aria-checked="option.value === model"
+        :class="option.value === model ? 'text-pink-400' : 'text-zinc-400 hover:text-gray-200'"
+        @click="onChange(option.value)">
+        {{ option.label }}
+      </button>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { LIBRARY_DOWNLOAD_FILTERS, type LibraryDownloadFilter } from '@shared/library-filter'
+import { ListFilter as ListFilterIcon } from '@lucide/vue'
+import {
+  DEFAULT_LIBRARY_CACHE_FILTER,
+  isLibraryCacheFilter,
+  LIBRARY_CACHE_FILTERS,
+  type LibraryCacheFilter
+} from '@shared/library-filter'
 import { computed } from 'vue'
 
-const props = defineProps<{
-  modelValue: LibraryDownloadFilter
-}>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: LibraryCacheFilter
+    ariaLabel?: string
+  }>(),
+  {
+    ariaLabel: '按转换状态筛选'
+  }
+)
 
 const emit = defineEmits<{
-  'update:modelValue': [value: LibraryDownloadFilter]
+  'update:modelValue': [value: LibraryCacheFilter]
 }>()
 
-const model = computed(() => props.modelValue)
+const options = LIBRARY_CACHE_FILTERS
+const ariaLabel = computed(() => props.ariaLabel)
 
-const onChange = (value: string | string[] | undefined): void => {
-  if (typeof value !== 'string') return
-  if (!LIBRARY_DOWNLOAD_FILTERS.some(option => option.value === value)) return
-  emit('update:modelValue', value as LibraryDownloadFilter)
+const model = computed(() => (isLibraryCacheFilter(props.modelValue) ? props.modelValue : DEFAULT_LIBRARY_CACHE_FILTER))
+
+const onChange = (value: LibraryCacheFilter): void => {
+  if (value === model.value) return
+  emit('update:modelValue', value)
 }
 </script>

@@ -50,6 +50,7 @@ declare module 'vue' {
     Label: typeof import('./src/components/ui/label/Label.vue')['default']
     Layout: typeof import('./src/layout/index.vue')['default']
     LibraryBrowser: typeof import('./src/components/library/LibraryBrowser.vue')['default']
+    LibraryDownloadFilter: typeof import('./src/components/library/LibraryDownloadFilter.vue')['default']
     LibraryGridSkeleton: typeof import('./src/components/library/LibraryGridSkeleton.vue')['default']
     LibraryPreviewPanel: typeof import('./src/components/library/LibraryPreviewPanel.vue')['default']
     LoginDialog: typeof import('./src/components/LoginDialog.vue')['default']

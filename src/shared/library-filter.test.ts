@@ -1,41 +1,49 @@
 import { describe, expect, it } from 'vitest'
 import {
-  convertStatusToDownloadFilter,
-  downloadFilterStatusFromBadge,
-  matchesLibraryDownloadFilter
+  convertStatusToCacheFilter,
+  DEFAULT_LIBRARY_CACHE_FILTER,
+  isLibraryCacheFilter,
+  LIBRARY_CACHE_FILTERS,
+  matchesLibraryCacheFilter
 } from './library-filter'
 
-describe('downloadFilterStatusFromBadge', () => {
-  it('maps active to downloading, completed to downloaded, and the rest to undownloaded', () => {
-    expect(downloadFilterStatusFromBadge({ status: 'active' })).toBe('downloading')
-    expect(downloadFilterStatusFromBadge({ status: 'completed' })).toBe('downloaded')
-    expect(downloadFilterStatusFromBadge({ status: 'idle' })).toBe('undownloaded')
-    expect(downloadFilterStatusFromBadge({ status: 'partial' })).toBe('undownloaded')
+describe('LIBRARY_CACHE_FILTERS', () => {
+  it('defaults to all, then completed, then pending', () => {
+    expect(DEFAULT_LIBRARY_CACHE_FILTER).toBe('all')
+    expect(LIBRARY_CACHE_FILTERS.map(option => option.value)).toEqual(['all', 'downloaded', 'undownloaded'])
+    expect(LIBRARY_CACHE_FILTERS.map(option => option.label)).toEqual(['全部', '已完成', '待转换'])
+  })
+
+  it('accepts only known filter values', () => {
+    expect(isLibraryCacheFilter('all')).toBe(true)
+    expect(isLibraryCacheFilter('downloaded')).toBe(true)
+    expect(isLibraryCacheFilter('undownloaded')).toBe(true)
+    expect(isLibraryCacheFilter('downloading')).toBe(false)
+    expect(isLibraryCacheFilter('')).toBe(false)
   })
 })
 
-describe('matchesLibraryDownloadFilter', () => {
+describe('matchesLibraryCacheFilter', () => {
   it('keeps every item when the filter is all', () => {
-    expect(matchesLibraryDownloadFilter('all', 'downloaded')).toBe(true)
-    expect(matchesLibraryDownloadFilter('all', 'undownloaded')).toBe(true)
-    expect(matchesLibraryDownloadFilter('all', 'downloading')).toBe(true)
+    expect(matchesLibraryCacheFilter('all', 'downloaded')).toBe(true)
+    expect(matchesLibraryCacheFilter('all', 'undownloaded')).toBe(true)
   })
 
   it('keeps only the selected status otherwise', () => {
-    expect(matchesLibraryDownloadFilter('downloaded', 'downloaded')).toBe(true)
-    expect(matchesLibraryDownloadFilter('downloaded', 'undownloaded')).toBe(false)
-    expect(matchesLibraryDownloadFilter('downloading', 'downloading')).toBe(true)
-    expect(matchesLibraryDownloadFilter('undownloaded', 'downloading')).toBe(false)
+    expect(matchesLibraryCacheFilter('downloaded', 'downloaded')).toBe(true)
+    expect(matchesLibraryCacheFilter('downloaded', 'undownloaded')).toBe(false)
+    expect(matchesLibraryCacheFilter('undownloaded', 'undownloaded')).toBe(true)
+    expect(matchesLibraryCacheFilter('undownloaded', 'downloaded')).toBe(false)
   })
 })
 
-describe('convertStatusToDownloadFilter', () => {
-  it('treats converting as downloading and finished mux as downloaded', () => {
-    expect(convertStatusToDownloadFilter('importing')).toBe('downloading')
-    expect(convertStatusToDownloadFilter('writing')).toBe('downloading')
-    expect(convertStatusToDownloadFilter('success')).toBe('downloaded')
-    expect(convertStatusToDownloadFilter('skipped')).toBe('downloaded')
-    expect(convertStatusToDownloadFilter('scanned')).toBe('undownloaded')
-    expect(convertStatusToDownloadFilter('fail')).toBe('undownloaded')
+describe('convertStatusToCacheFilter', () => {
+  it('treats finished mux as completed and the rest as pending', () => {
+    expect(convertStatusToCacheFilter('success')).toBe('downloaded')
+    expect(convertStatusToCacheFilter('skipped')).toBe('downloaded')
+    expect(convertStatusToCacheFilter('importing')).toBe('undownloaded')
+    expect(convertStatusToCacheFilter('writing')).toBe('undownloaded')
+    expect(convertStatusToCacheFilter('scanned')).toBe('undownloaded')
+    expect(convertStatusToCacheFilter('fail')).toBe('undownloaded')
   })
 })
