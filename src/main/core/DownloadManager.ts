@@ -197,6 +197,7 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
 
     runtime.status = 'paused'
     runtime.abort?.abort()
+    this.historyStore.markPaused(this.taskKey(runtime))
     this.emitProgress(runtime, 'paused', this.currentProgress(runtime))
     logger.debug(`下载任务已暂停: ${downloadTaskId(key.bvid, key.cid)}`)
   }
@@ -205,8 +206,15 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
    * 恢复已暂停的下载任务
    */
   public resume(key: DownloadTaskKey): void {
-    const runtime = this.getRuntime(key)
-    if (!runtime || runtime.cancelled || runtime.status !== 'paused') return
+    let runtime = this.getRuntime(key)
+    if (!runtime) {
+      const task = this.historyStore.readPausedTask(key)
+      if (!task) return
+      runtime = this.createRuntime(task)
+      this.tasks.set(downloadTaskId(task.bvid, task.cid), runtime)
+      runtime.status = 'paused'
+    }
+    if (runtime.cancelled || runtime.status !== 'paused') return
     this.enqueue(runtime)
   }
 
@@ -491,6 +499,10 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
         destPath: runtime.finalPath
       })
     }
+
+    await this.hydrateStreamFromDisk(runtime.streams.video)
+    await this.hydrateStreamFromDisk(runtime.streams.audio)
+    await this.hydrateStreamFromDisk(runtime.streams.durl)
   }
 
   private upsertStream(
@@ -711,6 +723,14 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
       stream.received = stat.size
     } catch {
       stream.received = 0
+    }
+  }
+
+  private async hydrateStreamFromDisk(stream?: StreamRuntime): Promise<void> {
+    if (!stream) return
+    await this.syncReceivedFromFile(stream)
+    if (stream.total > 0 && stream.received >= stream.total) {
+      stream.completed = true
     }
   }
 

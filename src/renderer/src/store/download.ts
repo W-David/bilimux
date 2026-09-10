@@ -90,6 +90,15 @@ function applyHistoryToState(state: DownloadItemState, record: DownloadHistoryRe
     state.message = '已取消'
     return
   }
+  if (historyStatus === 'paused') {
+    state.status = 'paused'
+    return
+  }
+  if (historyStatus === 'downloading') {
+    state.status = 'fail'
+    state.message = '上次下载未完成'
+    return
+  }
   state.status = 'fail'
   state.message = '上次下载未完成'
 }
@@ -249,8 +258,8 @@ export const useDownloadStore = defineStore('download', () => {
       if (item.status === 'success' || item.status === 'fail') return 'completed'
     }
     const record = historyFor(bvid, cid)
+    if (record?.status === 'paused' || record?.status === 'downloading') return 'active'
     if (record && COMPLETED_HISTORY_STATUS.has(record.status)) return 'completed'
-    if (record?.status === 'downloading' && item && ACTIVE_STATUS.has(item.status)) return 'active'
     if (record) return 'completed'
     return 'waiting'
   }

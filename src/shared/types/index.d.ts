@@ -176,7 +176,7 @@ type DownloadItemEndArgs = {
 }
 
 // 下载历史（SQLite 持久化）
-type DownloadHistoryStatus = 'downloading' | 'completed' | 'failed' | 'missing' | 'interrupted' | 'cancelled'
+type DownloadHistoryStatus = 'downloading' | 'paused' | 'completed' | 'failed' | 'missing' | 'interrupted' | 'cancelled'
 
 type DownloadHistoryRecord = {
   bvid: string
