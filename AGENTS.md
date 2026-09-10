@@ -18,13 +18,15 @@ pnpm dev              # electron-vite dev --watch (renderer :8880)
 pnpm lint             # eslint .
 pnpm lint:fix        # eslint --fix .
 pnpm typecheck        # tsc node + vue-tsc web
+pnpm test             # vitest run（纯函数，src/**/*.test.ts）
+pnpm test:watch       # vitest
 pnpm build            # typecheck then electron-vite build → out/
 pnpm build:mac|win|linux   # build + electron-builder → dist/
 pnpm build:unpack     # build + electron-builder --dir
 pnpm format           # prettier --write .
 ```
 
-无测试。CI（`.github/workflows/lint.yml`）：`pnpm lint:fix` 再 `pnpm typecheck`。打 `v*` tag 发版（win/mac/linux）。
+单测是 Vitest，覆盖 `src/shared/` 与少量主进程纯函数（qn、命名、缓存筛选、cookie-refresh、correspond-path）。没有组件/E2E。CI（`.github/workflows/lint.yml`）：`pnpm lint`（只检查、不 `--fix`）→ `pnpm typecheck` → `pnpm test`。打 `v*` tag 发版（win/mac/linux）。
 
 `package.json` 脚本内部用 `npm run …`；顶层请用 `pnpm`。
 
@@ -54,7 +56,7 @@ git push origin <branch> --tags
 
 ### Main process
 
-`Application` 拥有：`Context`、`ConfigManager`、`AutoLauncher`、`IPCManager`、`HttpClient`、`ComposEngine` + `ProcessQueue`、`DownloadManager`、`DownloadHistoryStore`、`ConvertHistoryStore`、`WindowManager`、`UpdateManager`。不要另起单例。
+`Application` 拥有：`Context`、`ConfigManager`、`AutoLauncher`、`IPCManager`、`HttpClient`、`CookieSession`、`ComposEngine` + `ProcessQueue`、`DownloadManager`、`DownloadHistoryStore`、`ConvertHistoryStore`、`WindowManager`、`UpdateManager`。不要另起单例。
 
 IPC 在 `src/main/ipc/`（preference / convert / download / http / app）。渲染进程用 `src/renderer/src/ipc/` 的 `emitter.invoke` / `ipc.on`，没有 api 包装层。
 
@@ -79,9 +81,9 @@ MP4Box：`getEngineBinPath()`，dev 用 `extra/<platform>/`，prod 用 app resou
 - 收藏 `medias.page` 是 **分 P 数**，不是 cid。入队前走 `GET /x/player/pagelist?bvid=`（`services/video.ts`）；空列表报错，**禁止**回退 `view.data.cid`。番剧用分集 `cid` + `epId`。
 - qn 集合：`[16, 32, 64, 80, 112, 116, 120]`（`src/shared/download.ts`）。`download:qualities` 用 `qn=120` 探测，`extractDownloadQns` **并集** `dash.video[].id` + `accept_quality` + `support_formats[].quality` + `quality`，再滤到上述集合。只看 dash 会漏 116/120。
 - 默认选档：`pickPreferredDownloadQn`（不超过设置偏好的最高档；全高于偏好则取该片最高）。真正拉流：`pickDashVideo`（`id` ≤ 请求 qn，再按编码排序，**禁止** `dash.video[0]`）。音频：`pickDashAudio` 优先 AAC `id <= 30280`。渲染进程按 `kind:bvid:cid:epId` 缓存。
-- 任务键 `bvid + cid`，一行一分 P。DASH 经 `HttpClient.downloadFile`，合成复用 `ComposEngine.mergeFiles`。事件带 `cid`。
-- 暂停仅内存：保留半成品，`Range` 续传；重试刷新 playurl。退出后残留 `downloading` 对账为 `interrupted`。`runtime.busy` 防止 pause/resume 双入队。`download:cancel` 中止传输、杀 MP4Box、删临时目录。
-- 历史：`userData/downloads.db`，PK `(bvid, cid)`。删除默认只清记录，`deleteFile` 需 `assertAllowedPath`。封面 URL 要持久化。启动对账：`downloading` → `interrupted`；完成但文件没了 → `missing`；文件回来 → `completed`。
+- 任务键 `bvid + cid`，一行一分 P。DASH 经 `HttpClient.downloadFile`，**音视频并行**下载，合成复用 `ComposEngine.mergeFiles`。事件带 `cid`。进度按两路字节合计，禁止假设「先视频后音频」。
+- 暂停写入 `downloads.db` `status=paused`，保留半成品，`Range` 续传；临时目录名稳定（`.{bvid}.{cid}.tmp`），重启后按文件大小续传。`task_json` 存入队快照（kind / epId / qn 等），无内存 runtime 时 `download:resume` 据此重建。合并阶段不可暂停。重试刷新 playurl。`runtime.busy` 防止 pause/resume 双入队。`download:cancel` 中止传输、杀 MP4Box、删临时目录。
+- 历史：`userData/downloads.db`，PK `(bvid, cid)`。删除默认只清记录，`deleteFile` 需 `assertAllowedPath`。封面 URL 要持久化。启动对账：`downloading` → `interrupted`；**不要**把 `paused` 改成 interrupted；完成但文件没了 → `missing`；文件回来 → `completed`。Range 起点越界（416）且本地已有字节视为该路已下完。
 
 下载与转换的引擎、队列、数据库 **不要合并**，只共用 MP4Box 合成。
 
@@ -95,26 +97,30 @@ MP4Box：`getEngineBinPath()`，dev 用 `extra/<platform>/`，prod 用 app resou
 
 ### Library / tasks（勿回退）
 
-片库：收藏 / 追番 / 追剧 / 本机缓存。未登录落在 **缓存**。前三项要登录，缓存不要。浏览壳共用 `LibraryBrowser` + `useCollectionSource`，不要再拆一套。
+片库：收藏 / 追番 / 追剧 / 本机缓存。未登录落在 **缓存**。前三项要登录，缓存不要。浏览壳共用 `LibraryBrowser` + `useCollectionSource`，不要再拆一套。**不要**在收藏 / 追番 / 追剧上做下载状态筛选（分页是远端列表，前端过滤会漏页）。筛选只出现在本机缓存：`全部 / 已完成 / 待转换`（`src/shared/library-filter.ts`），控件 `LibraryDownloadFilter`，默认全部；离开缓存页再回来重置。已完成 = 转换 `success`/`skipped`，其余算待转换。
 
 预览 `LibraryPreviewPanel`：UGC 与番剧同一套分集列表（单 P 一行、无全选）。默认 **不选**。高亮边框选中，不用 checkbox。下载中 / 已完成不可选。每行播放图标；进行中只显示下载图标，**片库不显示进度**。底栏固定高：清晰度 + 下载在未选时 **禁用仍显示**（单 P 全下完可藏下载区）。「全选未下载」仅总分集 > 1 且还有可选；全下完隐藏全选。标题可写 `已下载 xxP / 共 xxP`（番剧用「话」）。多 P 全下完 **不要** 底栏播放。右侧加载用等尺寸骨架，不要改回转圈文字。
 
-任务：下载 + 转换同一列表（全部 / 进行中 / 已完成）。转换 `scanned` 排除；失败/中断/缺失算已完成。下载进行中用扁平 `ProgressCapsule`；转换用圆形状态标，不用胶囊。完成态：播放 / 打开位置 / 删除（默认只删记录）。取消进行中下载另确认。
+任务：下载 + 转换同一列表（全部 / 进行中 / 已完成）。转换 `scanned` 排除；失败/中断/缺失算已完成。下载 `paused` 算进行中，可恢复。下载进行中用扁平 `ProgressCapsule`；转换用圆形状态标，不用胶囊。完成态：播放 / 打开位置 / 删除（默认只删记录）。取消进行中下载另确认。
 
 ### Login
 
-二维码状态在 `store/qrLogin.ts`，不在对话框里。180s TTL。关掉登录窗 **不要** 作废有效码；`ensureQr` 复用未过期会话。过期不自动刷新，用户点了再换。成功：`persist-cookie`、写 `user-info`、重置会话、清空 library store。
+二维码状态在 `store/qrLogin.ts`，不在对话框里。180s TTL。关掉登录窗 **不要** 作废有效码；`ensureQr` 复用未过期会话。过期不自动刷新，用户点了再换。成功：`persist-cookie`（可带 `refresh_token`）、写 `user-info`、重置会话、清空 library store。
+
+启动 / 打开需登录页走 `auth:ensure`（`CookieSession`）：有 SESSDATA + bili_jct 再问 B 站是否要刷新 cookie；需要时 correspond path + refresh + confirm。`refresh_token` 写在 `userData/refresh-token`，权限 `0600`。失败则清登录态。
 
 ### Persistence
 
 - electron-store：`user-info`、`convert-config`、`download-config`、`open-at-login`、`auto-hide-window`、`bind-close-to-hide`、`log-level`。没有收藏夹缓存（`favorites-data` 已删）。
 - sqlite：`userData/downloads.db`、`userData/converts.db`。
+- Cookie：`userData/cookies.json`（got jar，0600）。refresh_token：`userData/refresh-token`。
+- 下载产物路径：`src/shared/output-path.ts`（多 P / 番剧分目录，单 P 不建子目录）；文件名经 `sanitizeFileName`。
 
 ### Renderer
 
 Vue 3 + Pinia + vue-router **memory history** + Tailwind v4 + shadcn-vue（Reka UI）。组件自动导入 `src/components`、`src/layout`。主题 `styles/base.css`（仅深色、粉主色）。变体 CSS **内联** `shadcn-variants.css`，不要走 CDN。加组件：`pnpm dlx shadcn-vue@latest add <component>`。
 
-页面：`library/{index,created,follow,cache}`（follow 兼追番/追剧）、`tasks/{index,list}` + `unified.ts`、`setting/{index,normal,convert,download}`（共用 PathField / ConcurrentSelect / ClearHistoryRow）、About 在设置下。Store：`auth`、`download`、`convert`、`library`、`preference`、`update`、`qrLogin`。B 站 HTTP 经 `http-get` IPC。禁止把页内图片拖出。
+页面：`library/{index,created,follow,cache}`（follow 兼追番/追剧）、`tasks/{index,list}` + `unified.ts`、`setting/{index,normal,convert,download}`（共用 PathField / ConcurrentSelect / ClearHistoryRow）、About 在设置下。Store：`auth`、`download`、`convert`、`library`、`preference`、`update`、`qrLogin`。封面下载角标走 `videoBadge(bvid)`，按该 bvid 的 cid 集合计算，**不要**扫全表 `items`。B 站 HTTP 经 `http-get` IPC。禁止把页内图片拖出。
 
 ### Build gotchas
 
