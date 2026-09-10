@@ -30,6 +30,12 @@ pnpm format           # prettier --write .
 
 `package.json` 脚本内部用 `npm run …`；顶层请用 `pnpm`。
 
+## Workflow
+
+- **非破坏性改动自动提交**：改动后应用仍能正常运行（`pnpm lint`、`pnpm typecheck`、`pnpm test` 通过）即视为非破坏性，做完直接提交，不必逐次询问。
+- 提交按功能拆分，一个提交只做一件事；信息用 `feat:` / `fix:` / `chore:` / `refactor:` 前缀，中文描述，参照现有历史。
+- 破坏性改动（会改数据库结构、产物路径、已有用户配置，或让应用跑不起来）、以及无法验证的改动，先说明清楚再动手，不自动提交。
+
 ## Release
 
 ```bash
