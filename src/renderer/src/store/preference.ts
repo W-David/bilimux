@@ -12,11 +12,11 @@ export const usePreferenceStore = defineStore('preference', () => {
       outputDir: '',
       gpacBinPath: '',
       replaceExisting: false,
-      concurrent: 1
+      concurrent: 4
     },
     'download-config': {
       outputDir: '',
-      concurrent: 1,
+      concurrent: 4,
       qn: 80,
       codec: 'avc'
     },

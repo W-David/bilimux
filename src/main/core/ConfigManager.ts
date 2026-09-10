@@ -43,12 +43,12 @@ export default class ConfigManager {
       outputDir: convertOutputDir,
       gpacBinPath,
       replaceExisting: false,
-      concurrent: 1
+      concurrent: 4
     }
 
     const defaultDownloadConfig: Required<DownloadConfigOptions> = {
       outputDir: downloadOutputDir,
-      concurrent: 1,
+      concurrent: 4,
       qn: 80,
       codec: 'avc'
     }
@@ -99,7 +99,7 @@ export default class ConfigManager {
     if (!downloadConfig) {
       this.store.set('download-config', {
         outputDir: path.join(cachePath, OUTPUT_DIR_NAME, DOWNLOAD_DIR_NAME),
-        concurrent: 1,
+        concurrent: 4,
         qn: 80,
         codec: 'avc'
       })
