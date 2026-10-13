@@ -24,29 +24,7 @@ BiliMux 是跨平台桌面应用，支持 Windows、macOS、Linux：
 
 ## 预览
 
-**片库 · 收藏**
-
-<img src="docs/screenshots/library-favorites.png" alt="片库收藏" width="900" />
-
-**片库 · 追番**
-
-<img src="docs/screenshots/library-bangumi.png" alt="片库追番" width="900" />
-
-**片库 · 追剧**
-
-<img src="docs/screenshots/library-cinema.png" alt="片库追剧" width="900" />
-
-**片库 · 本机缓存**
-
-<img src="docs/screenshots/library-cache.png" alt="本机缓存" width="900" />
-
-**任务**
-
-<img src="docs/screenshots/tasks.png" alt="任务" width="900" />
-
-**关于**
-
-<img src="docs/screenshots/about.png" alt="关于" width="900" />
+<img src="docs/screenshots/overview.jpg" alt="BiliMux 界面：收藏、追番、追剧、本机缓存、任务、关于" width="900" />
 
 ## 安装
 
