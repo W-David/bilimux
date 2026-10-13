@@ -18,6 +18,7 @@ type HistoryRow = {
   status: DownloadHistoryStatus
   downloaded_at: number | null
   updated_at: number
+  task_json: string
 }
 
 const CREATE_TABLE_SQL = `
@@ -34,6 +35,7 @@ const CREATE_TABLE_SQL = `
     status TEXT NOT NULL DEFAULT 'downloading',
     downloaded_at INTEGER,
     updated_at INTEGER NOT NULL,
+    task_json TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (bvid, cid)
   )
 `
@@ -47,6 +49,7 @@ export default class DownloadHistoryStore {
     this.db.exec(CREATE_TABLE_SQL)
     this.migrateToCidPrimaryKey()
     this.ensureCoverColumn()
+    this.ensureTaskJsonColumn()
     this.reconcile()
   }
 
@@ -97,6 +100,68 @@ export default class DownloadHistoryStore {
     this.db.exec(`ALTER TABLE download_history ADD COLUMN cover TEXT NOT NULL DEFAULT ''`)
   }
 
+  private ensureTaskJsonColumn(): void {
+    const columns = this.db.prepare(`PRAGMA table_info(download_history)`).all() as { name: string }[]
+    if (columns.some(column => column.name === 'task_json')) return
+    this.db.exec(`ALTER TABLE download_history ADD COLUMN task_json TEXT NOT NULL DEFAULT ''`)
+  }
+
+  private serializeTask(task: DownloadVideoTask): string {
+    return JSON.stringify({
+      bvid: task.bvid,
+      cid: task.cid,
+      page: task.page,
+      pages: task.pages,
+      part: task.part,
+      title: task.title,
+      uname: task.uname,
+      folderName: task.folderName,
+      coverUrl: task.coverUrl,
+      kind: task.kind,
+      epId: task.epId,
+      ogvCategory: task.ogvCategory,
+      qn: task.qn
+    } satisfies DownloadVideoTask)
+  }
+
+  private parseStoredTask(row: HistoryRow): DownloadVideoTask {
+    if (row.task_json) {
+      try {
+        const parsed = JSON.parse(row.task_json) as Partial<DownloadVideoTask>
+        if (parsed.bvid && Number.isFinite(parsed.cid) && (parsed.cid ?? 0) > 0) {
+          return {
+            bvid: parsed.bvid,
+            cid: Number(parsed.cid),
+            page: parsed.page && parsed.page > 0 ? parsed.page : row.page || 1,
+            pages: parsed.pages && parsed.pages > 0 ? parsed.pages : row.page || 1,
+            part: parsed.part || row.part || '',
+            title: parsed.title || row.title,
+            uname: parsed.uname || '',
+            folderName: parsed.folderName || row.folder_name,
+            coverUrl: parsed.coverUrl || row.cover || '',
+            kind: parsed.kind,
+            epId: parsed.epId,
+            ogvCategory: parsed.ogvCategory,
+            qn: parsed.qn
+          }
+        }
+      } catch {
+        // fall through to row fields
+      }
+    }
+    return {
+      bvid: row.bvid,
+      cid: row.cid,
+      page: row.page || 1,
+      pages: row.page || 1,
+      part: row.part || '',
+      title: row.title,
+      uname: '',
+      folderName: row.folder_name,
+      coverUrl: row.cover || ''
+    }
+  }
+
   /**
    * 下载开始：写入/重置一条 downloading 记录
    */
@@ -110,9 +175,9 @@ export default class DownloadHistoryStore {
       this.db
         .prepare(
           `INSERT INTO download_history (
-             bvid, cid, page, part, title, folder_name, cover, output_path, file_size, status, downloaded_at, updated_at
+             bvid, cid, page, part, title, folder_name, cover, output_path, file_size, status, downloaded_at, updated_at, task_json
            )
-           VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 0, 'downloading', NULL, ?)
+           VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 0, 'downloading', NULL, ?, ?)
            ON CONFLICT(bvid, cid) DO UPDATE SET
              page = excluded.page,
              part = excluded.part,
@@ -123,9 +188,20 @@ export default class DownloadHistoryStore {
              file_size = 0,
              status = 'downloading',
              downloaded_at = NULL,
-             updated_at = excluded.updated_at`
+             updated_at = excluded.updated_at,
+             task_json = excluded.task_json`
         )
-        .run(task.bvid, task.cid, task.page, task.part, task.title, task.folderName, task.coverUrl || '', now)
+        .run(
+          task.bvid,
+          task.cid,
+          task.page,
+          task.part,
+          task.title,
+          task.folderName,
+          task.coverUrl || '',
+          now,
+          this.serializeTask(task)
+        )
       this.db.exec('COMMIT')
     } catch (error) {
       this.db.exec('ROLLBACK')
@@ -162,6 +238,28 @@ export default class DownloadHistoryStore {
   }
 
   /**
+   * 用户暂停：保留半成品，重启后仍可恢复
+   */
+  public markPaused(key: DownloadTaskKey): void {
+    this.updateStatus(key, 'paused')
+  }
+
+  /**
+   * 读取暂停中的任务快照，供重启后 resume 重建 runtime
+   */
+  public readPausedTask(key: DownloadTaskKey): DownloadVideoTask | null {
+    const row = this.db
+      .prepare(
+        `SELECT bvid, cid, page, part, title, folder_name, cover, output_path, file_size, status, downloaded_at, updated_at, task_json
+         FROM download_history
+         WHERE bvid = ? AND cid = ?`
+      )
+      .get(key.bvid, key.cid) as unknown as HistoryRow | undefined
+    if (!row || row.status !== 'paused') return null
+    return this.parseStoredTask(row)
+  }
+
+  /**
    * 按 bvid 批量查询下载历史（含全部分 P），已完成记录附带文件存在性校验
    */
   public async getMany(bvids: string[]): Promise<DownloadHistoryRecord[]> {
@@ -169,7 +267,7 @@ export default class DownloadHistoryStore {
     const placeholders = bvids.map(() => '?').join(', ')
     const rows = this.db
       .prepare(
-        `SELECT bvid, cid, page, part, title, folder_name, cover, output_path, file_size, status, downloaded_at, updated_at
+        `SELECT bvid, cid, page, part, title, folder_name, cover, output_path, file_size, status, downloaded_at, updated_at, task_json
          FROM download_history
          WHERE bvid IN (${placeholders})`
       )
@@ -184,7 +282,7 @@ export default class DownloadHistoryStore {
   public async listAll(): Promise<DownloadHistoryRecord[]> {
     const rows = this.db
       .prepare(
-        `SELECT bvid, cid, page, part, title, folder_name, cover, output_path, file_size, status, downloaded_at, updated_at
+        `SELECT bvid, cid, page, part, title, folder_name, cover, output_path, file_size, status, downloaded_at, updated_at, task_json
          FROM download_history
          ORDER BY updated_at DESC`
       )
@@ -198,7 +296,7 @@ export default class DownloadHistoryStore {
   public async getByKey(key: DownloadTaskKey): Promise<DownloadHistoryRecord | null> {
     const row = this.db
       .prepare(
-        `SELECT bvid, cid, page, part, title, folder_name, cover, output_path, file_size, status, downloaded_at, updated_at
+        `SELECT bvid, cid, page, part, title, folder_name, cover, output_path, file_size, status, downloaded_at, updated_at, task_json
          FROM download_history
          WHERE bvid = ? AND cid = ?`
       )
@@ -273,7 +371,7 @@ export default class DownloadHistoryStore {
     }
   }
 
-  private updateStatus(key: DownloadTaskKey, status: Extract<DownloadHistoryStatus, 'failed'>): void {
+  private updateStatus(key: DownloadTaskKey, status: Extract<DownloadHistoryStatus, 'failed' | 'paused'>): void {
     this.db
       .prepare(`UPDATE download_history SET status = ?, updated_at = ? WHERE bvid = ? AND cid = ?`)
       .run(status, Date.now(), key.bvid, key.cid)

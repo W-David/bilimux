@@ -123,7 +123,7 @@ export const useQrLoginStore = defineStore('qrLogin', () => {
           stopPolling()
           stopTick()
           try {
-            await emitter.invoke('persist-cookie')
+            await emitter.invoke('persist-cookie', res.data.refresh_token)
           } catch (error) {
             logger.error('持久化登录 Cookie 失败:', error)
           }

@@ -11,7 +11,8 @@ import { EventEmitter } from 'node:events'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { MP3_SUFFIX, MP4_SUFFIX, OUTPUT_DIR_NAME, PLAYURL_FILE_NAME, VIDEO_INFO_FILE_NAME } from '../config/constants'
-import { createDirIfNotExist, getEngineBinPath, isExist, isValidFile, mapLimit, sanitizeFileName } from '../utils'
+import { sanitizeFileName } from '@shared/filename'
+import { createDirIfNotExist, getEngineBinPath, isExist, isValidFile, mapLimit } from '../utils'
 import ConfigManager from './ConfigManager'
 import ConvertHistoryStore from './ConvertHistoryStore'
 import Engine from './Engine'
@@ -228,6 +229,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       // 合成 (Composition)
       const isOutputExist = await isExist(outputFilePath)
       if (!isOutputExist || replaceExisting) {
+        await createDirIfNotExist(path.dirname(outputFilePath))
         await this.muxWithEngine({
           bvInfo: bv,
           videoFile: videoMp4Path,
@@ -267,7 +269,7 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       logger.info('启动队列任务:', `总任务数: [${bvs.length}]`)
 
       bvs.forEach(bv => {
-        const outputFilePath = path.join(outputDir, bv.fileInfo.fileName)
+        const outputFilePath = bv.fileInfo.filePath || path.join(outputDir, bv.fileInfo.fileName)
         this.processQueue
           .add(() => {
             this.markItemStarted(bv, outputFilePath)
@@ -487,12 +489,13 @@ export class ComposEngine extends EventEmitter<ComposEventMap> {
       }
 
       videoTaskInfo.fileInfo.dirPath = dirPath
-      videoTaskInfo.fileInfo.fileName =
-        `[${videoTaskInfo.bvid}]-[${videoTaskInfo.uname}]-${sanitizeFileName(videoTaskInfo.title)}` + MP4_SUFFIX
-      videoTaskInfo.fileInfo.filePath = path.join(
-        this.configManager.getStore()['convert-config'].outputDir,
-        videoTaskInfo.fileInfo.fileName
-      )
+      const outputRoot = this.configManager.getStore()['convert-config'].outputDir
+      const fileStem = sanitizeFileName(videoTaskInfo.title)
+      const groupDir = videoTaskInfo.groupTitle ? sanitizeFileName(videoTaskInfo.groupTitle) : ''
+      videoTaskInfo.fileInfo.fileName = fileStem + MP4_SUFFIX
+      videoTaskInfo.fileInfo.filePath = groupDir
+        ? path.join(outputRoot, groupDir, videoTaskInfo.fileInfo.fileName)
+        : path.join(outputRoot, videoTaskInfo.fileInfo.fileName)
 
       return videoTaskInfo
 

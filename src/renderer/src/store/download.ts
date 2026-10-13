@@ -25,6 +25,7 @@ export type DownloadTaskRow = {
   history: DownloadHistoryRecord | null
   kind?: 'ugc' | 'ogv'
   epId?: number
+  ogvCategory?: 'bangumi' | 'cinema'
 }
 
 type VideoBadge = {
@@ -89,6 +90,15 @@ function applyHistoryToState(state: DownloadItemState, record: DownloadHistoryRe
     state.message = '已取消'
     return
   }
+  if (historyStatus === 'paused') {
+    state.status = 'paused'
+    return
+  }
+  if (historyStatus === 'downloading') {
+    state.status = 'fail'
+    state.message = '上次下载未完成'
+    return
+  }
   state.status = 'fail'
   state.message = '上次下载未完成'
 }
@@ -123,6 +133,7 @@ function syntheticVideo(record: DownloadHistoryRecord, favorite?: FavoriteResour
  */
 export const useDownloadStore = defineStore('download', () => {
   const items = reactive<Record<string, DownloadItemState>>({})
+  const cidsByBvid = reactive<Record<string, number[]>>({})
   const pagesByBvid = reactive<Record<string, BiliVideoPage[]>>({})
   const pagesLoading = reactive<Record<string, boolean>>({})
   const pagesInflight = new Map<string, Promise<BiliVideoPage[]>>()
@@ -141,8 +152,15 @@ export const useDownloadStore = defineStore('download', () => {
     return map
   })
 
+  function trackCid(bvid: string, cid: number): void {
+    const current = cidsByBvid[bvid]
+    if (current?.includes(cid)) return
+    cidsByBvid[bvid] = current ? [...current, cid] : [cid]
+  }
+
   function getItem(bvid: string, cid: number): DownloadItemState {
     const key = downloadTaskId(bvid, cid)
+    trackCid(bvid, cid)
     let item = items[key]
     if (!item) {
       item = emptyItem()
@@ -179,7 +197,7 @@ export const useDownloadStore = defineStore('download', () => {
     folderName: string,
     page: BiliVideoPage,
     pagesTotal: number,
-    extra?: { kind?: 'ugc' | 'ogv'; epId?: number }
+    extra?: { kind?: 'ugc' | 'ogv'; epId?: number; ogvCategory?: 'bangumi' | 'cinema' }
   ): void {
     snapshots[downloadTaskId(video.bvid, page.cid)] = {
       video: {
@@ -191,7 +209,8 @@ export const useDownloadStore = defineStore('download', () => {
       page,
       pagesTotal,
       kind: extra?.kind ?? 'ugc',
-      epId: extra?.epId
+      epId: extra?.epId,
+      ogvCategory: extra?.ogvCategory
     }
   }
 
@@ -247,8 +266,8 @@ export const useDownloadStore = defineStore('download', () => {
       if (item.status === 'success' || item.status === 'fail') return 'completed'
     }
     const record = historyFor(bvid, cid)
+    if (record?.status === 'paused' || record?.status === 'downloading') return 'active'
     if (record && COMPLETED_HISTORY_STATUS.has(record.status)) return 'completed'
-    if (record?.status === 'downloading' && item && ACTIVE_STATUS.has(item.status)) return 'active'
     if (record) return 'completed'
     return 'waiting'
   }
@@ -291,15 +310,11 @@ export const useDownloadStore = defineStore('download', () => {
 
   function videoBadge(bvid: string, expectedPages = 0): VideoBadge {
     const loaded = pagesByBvid[bvid]
-    const cids = new Set<number>()
+    const cids = new Set<number>(cidsByBvid[bvid] ?? [])
     if (loaded?.length) {
       for (const page of loaded) cids.add(page.cid)
     }
     for (const record of historyMap.value.get(bvid) ?? []) cids.add(record.cid)
-    for (const key of Object.keys(items)) {
-      const parsed = parseTaskKey(key)
-      if (parsed?.bvid === bvid) cids.add(parsed.cid)
-    }
 
     let active = 0
     let completed = 0
@@ -329,7 +344,7 @@ export const useDownloadStore = defineStore('download', () => {
     folderName: string,
     page: BiliVideoPage,
     pagesTotal: number,
-    extra?: { kind?: 'ugc' | 'ogv'; epId?: number; qn?: number }
+    extra?: { kind?: 'ugc' | 'ogv'; epId?: number; qn?: number; ogvCategory?: 'bangumi' | 'cinema' }
   ): boolean {
     const item = getItem(video.bvid, page.cid)
     if (ACTIVE_STATUS.has(item.status) || item.status === 'success') return false
@@ -337,19 +352,21 @@ export const useDownloadStore = defineStore('download', () => {
     const previousSnap = snapshots[downloadTaskId(video.bvid, page.cid)]
     const kind = extra?.kind ?? previousSnap?.kind ?? 'ugc'
     const epId = extra?.epId ?? previousSnap?.epId
-    rememberTask(video, folderName, page, pagesTotal, { kind, epId })
+    const ogvCategory = extra?.ogvCategory ?? previousSnap?.ogvCategory
+    rememberTask(video, folderName, page, pagesTotal, { kind, epId, ogvCategory })
     emitter.invoke('download:video', {
       bvid: video.bvid,
       cid: page.cid,
       page: page.page,
       pages: pagesTotal,
       part: page.part,
-      title: video.title,
+      title: kind === 'ogv' ? folderName || video.title : video.title,
       uname: video.upper.name,
       folderName,
       coverUrl: video.cover,
       kind,
       epId,
+      ogvCategory,
       qn: extra?.qn
     })
     item.status = 'waiting'
@@ -442,6 +459,7 @@ export const useDownloadStore = defineStore('download', () => {
     const request = fetchVideoPages(bvid)
       .then(pages => {
         pagesByBvid[bvid] = pages
+        for (const page of pages) trackCid(bvid, page.cid)
         return pages
       })
       .finally(() => {
@@ -459,6 +477,7 @@ export const useDownloadStore = defineStore('download', () => {
       if (version !== historyLoadVersion) return
       history.value = records
       for (const record of records) {
+        trackCid(record.bvid, record.cid)
         applyHistoryToState(getItem(record.bvid, record.cid), record)
       }
     } catch (error) {

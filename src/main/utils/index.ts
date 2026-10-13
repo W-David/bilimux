@@ -101,40 +101,7 @@ export function getEngineBinPath(platform: NodeJS.Platform): string {
   return app.isPackaged ? getProdEngineBinPath(platform) : getDevEngineBinPath(platform)
 }
 
-/**
- * 过滤文件名中的特殊字符，保证跨平台可用（转换与下载共用）
- * @param name 原始标题
- * @returns 清洗后的文件名
- */
-const WINDOWS_RESERVED_NAMES = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i
-
-export function sanitizeFileName(name: string): string {
-  if (!name) return 'untitled'
-
-  const sanitized = name
-    .replace(/（/g, '(')
-    .replace(/）/g, ')')
-    .replace(/</g, '《')
-    .replace(/>/g, '》')
-    .replace(/\\/g, '#')
-    .replace(/"/g, "'")
-    .replace(/\//g, '#')
-    .replace(/\|/g, '_')
-    .replace(/\?/g, '？')
-    .replace(/\*/g, '-')
-    .replace(/【/g, '[')
-    .replace(/】/g, ']')
-    .replace(/:/g, '：')
-    .replace(/\s+/g, '')
-    .replace(/[. ]+$/g, '')
-    .trim()
-
-  if (!sanitized) return 'untitled'
-  if (WINDOWS_RESERVED_NAMES.test(sanitized)) {
-    return `_${sanitized}`
-  }
-  return sanitized
-}
+export { sanitizeFileName } from '@shared/filename'
 
 /**
  * 批量检查文件是否存在（限制并发，避免一次性打开过多句柄）

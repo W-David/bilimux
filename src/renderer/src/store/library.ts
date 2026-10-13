@@ -118,5 +118,14 @@ export const useLibraryStore = defineStore('library', () => {
     Object.assign(cinema, emptyPage())
   }
 
-  return { created, bangumi, cinema, pageOf, ensureTab, refreshTab, loadMore, reset }
+  return {
+    created,
+    bangumi,
+    cinema,
+    pageOf,
+    ensureTab,
+    refreshTab,
+    loadMore,
+    reset
+  }
 })

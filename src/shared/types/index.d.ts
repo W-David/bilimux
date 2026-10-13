@@ -136,6 +136,8 @@ type DownloadVideoTask = {
   kind?: 'ugc' | 'ogv'
   /** ogv 单集 epid，取流时传给 pgc playurl */
   epId?: number
+  /** 番剧用「话」，影视用「集」；缺省按番剧处理 */
+  ogvCategory?: 'bangumi' | 'cinema'
   /** 本次下载清晰度；缺省则用设置里的 qn */
   qn?: number
 }
@@ -174,7 +176,7 @@ type DownloadItemEndArgs = {
 }
 
 // 下载历史（SQLite 持久化）
-type DownloadHistoryStatus = 'downloading' | 'completed' | 'failed' | 'missing' | 'interrupted' | 'cancelled'
+type DownloadHistoryStatus = 'downloading' | 'paused' | 'completed' | 'failed' | 'missing' | 'interrupted' | 'cancelled'
 
 type DownloadHistoryRecord = {
   bvid: string
@@ -402,6 +404,11 @@ type CollectionMedia = {
   kind: 'ugc' | 'ogv'
   epId?: number
   cid?: number
+  ogvCategory?: 'bangumi' | 'cinema'
+  /** 分集序号，从 1 起 */
+  index?: number
+  /** 话/集标题（不含番名） */
+  partTitle?: string
 }
 
 export type {

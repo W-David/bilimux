@@ -102,10 +102,7 @@ watch(
   { immediate: true }
 )
 
-watch(
-  () => [authStore.isAuthenticated, preferenceStore.preference['user-info']?.mid] as const,
-  loadTab
-)
+watch(() => [authStore.isAuthenticated, preferenceStore.preference['user-info']?.mid] as const, loadTab)
 
 onMounted(loadTab)
 onActivated(loadTab)

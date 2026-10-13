@@ -33,7 +33,7 @@
     <div
       v-else-if="!collection.items.length"
       class="flex h-full items-center justify-center text-sm text-gray-500">
-      {{ created.loading ? '' : '该收藏夹还没有内容' }}
+      {{ created.loading ? '' : emptyCopy }}
     </div>
     <div
       v-else
@@ -76,6 +76,10 @@ const preferenceStore = usePreferenceStore()
 const collection = reactive(useCollectionSource())
 const selectedFolder = ref<FavoriteFolder | null>(null)
 const created = computed(() => libraryStore.created)
+const emptyCopy = computed(() => {
+  if (!created.value.items.length) return '还没有收藏夹'
+  return '该收藏夹还没有内容'
+})
 
 const loadTab = (): void => {
   if (!authStore.isAuthenticated) return
@@ -107,10 +111,7 @@ watch(
   { immediate: true }
 )
 
-watch(
-  () => [authStore.isAuthenticated, preferenceStore.preference['user-info']?.mid] as const,
-  loadTab
-)
+watch(() => [authStore.isAuthenticated, preferenceStore.preference['user-info']?.mid] as const, loadTab)
 
 onMounted(loadTab)
 onActivated(loadTab)

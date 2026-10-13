@@ -17,7 +17,9 @@ import { DownloadEventMap, DownloadProgressStatus, DownloadTaskKey, DownloadVide
 import { EventEmitter } from 'node:events'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import { createDirIfNotExist, sanitizeFileName } from '../utils'
+import { sanitizeFileName } from '@shared/filename'
+import { buildOutputLayout } from '@shared/output-path'
+import { createDirIfNotExist } from '../utils'
 import { getWbiSignedParams } from '../utils/wbi'
 import { ComposEngine } from './ComposEngine'
 import ConfigManager from './ConfigManager'
@@ -195,6 +197,7 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
 
     runtime.status = 'paused'
     runtime.abort?.abort()
+    this.historyStore.markPaused(this.taskKey(runtime))
     this.emitProgress(runtime, 'paused', this.currentProgress(runtime))
     logger.debug(`下载任务已暂停: ${downloadTaskId(key.bvid, key.cid)}`)
   }
@@ -203,8 +206,15 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
    * 恢复已暂停的下载任务
    */
   public resume(key: DownloadTaskKey): void {
-    const runtime = this.getRuntime(key)
-    if (!runtime || runtime.cancelled || runtime.status !== 'paused') return
+    let runtime = this.getRuntime(key)
+    if (!runtime) {
+      const task = this.historyStore.readPausedTask(key)
+      if (!task) return
+      runtime = this.createRuntime(task)
+      this.tasks.set(downloadTaskId(task.bvid, task.cid), runtime)
+      runtime.status = 'paused'
+    }
+    if (runtime.cancelled || runtime.status !== 'paused') return
     this.enqueue(runtime)
   }
 
@@ -237,11 +247,17 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
   private createRuntime(task: DownloadVideoTask): TaskRuntime {
     const downloadConfig = this.configManager.getStore()['download-config']
     const outputDir = downloadConfig.outputDir
-    const titlePart = sanitizeFileName(task.title)
-    const partSuffix =
-      task.pages > 1 || task.page > 1 ? `-P${task.page}-${sanitizeFileName(task.part || `P${task.page}`)}` : ''
-    const finalPath = path.join(outputDir, `[${task.bvid}]-[${task.uname}]-${titlePart}${partSuffix}.mp4`)
-    const folderDir = path.dirname(finalPath)
+    const workTitle = task.kind === 'ogv' ? task.folderName || task.title : task.title
+    const layout = buildOutputLayout({
+      title: workTitle,
+      part: task.part,
+      page: task.page,
+      pages: task.pages,
+      kind: task.kind ?? 'ugc',
+      ogvCategory: task.ogvCategory
+    })
+    const folderDir = layout.directory ? path.join(outputDir, sanitizeFileName(layout.directory)) : outputDir
+    const finalPath = path.join(folderDir, `${sanitizeFileName(layout.fileStem)}.mp4`)
 
     return {
       task,
@@ -311,8 +327,14 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
 
       if (runtime.mode === 'dash' && runtime.tempDir) {
         await createDirIfNotExist(runtime.tempDir)
-        await this.downloadStream(runtime, 'video')
-        await this.downloadStream(runtime, 'audio')
+        try {
+          await Promise.all([this.downloadStream(runtime, 'video'), this.downloadStream(runtime, 'audio')])
+        } catch (error) {
+          if (!this.isPaused(runtime) && !runtime.cancelled) {
+            runtime.abort?.abort()
+          }
+          throw error
+        }
 
         this.throwIfCancelled(runtime)
         runtime.stage = 'merge'
@@ -483,6 +505,10 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
         destPath: runtime.finalPath
       })
     }
+
+    await this.hydrateStreamFromDisk(runtime.streams.video)
+    await this.hydrateStreamFromDisk(runtime.streams.audio)
+    await this.hydrateStreamFromDisk(runtime.streams.durl)
   }
 
   private upsertStream(
@@ -541,10 +567,10 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
           await this.httpClient.downloadFile(
             url,
             current.destPath,
-            (percent, received, total) => {
+            (_percent, received, total) => {
               current.received = received
               current.total = total
-              this.emitProgress(runtime, 'downloading', this.streamOverallProgress(runtime, kind, percent))
+              this.emitProgress(runtime, 'downloading', this.currentProgress(runtime))
             },
             {
               offset,
@@ -566,6 +592,11 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
           logger.info(`下载完成: ${runtime.task.bvid}:${runtime.task.cid} ${kind}`)
           return
         } catch (error) {
+          const code = (error as NodeJS.ErrnoException).code
+          if (code === 'RANGE_NOT_SATISFIABLE' && current.received > 0) {
+            current.completed = true
+            return
+          }
           if (runtime.cancelled || error instanceof DownloadCancelledError) {
             await this.syncReceivedFromFile(current)
             throw new DownloadCancelledError()
@@ -579,7 +610,6 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
             throw error
           }
 
-          const code = (error as NodeJS.ErrnoException).code
           if (code === 'RANGE_NOT_SUPPORTED' || code === 'RESUME_MISMATCH') {
             await this.resetStream(current)
             lastError = error
@@ -706,6 +736,14 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
     }
   }
 
+  private async hydrateStreamFromDisk(stream?: StreamRuntime): Promise<void> {
+    if (!stream) return
+    await this.syncReceivedFromFile(stream)
+    if (stream.total > 0 && stream.received >= stream.total) {
+      stream.completed = true
+    }
+  }
+
   /**
    * 当前任务总进度（0-100）
    */
@@ -720,10 +758,5 @@ export default class DownloadManager extends EventEmitter<DownloadEventMap> {
     const videoProgress = video && video.total > 0 ? Math.min(50, Math.round((video.received / video.total) * 50)) : 0
     const audioProgress = audio && audio.total > 0 ? Math.min(50, Math.round((audio.received / audio.total) * 50)) : 0
     return videoProgress + audioProgress
-  }
-
-  private streamOverallProgress(runtime: TaskRuntime, kind: StreamKind, streamPercent: number): number {
-    if (runtime.mode !== 'dash') return streamPercent
-    return kind === 'video' ? Math.round(streamPercent / 2) : 50 + Math.round(streamPercent / 2)
   }
 }

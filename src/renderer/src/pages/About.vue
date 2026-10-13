@@ -15,7 +15,8 @@ const isChecking = ref(false)
 const isMac = window.electron.process.platform === 'darwin'
 
 const fetchAppVersion = () => {
-  emitter.invoke('get-app-version')
+  emitter
+    .invoke('get-app-version')
     .then(version => (appVersion.value = version))
     .catch(e => logger.error(e))
 }
@@ -39,7 +40,7 @@ const handleCheckUpdate = async () => {
   try {
     const result = await emitter.invoke('check-for-update')
     if (result?.isUpdateAvailable) {
-      // macOS 由主进程自动打开 GitHub 下载页，并通过 update:manual-download 提示，避免重复 toast
+      // macOS 走手动下载：主进程发 update:manual-download，由更新条/toast 提示
       if (isMac) return
       mittbus.emit('toast:add', {
         severity: 'success',

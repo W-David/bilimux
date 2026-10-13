@@ -55,6 +55,7 @@ export function registerPreferenceIpc(app: Application): void {
 
   app.ipcManager.mainIpc.on('reset-preference', () => {
     app.configManager.store.clear()
+    void app.cookieSession.clearRefreshToken()
     void app.httpClient.logout()
     app.windowManager.sendCommandToAll('fetch-preference')
     logger.debug('preference reseted')
@@ -64,15 +65,21 @@ export function registerPreferenceIpc(app: Application): void {
     return app.configManager.store.store
   })
 
-  app.ipcManager.mainIpc.handle('persist-cookie', async () => {
+  app.ipcManager.mainIpc.handle('persist-cookie', async (_, refreshToken?: string) => {
     await app.httpClient.saveCookieJar()
+    await app.cookieSession.saveRefreshToken(refreshToken)
+  })
+
+  app.ipcManager.mainIpc.handle('auth:ensure', () => {
+    return app.cookieSession.ensure()
   })
 
   app.ipcManager.mainIpc.handle('get-cookie', async () => {
     return app.httpClient.getCookieKey('bili_jct')
   })
 
-  app.ipcManager.mainIpc.handle('logout', () => {
+  app.ipcManager.mainIpc.handle('logout', async () => {
+    await app.cookieSession.clearRefreshToken()
     return app.httpClient.logout()
   })
 }

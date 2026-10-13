@@ -23,6 +23,9 @@ export interface QrCodeResponseData {
 export interface CheckLoginStatusResponseData {
   code: number
   message: string
+  refresh_token?: string
+  url?: string
+  timestamp?: number
 }
 
 // 检查认证状态返回数据类型
